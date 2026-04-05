@@ -119,7 +119,9 @@
 		speed = 1 + (distance / 5000);
 
 		// Move Road (Illusion of movement)
-		road.material.color.setHSL((distance % 1000) / 1000, 0.5, 0.5); // Psycho color road!
+		if (road.material instanceof THREE.MeshPhongMaterial) {
+			road.material.color.setHSL((distance % 1000) / 1000, 0.5, 0.5); // Psycho color road!
+		}
 
 		// Player Control
 		player.position.x = THREE.MathUtils.lerp(player.position.x, playerX, 0.1);
@@ -156,27 +158,38 @@
 		const weathers: ('clear' | 'snow' | 'fog' | 'night')[] = ['clear', 'snow', 'fog', 'night'];
 		weather = weathers[weatherCycle];
 
+		const fog = scene.fog as THREE.Fog;
+
 		if (weather === 'snow') {
 			snowParticles.visible = true;
 			snowParticles.position.z += 1;
 			if (snowParticles.position.z > 100) snowParticles.position.z = 0;
 			scene.background = new THREE.Color(0xffffff);
-			scene.fog.color.set(0xffffff);
+			if (fog) {
+				fog.color.set(0xffffff);
+				fog.far = 200;
+			}
 		} else if (weather === 'fog') {
 			snowParticles.visible = false;
 			scene.background = new THREE.Color(0xcccccc);
-			scene.fog.color.set(0xcccccc);
-			scene.fog.far = 50;
+			if (fog) {
+				fog.color.set(0xcccccc);
+				fog.far = 50;
+			}
 		} else if (weather === 'night') {
 			snowParticles.visible = false;
 			scene.background = new THREE.Color(0x000000);
-			scene.fog.color.set(0x000000);
-			scene.fog.far = 100;
+			if (fog) {
+				fog.color.set(0x000000);
+				fog.far = 100;
+			}
 		} else {
 			snowParticles.visible = false;
 			scene.background = new THREE.Color(0x4ade80);
-			scene.fog.color.set(0x4ade80);
-			scene.fog.far = 200;
+			if (fog) {
+				fog.color.set(0x4ade80);
+				fog.far = 200;
+			}
 		}
 
 		renderer.render(scene, camera);
