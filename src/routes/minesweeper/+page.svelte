@@ -20,10 +20,10 @@
 	let gameOver = $state(false);
 	let gameWon = $state(false);
 	let minesLeft = $state(MINES_COUNT);
-	
+
 	// Modal State
 	let showChaosModal = $state(false);
-	let modalMessage = $state("");
+	let modalMessage = $state('');
 
 	// Initialize game
 	function initGame() {
@@ -140,11 +140,11 @@
 
 	function triggerChaos() {
 		const messages = [
-			"I TOLD YOU NOT TO CLICK IT! 😤",
-			"SYSTEM ERROR: Too much chaos detected! ⚠️",
-			"Are you even listening?! 🤨",
-			"Your finger is too curious for its own good. 🕵️‍♂️",
-			"ERROR 404: Sanity Not Found. 🧠💨"
+			'I TOLD YOU NOT TO CLICK IT! 😤',
+			'SYSTEM ERROR: Too much chaos detected! ⚠️',
+			'Are you even listening?! 🤨',
+			'Your finger is too curious for its own good. 🕵️‍♂️',
+			'ERROR 404: Sanity Not Found. 🧠💨'
 		];
 		modalMessage = messages[Math.floor(Math.random() * messages.length)];
 		showChaosModal = true;
@@ -160,41 +160,45 @@
 	});
 </script>
 
-<div class="min-h-screen bg-yellow-300 flex flex-col items-center justify-center p-8 font-mono overflow-hidden relative">
-	<div class="text-center mb-8 animate-bounce">
-		<h1 class="text-5xl font-black text-black mb-2 drop-shadow-[4px_4px_0_rgba(0,0,0,1)] uppercase">
+<div
+	class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-yellow-300 p-8 font-mono"
+>
+	<div class="mb-8 animate-bounce text-center">
+		<h1 class="mb-2 text-5xl font-black text-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
 			💣 BOOM BOX 💣
 		</h1>
-		<p class="text-lg text-black font-bold">Don't touch the spicy rocks!</p>
+		<p class="text-lg font-bold text-black">Don't touch the spicy rocks!</p>
 	</div>
 
-	<div class="bg-white border-4 border-black p-6 shadow-[12px_12px_0_rgba(0,0,0,1)] flex flex-col items-center gap-6 relative z-10">
-		<div class="flex justify-between w-full items-center bg-black text-yellow-300 p-2 px-4 font-bold text-xl">
+	<div
+		class="relative z-10 flex flex-col items-center gap-6 border-4 border-black bg-white p-6 shadow-[12px_12px_0_rgba(0,0,0,1)]"
+	>
+		<div
+			class="flex w-full items-center justify-between bg-black p-2 px-4 text-xl font-bold text-yellow-300"
+		>
 			<span>MINES: {minesLeft}</span>
-			<button 
+			<button
 				onclick={initGame}
-				class="bg-yellow-300 text-black px-3 py-1 border-2 border-white hover:bg-white transition-colors uppercase text-sm"
+				class="border-2 border-white bg-yellow-300 px-3 py-1 text-sm text-black uppercase transition-colors hover:bg-white"
 			>
 				Reset 🔄
 			</button>
 		</div>
 
 		{#if gameOver}
-			<div class="text-3xl font-black text-red-600 animate-pulse uppercase">
-				💥 KABOOM! 💥
-			</div>
+			<div class="animate-pulse text-3xl font-black text-red-600 uppercase">💥 KABOOM! 💥</div>
 		{:else if gameWon}
-			<div class="text-3xl font-black text-green-600 animate-bounce uppercase">
-				🏆 VICTORY! 🏆
-			</div>
+			<div class="animate-bounce text-3xl font-black text-green-600 uppercase">🏆 VICTORY! 🏆</div>
 		{/if}
 
-		<div class="grid gap-1 bg-black p-1 border-4 border-black" 
-			 style:grid-template-columns="repeat({COLS}, minmax(0, 1fr))">
+		<div
+			class="grid gap-1 border-4 border-black bg-black p-1"
+			style:grid-template-columns="repeat({COLS}, minmax(0, 1fr))"
+		>
 			{#each grid as row, r}
 				{#each row as cell, c}
 					<button
-						class="w-8 h-8 flex items-center justify-center text-sm font-black transition-all
+						class="flex h-8 w-8 items-center justify-center text-sm font-black transition-all
 						{cell.state === 'revealed' ? 'bg-white' : 'bg-gray-500 hover:bg-gray-400 active:translate-y-1'}
 						{cell.state === 'flagged' ? 'bg-yellow-400' : ''}"
 						onclick={() => handleReveal(r, c)}
@@ -208,9 +212,7 @@
 								💣
 							{:else if typeof cell.value === 'number' && cell.value > 0}
 								<span class="text-blue-600">{cell.value}</span>
-							{:else}
-								
-							{/if}
+							{:else}{/if}
 						{:else if cell.state === 'flagged'}
 							🚩
 						{/if}
@@ -220,28 +222,35 @@
 		</div>
 	</div>
 
-	<a href="/" class="mt-10 text-black font-bold underline decoration-4 hover:text-white transition-colors relative z-10">
+	<a
+		href="/"
+		class="relative z-10 mt-10 font-bold text-black underline decoration-4 transition-colors hover:text-white"
+	>
 		← BACK TO CHAOS
 	</a>
 
 	<!-- Funny Backup Button -->
-	<button 
+	<button
 		onclick={triggerChaos}
-		class="absolute bottom-4 right-4 bg-pink-500 text-white font-black p-4 border-4 border-black shadow-[4px_4px_0_rgba(0,0,0,1)] hover:rotate-12 transition-transform uppercase text-xs"
+		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:rotate-12"
 	>
 		Don't Click Me 🚫
 	</button>
 
 	<!-- Chaos Modal -->
 	{#if showChaosModal}
-		<div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-			<div class="bg-white border-8 border-black p-8 shadow-[16px_16px_0_rgba(0,0,0,1)] max-w-sm w-full text-center animate-in fade-in zoom-in duration-200">
-				<div class="text-6xl mb-4">🤬</div>
-				<h2 class="text-2xl font-black text-black mb-4 uppercase">Wait, what?!</h2>
-				<p class="text-xl font-bold text-black mb-8 italic">"{modalMessage}"</p>
-				<button 
+		<div
+			class="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+		>
+			<div
+				class="animate-in fade-in zoom-in w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)] duration-200"
+			>
+				<div class="mb-4 text-6xl">🤬</div>
+				<h2 class="mb-4 text-2xl font-black text-black uppercase">Wait, what?!</h2>
+				<p class="mb-8 text-xl font-bold text-black italic">"{modalMessage}"</p>
+				<button
 					onclick={closeChaosModal}
-					class="w-full bg-black text-white font-black py-3 px-6 border-4 border-white hover:bg-pink-500 transition-colors uppercase"
+					class="w-full border-4 border-white bg-black px-6 py-3 font-black text-white uppercase transition-colors hover:bg-pink-500"
 				>
 					Fine, I'm sorry 😔
 				</button>
