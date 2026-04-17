@@ -18,13 +18,15 @@
 	let playerX = $state(GAME_WIDTH / 2 - PLAYER_WIDTH / 2);
 	let bullets = $state<{ x: number; y: number; type: 'player' | 'alien'; id: number }[]>([]);
 	let nextBulletId = 0;
-	let aliens = $state<{ x: number; y: number; alive: boolean; id: number }[]>([]);
+	let aliens = $state<{ x: number; y: number; alive: boolean; id: number; legFrame: number }[]>([]);
 	let alienDirection = $state(1); // 1 for right, -1 for left
 	let alienStep = $state(0);
 	let alienSpeed = $state(1);
 	let lastTime = 0;
 	let showChaosModal = $state(false);
 	let chaosMode = $state(false);
+	let globalTick = $state(0);
+	let animFrame = $state(0);
 
 	function initGame() {
 		score = 0;
@@ -44,7 +46,8 @@
 					x: c * (ALIEN_WIDTH + 10) + 50,
 					y: r * (ALIEN_HEIGHT + 10) + 50,
 					alive: true,
-					id: r * ALIEN_COLS + c
+					id: r * ALIEN_COLS + c,
+					legFrame: 0
 				});
 			}
 		}
@@ -156,6 +159,17 @@
 			gameWon = true;
 		}
 
+		// Animate leg frames (toggle every ~500ms)
+		animFrame = (animFrame + 1) % 3;
+		if (animFrame === 0) {
+			globalTick = (globalTick + 1) % 2;
+			aliens.forEach((a) => {
+				if (a.alive) {
+					a.legFrame = globalTick;
+				}
+			});
+		}
+
 		requestAnimationFrame(update);
 	}
 
@@ -214,14 +228,116 @@
 		{#each aliens as alien (alien.id)}
 			{#if alien.alive}
 				<div
-					class="absolute flex items-center justify-center bg-white text-2xl"
+					class="absolute"
 					style:left="{alien.x}px"
 					style:top="{alien.y}px"
 					style:width="{ALIEN_WIDTH}px"
 					style:height="{ALIEN_HEIGHT}px"
-					class:animate-bounce={chaosMode}
 				>
-					👾
+					{#if alien.id < ALIEN_COLS}
+						<!-- Type 0: squid - top row -->
+						<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
+							<g
+								class="text-green-400"
+								fill="currentColor"
+								style="filter: drop-shadow(0 0 4px #4ade80);"
+							>
+								<!-- Body -->
+								<rect x="8" y="0" width="24" height="4" />
+								<rect x="4" y="4" width="32" height="4" />
+								<rect x="4" y="8" width="8" height="4" />
+								<rect x="12" y="8" width="16" height="4" />
+								<rect x="28" y="8" width="8" height="4" />
+								<rect x="4" y="12" width="4" height="4" />
+								<rect x="12" y="12" width="4" height="4" />
+								<rect x="24" y="12" width="4" height="4" />
+								<rect x="32" y="12" width="4" height="4" />
+								<!-- Eyes -->
+								<rect x="12" y="16" width="4" height="4" fill="black" />
+								<rect x="24" y="16" width="4" height="4" fill="black" />
+								<!-- Mouth -->
+								<rect x="16" y="20" width="8" height="4" />
+								<!-- Legs animation -->
+								{#if alien.legFrame === 0}
+									<rect x="10" y="24" width="4" height="4" />
+									<rect x="26" y="24" width="4" height="4" />
+								{:else}
+									<rect x="14" y="24" width="4" height="4" />
+									<rect x="22" y="24" width="4" height="4" />
+								{/if}
+							</g>
+						</svg>
+					{:else if alien.id < ALIEN_COLS * 2}
+						<!-- Type 1: crab - second/third row -->
+						<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
+							<g
+								class="text-green-400"
+								fill="currentColor"
+								style="filter: drop-shadow(0 0 4px #4ade80);"
+							>
+								<!-- Body -->
+								<rect x="12" y="0" width="16" height="4" />
+								<rect x="8" y="4" width="24" height="4" />
+								<rect x="4" y="8" width="32" height="4" />
+								<rect x="4" y="12" width="8" height="4" />
+								<rect x="12" y="12" width="4" height="4" />
+								<rect x="24" y="12" width="4" height="4" />
+								<rect x="28" y="12" width="8" height="4" />
+								<rect x="12" y="16" width="16" height="4" />
+								<rect x="8" y="20" width="4" height="4" />
+								<rect x="28" y="20" width="4" height="4" />
+								<!-- Eyes -->
+								<rect x="12" y="16" width="4" height="4" fill="black" />
+								<rect x="24" y="16" width="4" height="4" fill="black" />
+								<!-- Antennae -->
+								<rect x="8" y="0" width="4" height="4" />
+								<rect x="28" y="0" width="4" height="4" />
+								<!-- Legs animation -->
+								{#if alien.legFrame === 0}
+									<rect x="8" y="24" width="4" height="4" />
+									<rect x="28" y="24" width="4" height="4" />
+								{:else}
+									<rect x="12" y="24" width="4" height="4" />
+									<rect x="24" y="24" width="4" height="4" />
+								{/if}
+							</g>
+						</svg>
+					{:else}
+						<!-- Type 2: octopus - bottom rows -->
+						<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
+							<g
+								class="text-green-400"
+								fill="currentColor"
+								style="filter: drop-shadow(0 0 4px #4ade80);"
+							>
+								<!-- Dome -->
+								<rect x="12" y="0" width="16" height="4" />
+								<rect x="8" y="4" width="24" height="4" />
+								<rect x="4" y="8" width="32" height="4" />
+								<rect x="4" y="12" width="8" height="4" />
+								<rect x="16" y="12" width="8" height="4" />
+								<rect x="28" y="12" width="8" height="4" />
+								<rect x="12" y="16" width="16" height="4" />
+								<!-- Eyes -->
+								<rect x="12" y="16" width="4" height="4" fill="black" />
+								<rect x="24" y="16" width="4" height="4" fill="black" />
+								<!-- Tentacles animation -->
+								{#if alien.legFrame === 0}
+									<rect x="8" y="20" width="4" height="4" />
+									<rect x="16" y="20" width="4" height="4" />
+									<rect x="24" y="20" width="4" height="4" />
+									<rect x="12" y="24" width="4" height="4" />
+									<rect x="24" y="24" width="4" height="4" />
+								{:else}
+									<rect x="4" y="20" width="4" height="4" />
+									<rect x="20" y="20" width="4" height="4" />
+									<rect x="28" y="20" width="4" height="4" />
+									<rect x="16" y="24" width="4" height="4" />
+									<rect x="20" y="24" width="4" height="4" />
+								{/if}
+							</g>
+						</svg>
+					{/if}
 				</div>
 			{/if}
 		{/each}
