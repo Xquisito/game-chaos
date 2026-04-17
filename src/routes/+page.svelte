@@ -20,6 +20,13 @@
 			href: '/enduro',
 			emoji: '🏎️',
 			color: 'bg-green-500'
+		},
+		{
+			name: 'Space Chaos',
+			description: 'Save the galaxy from pixelated madness! 👾',
+			href: '/space-invaders',
+			emoji: '🛸',
+			color: 'bg-purple-600'
 		}
 	];
 
@@ -32,7 +39,9 @@
 		<h1 class="mb-4 text-6xl font-black text-black drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
 			🕹️ THE CHAOS ARCADE 🕹️
 		</h1>
-		<p class="text-xl font-bold text-black italic">Where code goes to play (and sometimes explode)</p>
+		<p class="text-xl font-bold text-black italic">
+			Where code goes to play (and sometimes explode)
+		</p>
 	</div>
 
 	<div class="grid w-full max-w-6xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
