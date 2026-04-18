@@ -1,140 +1,429 @@
+<svelte:head>
+	<title>The Chaos Arcade | Dashboard</title>
+</svelte:head>
+
 <script lang="ts">
-	const games = [
+	type ScoreId = 'minesweeper' | 'checkers' | 'enduro' | 'space-chaos';
+	type Direction = 'up' | 'down' | 'left' | 'right';
+
+	type GameCard = {
+		id: ScoreId;
+		name: string;
+		description: string;
+		href: string;
+		emoji: string;
+		kicker: string;
+		color: string;
+		marquee: string;
+		storageKey: string;
+		scoreLabel: string;
+		cta: string;
+	};
+
+	type UtilityCard = {
+		id: 'settings';
+		name: string;
+		description: string;
+		href: string;
+		emoji: string;
+		kicker: string;
+		color: string;
+		marquee: string;
+		meta: string;
+		cta: string;
+	};
+
+	type DashboardCard = GameCard | UtilityCard;
+
+	const gameCards: GameCard[] = [
 		{
+			id: 'minesweeper',
 			name: 'Minesweeper',
-			description: 'Avoid the boom! A classic test of nerves and math.',
+			description: 'Avoid the boom with quick reads and cooler nerves.',
 			href: '/minesweeper',
 			emoji: '💣',
-			color: 'bg-red-500'
+			kicker: 'Puzzle Bay',
+			color: 'bg-red-500',
+			marquee: 'bg-red-200',
+			storageKey: 'minesweeper-wins',
+			scoreLabel: 'Wins',
+			cta: 'Insert Coin'
 		},
 		{
+			id: 'checkers',
 			name: 'Checkers Chaos',
-			description: 'A battle of strategy amidst the digital madness! 🏁',
+			description: 'Fast board control in a chunky neon showdown.',
 			href: '/checkers',
 			emoji: '🎲',
-			color: 'bg-orange-400'
+			kicker: 'Battle Table',
+			color: 'bg-orange-400',
+			marquee: 'bg-orange-200',
+			storageKey: 'checkers-wins',
+			scoreLabel: 'Wins',
+			cta: 'Start Match'
 		},
 		{
+			id: 'enduro',
 			name: 'Enduro Chaos',
-			description: 'Pilot or die through blizzards and total darkness! 🏎️',
+			description: 'Race the night through storms, ice, and blind corners.',
 			href: '/enduro',
 			emoji: '🏎️',
-			color: 'bg-green-500'
+			kicker: 'Road Fury',
+			color: 'bg-green-500',
+			marquee: 'bg-green-200',
+			storageKey: 'enduro-high-score',
+			scoreLabel: 'Hi-Score',
+			cta: 'Burn Rubber'
 		},
 		{
+			id: 'space-chaos',
 			name: 'Space Chaos',
-			description: 'Save the galaxy from pixelated madness! 👾',
+			description: 'Scramble the fleet and climb the cosmic score board.',
 			href: '/space-invaders',
 			emoji: '🛸',
-			color: 'bg-purple-600'
+			kicker: 'Galaxy Sector',
+			color: 'bg-purple-600',
+			marquee: 'bg-fuchsia-200',
+			storageKey: 'space-chaos-high-score',
+			scoreLabel: 'Hi-Score',
+			cta: 'Launch Run'
 		}
 	];
 
+	const utilityCards: UtilityCard[] = [
+		{
+			id: 'settings',
+			name: 'Settings',
+			description: 'Tune the cabinet, inspect scores, and wipe save data.',
+			href: '/settings',
+			emoji: '⚙️',
+			kicker: 'System Deck',
+			color: 'bg-sky-400',
+			marquee: 'bg-sky-200',
+			meta: 'Scores • Reset • System',
+			cta: 'Open Panel'
+		}
+	];
+
+	const dashboardCards: DashboardCard[] = [...gameCards, ...utilityCards];
+
+	let scores = $state<Record<ScoreId, number>>({
+		minesweeper: 0,
+		checkers: 0,
+		enduro: 0,
+		'space-chaos': 0
+	});
+
+	let lastUp = false;
+	let lastDown = false;
+	let lastLeft = false;
+	let lastRight = false;
+	let lastConfirm = false;
+
+	const DEADZONE = 0.45;
+
 	// @ts-ignore
 	const appVersion = __APP_VERSION__;
+
+	function isGameCard(card: DashboardCard): card is GameCard {
+		return 'storageKey' in card;
+	}
+
+	function readStoredNumber(key: string) {
+		const stored = localStorage.getItem(key);
+		return stored ? Number.parseInt(stored, 10) || 0 : 0;
+	}
+
+	function loadScores() {
+		for (const card of gameCards) {
+			scores[card.id] = readStoredNumber(card.storageKey);
+		}
+	}
+
+	function getActionables() {
+		return Array.from(document.querySelectorAll<HTMLElement>('[data-dashboard-action="true"]'));
+	}
+
+	function getFocusedActionable() {
+		const active = document.activeElement;
+		return active instanceof HTMLElement
+			? active.closest<HTMLElement>('[data-dashboard-action="true"]')
+			: null;
+	}
+
+	function focusFirstActionable(force = false) {
+		const items = getActionables();
+		if (!items.length) return;
+
+		const active = document.activeElement;
+		if (!force && active instanceof HTMLElement && items.includes(active)) return;
+
+		items[0]?.focus();
+	}
+
+	function moveFocus(direction: Direction) {
+		const items = getActionables();
+		if (!items.length) return;
+
+		const active = document.activeElement;
+		if (!(active instanceof HTMLElement) || !items.includes(active)) {
+			items[0]?.focus();
+			return;
+		}
+
+		const currentRect = active.getBoundingClientRect();
+		const originX = currentRect.left + currentRect.width / 2;
+		const originY = currentRect.top + currentRect.height / 2;
+
+		let bestMatch: { element: HTMLElement; score: number } | null = null;
+
+		for (const element of items) {
+			if (element === active) continue;
+
+			const rect = element.getBoundingClientRect();
+			const targetX = rect.left + rect.width / 2;
+			const targetY = rect.top + rect.height / 2;
+			const dx = targetX - originX;
+			const dy = targetY - originY;
+
+			let mainAxis = 0;
+			let crossAxis = 0;
+
+			if (direction === 'up') {
+				mainAxis = -dy;
+				crossAxis = Math.abs(dx);
+			}
+
+			if (direction === 'down') {
+				mainAxis = dy;
+				crossAxis = Math.abs(dx);
+			}
+
+			if (direction === 'left') {
+				mainAxis = -dx;
+				crossAxis = Math.abs(dy);
+			}
+
+			if (direction === 'right') {
+				mainAxis = dx;
+				crossAxis = Math.abs(dy);
+			}
+
+			if (mainAxis <= 12) continue;
+
+			const score = Math.hypot(mainAxis, crossAxis) + crossAxis * 0.65;
+
+			if (!bestMatch || score < bestMatch.score) {
+				bestMatch = { element, score };
+			}
+		}
+
+		bestMatch?.element.focus();
+	}
+
+	function activateFocusedAction() {
+		if (document.activeElement instanceof HTMLElement) {
+			document.activeElement.click();
+		}
+	}
+
+	function handleDashboardKeydown(event: KeyboardEvent) {
+		if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+
+		const activeActionable = getFocusedActionable();
+		const canNavigate = !!activeActionable || document.activeElement === document.body;
+
+		if (event.key === 'ArrowUp') {
+			if (!canNavigate) return;
+			event.preventDefault();
+			moveFocus('up');
+			return;
+		}
+
+		if (event.key === 'ArrowDown') {
+			if (!canNavigate) return;
+			event.preventDefault();
+			moveFocus('down');
+			return;
+		}
+
+		if (event.key === 'ArrowLeft') {
+			if (!canNavigate) return;
+			event.preventDefault();
+			moveFocus('left');
+			return;
+		}
+
+		if (event.key === 'ArrowRight') {
+			if (!canNavigate) return;
+			event.preventDefault();
+			moveFocus('right');
+			return;
+		}
+
+		if ((event.key === 'Enter' || event.key === ' ') && activeActionable && !event.repeat) {
+			event.preventDefault();
+			activateFocusedAction();
+		}
+	}
+
+	function handleVisibilityChange() {
+		if (document.visibilityState === 'visible') {
+			loadScores();
+		}
+	}
+
+	function scoreText(card: GameCard) {
+		return `${card.scoreLabel}: ${scores[card.id].toLocaleString()}`;
+	}
+
+	$effect(() => {
+		loadScores();
+		requestAnimationFrame(() => {
+			focusFirstActionable(true);
+		});
+
+		let animationFrame = 0;
+
+		const pollGamepad = () => {
+			const gamepads = navigator.getGamepads?.() ?? [];
+			let upPressed = false;
+			let downPressed = false;
+			let leftPressed = false;
+			let rightPressed = false;
+			let confirmPressed = false;
+
+			for (const gamepad of gamepads) {
+				if (!gamepad) continue;
+
+				const axisX = gamepad.axes[0] ?? 0;
+				const axisY = gamepad.axes[1] ?? 0;
+
+				upPressed ||= gamepad.buttons[12]?.pressed || axisY < -DEADZONE;
+				downPressed ||= gamepad.buttons[13]?.pressed || axisY > DEADZONE;
+				leftPressed ||= gamepad.buttons[14]?.pressed || axisX < -DEADZONE;
+				rightPressed ||= gamepad.buttons[15]?.pressed || axisX > DEADZONE;
+				confirmPressed ||= !!(
+					gamepad.buttons[0]?.pressed ||
+					gamepad.buttons[2]?.pressed ||
+					gamepad.buttons[3]?.pressed ||
+					gamepad.buttons[7]?.pressed
+				);
+			}
+
+			if (upPressed && !lastUp) moveFocus('up');
+			if (downPressed && !lastDown) moveFocus('down');
+			if (leftPressed && !lastLeft) moveFocus('left');
+			if (rightPressed && !lastRight) moveFocus('right');
+			if (confirmPressed && !lastConfirm) activateFocusedAction();
+
+			lastUp = upPressed;
+			lastDown = downPressed;
+			lastLeft = leftPressed;
+			lastRight = rightPressed;
+			lastConfirm = confirmPressed;
+
+			animationFrame = requestAnimationFrame(pollGamepad);
+		};
+
+		animationFrame = requestAnimationFrame(pollGamepad);
+
+		return () => {
+			cancelAnimationFrame(animationFrame);
+		};
+	});
 </script>
 
-<div class="flex min-h-screen flex-col items-center justify-center bg-yellow-300 p-8 font-mono">
-	<div class="mb-12 animate-bounce text-center">
-		<h1 class="mb-4 text-6xl font-black text-black drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
-			🕹️ THE CHAOS ARCADE 🕹️
-		</h1>
-		<p class="text-xl font-bold text-black italic">INSERT COIN TO PLAY</p>
-	</div>
+<svelte:window onfocus={loadScores} onkeydown={handleDashboardKeydown} />
+<svelte:document onvisibilitychange={handleVisibilityChange} />
 
-	<div class="grid w-full max-w-6xl grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-		{#each games as game}
-			<a href={game.href} class="group">
-				<!-- Arcade cabinet shell -->
-				<div class="relative">
-					<!-- Marquee header -->
-					<div
-						class="flex items-center justify-center rounded-t-none border-4 border-black bg-black p-3"
+<div class="min-h-screen bg-yellow-300 px-4 py-5 font-mono text-black sm:px-6 sm:py-6">
+	<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
+		<header class="border-4 border-black bg-yellow-200 p-4 shadow-[8px_8px_0_rgba(0,0,0,1)] sm:p-5">
+			<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+				<div>
+					<p class="text-xs font-black tracking-[0.3em] uppercase sm:text-sm">Arcade Hub // Ready</p>
+					<h1
+						class="mt-2 text-4xl font-black tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-5xl"
 					>
-						<h2 class="text-center text-2xl font-black tracking-tighter text-white uppercase">
-							{game.name}
-						</h2>
+						🕹️ The Chaos Arcade
+					</h1>
+					<p class="mt-2 max-w-3xl text-sm font-bold uppercase sm:text-base">
+						Tap, tab, or hit the D-pad to jump cabinet-to-cabinet.
+					</p>
+				</div>
+
+				<div class="flex flex-wrap gap-2 text-xs font-black uppercase sm:text-sm">
+					<div class="border-4 border-black bg-black px-3 py-2 text-yellow-300">
+						{dashboardCards.length} Hotspots
 					</div>
+					<div class="border-4 border-black bg-white px-3 py-2">A / Enter = Launch</div>
+					<div class="border-4 border-black bg-white px-3 py-2">v{appVersion}</div>
+				</div>
+			</div>
+		</header>
 
-					<!-- Cabinet body -->
-					<div
-						class="{game.color} border-4 border-t-0 border-black p-6 shadow-[8px_8px_0_rgba(0,0,0,1)] transition-all"
+		<section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+			{#each dashboardCards as card (card.id)}
+				<a
+					href={card.href}
+					data-dashboard-action="true"
+					class="group block min-h-44 focus:outline-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black"
+				>
+					<article
+						class="flex h-full flex-col border-4 border-black bg-black shadow-[8px_8px_0_rgba(0,0,0,1)] transition-transform duration-100 group-hover:-translate-y-1 group-focus-visible:-translate-y-1"
 					>
-						<!-- Screen bezel -->
-						<div class="mb-6 rounded-none border-4 border-black bg-black p-4">
-							<div class="flex flex-col items-center justify-center rounded-sm bg-black py-10">
-								<span class="mb-3 text-6xl transition-transform group-hover:scale-110">
-									{game.emoji}
+						<div class="{card.marquee} flex items-center justify-between border-b-4 border-black px-4 py-2">
+							<p class="text-[0.65rem] font-black tracking-[0.22em] uppercase sm:text-xs">
+								{card.kicker}
+							</p>
+							<p class="text-sm font-black uppercase">▶</p>
+						</div>
+
+						<div class="{card.color} flex flex-1 flex-col justify-between p-4 sm:p-5">
+							<div class="flex items-start gap-4">
+								<div
+									class="flex h-16 w-16 shrink-0 items-center justify-center border-4 border-black bg-black text-3xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl"
+								>
+									{card.emoji}
+								</div>
+
+								<div class="min-w-0 flex-1">
+									<h2 class="text-2xl font-black leading-none uppercase sm:text-[1.7rem]">
+										{card.name}
+									</h2>
+									<p class="mt-2 text-sm leading-tight font-bold uppercase sm:text-[0.95rem]">
+										{card.description}
+									</p>
+								</div>
+							</div>
+
+							<div class="mt-4 flex items-end justify-between gap-3">
+								<div class="border-4 border-black bg-black px-3 py-2 text-xs font-black uppercase text-yellow-300 sm:text-sm">
+									{#if isGameCard(card)}
+										{scoreText(card)}
+									{:else}
+										{card.meta}
+									{/if}
+								</div>
+
+								<span
+									class="min-w-32 border-4 border-black bg-white px-3 py-3 text-center text-sm font-black uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-all group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:shadow-none sm:min-w-36 sm:text-base"
+								>
+									{card.cta}
 								</span>
-								<div class="h-1 w-16 animate-pulse bg-green-400 opacity-75"></div>
 							</div>
 						</div>
+					</article>
+				</a>
+			{/each}
+		</section>
 
-						<!-- Coin slot & description -->
-						<div class="mb-2 flex items-center gap-2">
-							<div class="h-3 w-6 rounded-none border-2 border-black bg-black"></div>
-							<p class="text-sm leading-tight font-bold text-black uppercase">
-								{game.description}
-							</p>
-						</div>
-
-						<!-- Start button -->
-						<div class="flex justify-center">
-							<span
-								class="inline-block rounded-full border-4 border-black bg-white px-6 py-2 text-lg font-black text-black shadow-[4px_4px_0_rgba(0,0,0,1)] transition-all group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:shadow-none"
-							>
-								▶ INSERT COIN
-							</span>
-						</div>
-					</div>
-
-					<!-- Cabinet bottom trim -->
-					<div class="h-4 border-4 border-t-0 border-black bg-black"></div>
-				</div>
-			</a>
-		{/each}
-
-		<!-- Placeholder for future games -->
-		<div class="group">
-			<div class="relative">
-				<div
-					class="flex items-center justify-center rounded-t-none border-4 border-dashed border-black bg-gray-200 p-3 opacity-50"
-				>
-					<h2 class="text-center text-2xl font-black tracking-tighter text-black uppercase">
-						Coming Soon
-					</h2>
-				</div>
-
-				<div
-					class="border-4 border-t-0 border-dashed border-black bg-gray-200 p-6 opacity-50 shadow-[8px_8px_0_rgba(0,0,0,1)]"
-				>
-					<div class="mb-6 rounded-none border-4 border-dashed border-black bg-gray-300 p-4">
-						<div class="flex flex-col items-center justify-center rounded-sm bg-gray-400 py-10">
-							<span class="mb-3 text-6xl">❓</span>
-							<div class="h-1 w-16 bg-gray-500"></div>
-						</div>
-					</div>
-
-					<div class="flex justify-center">
-						<span
-							class="inline-block rounded-full border-4 border-dashed border-black bg-gray-300 px-6 py-2 text-lg font-black text-black"
-						>
-							🔒 LOCKED
-						</span>
-					</div>
-				</div>
-
-				<div class="h-4 border-4 border-t-0 border-dashed border-black bg-gray-300"></div>
-			</div>
-		</div>
+		<footer class="flex flex-wrap items-center justify-between gap-3 border-4 border-black bg-black px-4 py-3 text-xs font-black uppercase text-yellow-300 shadow-[8px_8px_0_rgba(0,0,0,1)] sm:text-sm">
+			<p>Built with ⚡ SvelteKit & pure chaos</p>
+			<p>Local scores loaded from cabinet memory</p>
+		</footer>
 	</div>
-
-	<footer class="mt-20 flex flex-col items-center gap-2 text-sm font-bold text-black">
-		<div class="bg-black px-4 py-1 text-yellow-300 shadow-[4px_4px_0_rgba(0,0,0,1)]">
-			v{appVersion}
-		</div>
-		<div>Built with ⚡ SvelteKit & pure chaos</div>
-	</footer>
 </div>
 
 <style>
