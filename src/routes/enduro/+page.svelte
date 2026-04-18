@@ -333,6 +333,7 @@
 				c.passed = true;
 				carsPassed++;
 				score += 15 + day * 3;
+				playPassSound();
 			}
 
 			// Adjusted collision detection for playerZOffset
@@ -384,7 +385,7 @@
 		osc.frequency.value = 60 + speed * 60 + Math.random() * 25;
 
 		const gain = audioCtx.createGain();
-		gain.gain.value = 0.08 + speed * 0.05;
+		gain.gain.value = 0.04 + speed * 0.03;
 
 		const filter = audioCtx.createBiquadFilter();
 		filter.type = 'lowpass';
@@ -417,8 +418,31 @@
 		filter.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + 0.9);
 
 		const gain = audioCtx.createGain();
-		gain.gain.setValueAtTime(1.1, audioCtx.currentTime);
+		gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
 		gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.1);
+
+		noise.connect(filter);
+		filter.connect(gain);
+		gain.connect(audioCtx.destination);
+		noise.start();
+	}
+
+	function playPassSound() {
+		if (!audioCtx) return;
+		const noise = audioCtx.createBufferSource();
+		const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.15, audioCtx.sampleRate);
+		const data = buffer.getChannelData(0);
+		for (let i = 0; i < buffer.length; i++) data[i] = Math.random() * 2 - 1;
+		noise.buffer = buffer;
+
+		const filter = audioCtx.createBiquadFilter();
+		filter.type = 'bandpass';
+		filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+		filter.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.15);
+
+		const gain = audioCtx.createGain();
+		gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
 
 		noise.connect(filter);
 		filter.connect(gain);
