@@ -10,6 +10,12 @@
 	let gameOver = $state(false);
 	let weather = $state<'clear' | 'snow' | 'fog' | 'night'>('clear');
 	let isAiThinking = $state(false);
+	let gameStarted = $state(false);
+	let gamepadStartWasPressed = $state(false);
+	let lives = $state(3);
+	let highScore = $state(0);
+	let crashCooldown = $state(false);
+	let crashFlash = $state(false);
 
 	// --- Three.js Variables ---
 	let container: HTMLDivElement;
@@ -20,9 +26,11 @@
 	let player: THREE.Group;
 	let cars: { mesh: THREE.Group; overtaken: boolean }[] = [];
 	let snowParticles: THREE.Points;
-	
+
 	const ROAD_WIDTH = 20;
 	const ROAD_LENGTH = 1000;
+	const GAMEPAD_DEADZONE = 0.2;
+	const GAMEPAD_MOVE_SPEED = 0.15;
 
 	function createCarMesh(color: number) {
 		const group = new THREE.Group();
@@ -100,9 +108,12 @@
 		const snowGeo = new THREE.BufferGeometry();
 		const snowCount = 2000;
 		const snowPos = new Float32Array(snowCount * 3);
-		for(let i=0; i<snowCount*3; i++) snowPos[i] = (Math.random() - 0.5) * 200;
+		for (let i = 0; i < snowCount * 3; i++) snowPos[i] = (Math.random() - 0.5) * 200;
 		snowGeo.setAttribute('position', new THREE.BufferAttribute(snowPos, 3));
-		snowParticles = new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 }));
+		snowParticles = new THREE.Points(
+			snowGeo,
+			new THREE.PointsMaterial({ color: 0xffffff, size: 0.5 })
+		);
 		snowParticles.visible = false;
 		scene.add(snowParticles);
 
@@ -111,12 +122,53 @@
 	}
 
 	function animate() {
-		if (gameOver) return;
 		requestAnimationFrame(animate);
+
+		// Gamepad input
+		const gamepads = navigator.getGamepads();
+		for (let gi = 0; gi < gamepads.length; gi++) {
+			const gp = gamepads[gi];
+			if (!gp) continue;
+
+			// A button to start/restart
+			if (gp.buttons[0]?.pressed && !gamepadStartWasPressed) {
+				if (!gameStarted) {
+					gameStarted = true;
+				} else if (gameOver) {
+					restartGame();
+				}
+				gamepadStartWasPressed = true;
+			}
+			if (!gp.buttons[0]?.pressed) {
+				gamepadStartWasPressed = false;
+			}
+
+			if (!gameStarted || gameOver) continue;
+
+			// Left stick horizontal
+			const axisX = gp.axes[0];
+			if (Math.abs(axisX) > GAMEPAD_DEADZONE) {
+				playerX = Math.max(
+					-ROAD_WIDTH / 2 + 2,
+					Math.min(ROAD_WIDTH / 2 - 2, playerX + axisX * GAMEPAD_MOVE_SPEED)
+				);
+			}
+
+			// D-pad horizontal (buttons 14=left, 15=right)
+			if (gp.buttons[14]?.pressed) {
+				playerX = Math.max(-ROAD_WIDTH / 2 + 2, playerX - GAMEPAD_MOVE_SPEED);
+			}
+			if (gp.buttons[15]?.pressed) {
+				playerX = Math.min(ROAD_WIDTH / 2 - 2, playerX + GAMEPAD_MOVE_SPEED);
+			}
+		}
+
+		if (gameOver) return;
+		if (!gameStarted) return;
 
 		// Update Distance & Speed
 		distance += speed;
-		speed = 1 + (distance / 5000);
+		speed = 1 + distance / 5000;
 
 		// Move Road (Illusion of movement)
 		if (road.material instanceof THREE.MeshPhongMaterial) {
@@ -134,9 +186,9 @@
 			car.mesh.position.z += speed * 0.5; // Enemies move slower than player's perspective
 
 			// Collision
-			if (car.mesh.position.z > -2 && car.mesh.position.z < 2) {
+			if (!crashCooldown && car.mesh.position.z > -2 && car.mesh.position.z < 2) {
 				if (Math.abs(car.mesh.position.x - player.position.x) < 3) {
-					endGame();
+					handleCrash();
 				}
 			}
 
@@ -196,12 +248,58 @@
 	}
 
 	function endGame() {
+		if (score > highScore) {
+			highScore = score;
+			localStorage.setItem('enduro-high-score', String(highScore));
+		}
 		gameOver = true;
 	}
 
+	function handleCrash() {
+		if (crashCooldown) return;
+
+		lives--;
+		crashFlash = true;
+		setTimeout(() => { crashFlash = false; }, 300);
+
+		if (lives <= 0) {
+			endGame();
+			return;
+		}
+
+		crashCooldown = true;
+		setTimeout(() => { crashCooldown = false; }, 1500);
+
+		// Remove the car that caused the crash
+		for (let i = cars.length - 1; i >= 0; i--) {
+			const car = cars[i];
+			if (car.mesh.position.z > -2 && car.mesh.position.z < 2) {
+				if (Math.abs(car.mesh.position.x - player.position.x) < 3) {
+					scene.remove(car.mesh);
+					cars.splice(i, 1);
+					break;
+				}
+			}
+		}
+	}
+
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'ArrowLeft') playerX = Math.max(-ROAD_WIDTH/2 + 2, playerX - 4);
-		if (e.key === 'ArrowRight') playerX = Math.min(ROAD_WIDTH/2 - 2, playerX + 4);
+		if (!gameStarted) {
+			if (e.key === ' ' || e.key === 'Enter') {
+				e.preventDefault();
+				gameStarted = true;
+			}
+			return;
+		}
+		if (gameOver) {
+			if (e.key === ' ' || e.key === 'Enter') {
+				e.preventDefault();
+				restartGame();
+			}
+			return;
+		}
+		if (e.key === 'ArrowLeft') playerX = Math.max(-ROAD_WIDTH / 2 + 2, playerX - 4);
+		if (e.key === 'ArrowRight') playerX = Math.min(ROAD_WIDTH / 2 - 2, playerX + 4);
 	}
 
 	let showChaosModal = $state(false);
@@ -212,9 +310,63 @@
 		camera.updateProjectionMatrix();
 	}
 
+	function startGame() {
+		gameStarted = true;
+	}
+
+	function restartGame() {
+		score = 0;
+		distance = 0;
+		speed = 1;
+		playerX = 0;
+		gameOver = false;
+		lives = 3;
+		weather = 'clear';
+		showChaosModal = false;
+		crashCooldown = false;
+		crashFlash = false;
+		camera.fov = 75;
+		camera.updateProjectionMatrix();
+
+		// Remove all existing cars from scene
+		for (const car of cars) {
+			scene.remove(car.mesh);
+		}
+		cars = [];
+
+		// Restart animation loop and enemy car spawning
+		requestAnimationFrame(animate);
+		spawnEnemyCar();
+	}
+
 	onMount(() => {
+		const saved = localStorage.getItem('enduro-high-score');
+		if (saved) {
+			highScore = parseInt(saved, 10);
+		}
+
 		initThree();
 		window.addEventListener('keydown', handleKeydown);
+		window.addEventListener('gamepadconnected', () => {});
+		window.addEventListener('gamepaddisconnected', () => {});
+
+		const gamepadPoll = setInterval(() => {
+			if (gameStarted || gameOver) return;
+			const gamepads = navigator.getGamepads();
+			for (let gi = 0; gi < gamepads.length; gi++) {
+				const gp = gamepads[gi];
+				if (!gp) continue;
+				if (gp.buttons[0]?.pressed && !gamepadStartWasPressed) {
+					gameStarted = true;
+					gamepadStartWasPressed = true;
+					return;
+				}
+				if (!gp.buttons[0]?.pressed) {
+					gamepadStartWasPressed = false;
+				}
+			}
+		}, 100);
+
 		const handleResize = () => {
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
@@ -225,43 +377,92 @@
 		return () => {
 			window.removeEventListener('keydown', handleKeydown);
 			window.removeEventListener('resize', handleResize);
+			window.removeEventListener('gamepadconnected', () => {});
+			window.removeEventListener('gamepaddisconnected', () => {});
+			clearInterval(gamepadPoll);
 			renderer.dispose();
 		};
 	});
 </script>
 
 <div class="relative h-screen w-screen overflow-hidden font-mono" bind:this={container}>
-	
+	<!-- Splash Screen -->
+	{#if !gameStarted}
+		<div
+			class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md"
+		>
+			<div class="mb-12 flex gap-8">
+				<div class="animate-bounce text-6xl" style="animation-delay: 0ms;">🏎️</div>
+				<div class="animate-bounce text-6xl" style="animation-delay: 150ms;">🏁</div>
+				<div class="animate-bounce text-6xl" style="animation-delay: 300ms;">💨</div>
+			</div>
+			<h1
+				class="mb-4 text-7xl font-black tracking-tighter text-yellow-300 uppercase italic drop-shadow-[6px_6px_0_rgba(0,0,0,1)]"
+			>
+				ENDURO 3D CHAOS
+			</h1>
+			<p class="mb-8 text-2xl font-bold text-pink-400 italic">Dodge cars. Survive the chaos.</p>
+			<div
+				class="mb-12 flex gap-6 border-4 border-white bg-black/50 p-4 text-lg font-bold text-white"
+			>
+				<span>← → to move</span>
+				<span>🎮 Stick / D-pad to steer</span>
+			</div>
+			{#if highScore > 0}
+				<p class="mb-4 text-xl font-bold text-yellow-400">HIGH SCORE: {highScore}</p>
+			{/if}
+			<button
+				onclick={startGame}
+				class="animate-pulse border-8 border-yellow-300 bg-yellow-300 px-16 py-6 text-4xl font-black text-black uppercase shadow-[12px_12px_0_rgba(255,255,255,0.3)] transition-transform hover:scale-110"
+			>
+				PRESS SPACE or A to START
+			</button>
+		</div>
+	{/if}
+
 	<!-- UI Overlay -->
 	<div class="pointer-events-none absolute inset-0 z-20 flex flex-col items-center p-8">
-		<h1 class="text-6xl font-black italic uppercase text-yellow-300 drop-shadow-[6px_6px_0_rgba(0,0,0,1)]">
+		<h1
+			class="text-6xl font-black text-yellow-300 uppercase italic drop-shadow-[6px_6px_0_rgba(0,0,0,1)]"
+		>
 			ENDURO 3D CHAOS
 		</h1>
-		
-		<div class="mt-4 flex gap-6 bg-black p-4 border-4 border-white shadow-[8px_8px_0_rgba(0,0,0,1)] text-2xl font-black text-white">
+
+		<div
+			class="mt-4 flex gap-6 border-4 border-white bg-black p-4 text-2xl font-black text-white shadow-[8px_8px_0_rgba(0,0,0,1)]"
+		>
 			<span>SCORE: {score}</span>
+			<span class="text-yellow-400">HI: {highScore}</span>
 			<span>DIST: {Math.floor(distance)}m</span>
 			<span class="text-red-500">SPEED: {Math.floor(speed * 100)}%</span>
+			<span class="text-green-400">{'🚗'.repeat(lives)}</span>
 		</div>
 
 		{#if weather !== 'clear'}
-			<div class="mt-10 animate-pulse bg-white p-4 border-8 border-black text-4xl font-black uppercase text-black">
+			<div
+				class="mt-10 animate-pulse border-8 border-black bg-white p-4 text-4xl font-black text-black uppercase"
+			>
 				⚠️ {weather.toUpperCase()} WARNING ⚠️
 			</div>
 		{/if}
 	</div>
 
+	<!-- Crash Flash Overlay -->
+	{#if crashFlash}
+		<div class="pointer-events-none absolute inset-0 z-40 bg-red-500/40"></div>
+	{/if}
+
 	<!-- Mobile Controls -->
-	<div class="absolute bottom-10 left-0 right-0 z-30 flex justify-center gap-20 px-10">
-		<button 
-			onmousedown={() => playerX = Math.max(-ROAD_WIDTH/2 + 2, playerX - 5)}
-			class="h-24 w-24 border-8 border-black bg-white text-5xl shadow-[10px_10px_0_rgba(0,0,0,1)] active:translate-x-2 active:translate-y-2 active:shadow-none transition-all"
+	<div class="absolute right-0 bottom-10 left-0 z-30 flex justify-center gap-20 px-10">
+		<button
+			onmousedown={() => (playerX = Math.max(-ROAD_WIDTH / 2 + 2, playerX - 5))}
+			class="h-24 w-24 border-8 border-black bg-white text-5xl shadow-[10px_10px_0_rgba(0,0,0,1)] transition-all active:translate-x-2 active:translate-y-2 active:shadow-none"
 		>
 			⬅️
 		</button>
-		<button 
-			onmousedown={() => playerX = Math.min(ROAD_WIDTH/2 - 2, playerX + 5)}
-			class="h-24 w-24 border-8 border-black bg-white text-5xl shadow-[10px_10px_0_rgba(0,0,0,1)] active:translate-x-2 active:translate-y-2 active:shadow-none transition-all"
+		<button
+			onmousedown={() => (playerX = Math.min(ROAD_WIDTH / 2 - 2, playerX + 5))}
+			class="h-24 w-24 border-8 border-black bg-white text-5xl shadow-[10px_10px_0_rgba(0,0,0,1)] transition-all active:translate-x-2 active:translate-y-2 active:shadow-none"
 		>
 			➡️
 		</button>
@@ -269,43 +470,72 @@
 
 	<!-- Reset / Game Over -->
 	{#if gameOver}
-		<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-8 text-center">
-			<h2 class="mb-4 text-9xl font-black text-red-600 uppercase animate-bounce drop-shadow-[8px_8px_0_white]">
+		<div
+			class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-8 text-center"
+		>
+			<h2
+				class="mb-4 animate-bounce text-9xl font-black text-red-600 uppercase drop-shadow-[8px_8px_0_white]"
+			>
 				CRASHED! 💀
 			</h2>
-			<p class="mb-12 text-4xl font-bold text-white uppercase italic">You died with a score of {score}.</p>
-			<button 
-				onclick={() => window.location.reload()}
-				class="border-8 border-white bg-red-600 px-16 py-8 text-6xl font-black text-white uppercase shadow-[15px_15px_0_rgba(255,255,255,1)] hover:scale-110 transition-transform"
+			<p class="mb-4 text-4xl font-bold text-white uppercase italic">
+				You died with a score of {score}.
+			</p>
+			{#if score >= highScore && score > 0}
+				<p class="mb-8 text-2xl font-bold text-yellow-400 animate-pulse">
+					NEW HIGH SCORE!
+				</p>
+			{:else}
+				<p class="mb-8 text-xl font-bold text-yellow-400">
+					HIGH SCORE: {highScore}
+				</p>
+			{/if}
+			<button
+				onclick={restartGame}
+				class="border-8 border-white bg-red-600 px-16 py-8 text-6xl font-black text-white uppercase shadow-[15px_15px_0_rgba(255,255,255,1)] transition-transform hover:scale-110"
 			>
 				REVIVE! ⚡
 			</button>
+			<p class="mt-6 animate-pulse text-xl font-bold text-yellow-300">
+				Press A or SPACE to restart
+			</p>
 		</div>
 	{/if}
 
-	<a href="/" class="absolute left-8 bottom-8 z-30 text-2xl font-black text-white underline decoration-8 hover:text-yellow-300">
+	<a
+		href="/"
+		class="absolute bottom-8 left-8 z-30 text-2xl font-black text-white underline decoration-8 hover:text-yellow-300"
+	>
 		← ABANDON SHIP
 	</a>
 
 	<!-- Forbidden Button -->
 	<button
 		onclick={triggerChaos}
-		class="absolute right-8 bottom-8 z-30 border-8 border-black bg-pink-500 p-8 text-xl font-black text-white uppercase shadow-[10px_10px_0_rgba(0,0,0,1)] transition-transform hover:rotate-12 hover:scale-110"
+		class="absolute right-8 bottom-8 z-30 border-8 border-black bg-pink-500 p-8 text-xl font-black text-white uppercase shadow-[10px_10px_0_rgba(0,0,0,1)] transition-transform hover:scale-110 hover:rotate-12"
 	>
 		Don't Click Me 🚫
 	</button>
 
 	<!-- Chaos Modal -->
 	{#if showChaosModal}
-		<div class="fixed inset-0 z-[100] flex items-center justify-center bg-red-600/50 backdrop-blur-2xl">
-			<div class="animate-ping absolute inset-0 bg-yellow-400 opacity-20"></div>
-			<div class="relative w-full max-w-2xl border-[12px] border-black bg-white p-12 text-center shadow-[20px_20px_0_rgba(0,0,0,1)]">
-				<div class="mb-6 text-9xl animate-spin">🌀</div>
-				<h2 class="mb-6 text-6xl font-black text-black uppercase tracking-tighter">DIMENSIONAL RIFT!</h2>
-				<p class="mb-12 text-3xl font-bold text-black italic leading-tight">"YOUR SPEED IS NOW CALCULATED IN PURE ADRENALINE! GOOD LUCK SURVIVING THIS!"</p>
+		<div
+			class="fixed inset-0 z-[100] flex items-center justify-center bg-red-600/50 backdrop-blur-2xl"
+		>
+			<div class="absolute inset-0 animate-ping bg-yellow-400 opacity-20"></div>
+			<div
+				class="relative w-full max-w-2xl border-[12px] border-black bg-white p-12 text-center shadow-[20px_20px_0_rgba(0,0,0,1)]"
+			>
+				<div class="mb-6 animate-spin text-9xl">🌀</div>
+				<h2 class="mb-6 text-6xl font-black tracking-tighter text-black uppercase">
+					DIMENSIONAL RIFT!
+				</h2>
+				<p class="mb-12 text-3xl leading-tight font-bold text-black italic">
+					"YOUR SPEED IS NOW CALCULATED IN PURE ADRENALINE! GOOD LUCK SURVIVING THIS!"
+				</p>
 				<button
 					onclick={() => (showChaosModal = false)}
-					class="w-full border-8 border-black bg-black px-10 py-6 text-4xl font-black text-white uppercase hover:bg-pink-500 transition-colors"
+					class="w-full border-8 border-black bg-black px-10 py-6 text-4xl font-black text-white uppercase transition-colors hover:bg-pink-500"
 				>
 					HELP ME! 😱
 				</button>
