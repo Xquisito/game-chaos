@@ -20,6 +20,7 @@
 	let weather = $state<'clear' | 'fog' | 'ice'>('clear');
 	let isNight = $state(false);
 	let iceFactor = $state(0);
+	let fogFactor = $state(0);
 	let gamepadThrottle = $state(false);
 	let gamepadBrake = $state(false);
 	let lastFireBtn = false;
@@ -69,6 +70,7 @@
 	const cNormalOdd = new THREE.Color(0x111111);
 	const cIceEven = new THREE.Color(0xffffff);
 	const cIceOdd = new THREE.Color(0xf0f0ff);
+	const cFog = new THREE.Color(0x777777);
 	const tempColor = new THREE.Color();
 	let scene: THREE.Scene;
 	let camera: THREE.PerspectiveCamera;
@@ -77,6 +79,7 @@
 	let playerCar: THREE.Group;
 	let enemyCars: { mesh: THREE.Group; z: number; x: number; passed: boolean }[] = [];
 	let horizon: THREE.Mesh;
+	let fogPlane: THREE.Mesh;
 	let animationId: number;
 
 	const ROAD_WIDTH = 34;
@@ -180,6 +183,17 @@
 		horizon.position.z = -250;
 		scene.add(horizon);
 
+		// Fog plane for limited visibility
+		const fogGeo = new THREE.PlaneGeometry(ROAD_WIDTH * 10, 150);
+		const fogMat = new THREE.MeshBasicMaterial({
+			color: 0x777777,
+			transparent: true,
+			opacity: 0
+		});
+		fogPlane = new THREE.Mesh(fogGeo, fogMat);
+		fogPlane.position.set(0, 5, -120);
+		scene.add(fogPlane);
+
 		roadGroup = new THREE.Group();
 		scene.add(roadGroup);
 
@@ -245,6 +259,27 @@
 		const targetIce = weather === 'ice' ? 1 : 0;
 		iceFactor = THREE.MathUtils.lerp(iceFactor, targetIce, 0.015);
 
+		const targetFog = weather === 'fog' ? 1 : 0;
+		fogFactor = THREE.MathUtils.lerp(fogFactor, targetFog, 0.02);
+
+		if (fogPlane.material instanceof THREE.MeshBasicMaterial) {
+			fogPlane.material.opacity = fogFactor * 0.85;
+		}
+
+		if (isNight) {
+			scene.background = new THREE.Color(0x000011);
+			if (horizon.material instanceof THREE.MeshBasicMaterial) {
+				tempColor.setHex(0x112244).lerp(cFog, fogFactor * 0.5);
+				horizon.material.color.copy(tempColor);
+			}
+		} else {
+			scene.background = new THREE.Color(0x225588);
+			if (horizon.material instanceof THREE.MeshBasicMaterial) {
+				tempColor.setHex(0x88bbff).lerp(cFog, fogFactor);
+				horizon.material.color.copy(tempColor);
+			}
+		}
+
 		const curve = Math.sin(distance * 0.0004) * 32;
 
 		roadGroup.children.forEach((child, i) => {
@@ -258,9 +293,12 @@
 				const iceColor = i % 2 === 0 ? cIceEven : cIceOdd;
 				roadMat.color.copy(baseColor).lerp(iceColor, iceFactor);
 
-				// Darken markers when road is white
+				// Darken road during fog
+				roadMat.color.lerp(cFog, fogFactor * 0.6);
+
+				// Darken markers when road is white or foggy
 				if (child.children.length > 1) {
-					const markerColor = 1 - iceFactor * 0.35;
+					const markerColor = 1 - iceFactor * 0.35 - fogFactor * 0.4;
 					const leftMarker = child.children[1] as THREE.Mesh;
 					const leftMat = leftMarker.material as THREE.MeshBasicMaterial;
 					leftMat.color.setRGB(markerColor, markerColor, markerColor);
