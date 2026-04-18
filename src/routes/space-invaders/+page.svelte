@@ -156,6 +156,8 @@
 	const PLAYER_HIT_ANIMATION_MS = 350;
 	const PLAYER_RESPAWN_INVULNERABILITY_MS = 1100;
 	const ALIEN_FRONTLINE_FIRE_REDUCTION = 90;
+	const GAMEPAD_DEADZONE = 0.2;
+	const GAMEPAD_FIRE_COOLDOWN = 200;
 	const UFO_WIDTH = 48;
 	const UFO_HEIGHT = 20;
 	const UFO_Y = 30;
@@ -186,6 +188,8 @@
 	let playerX = $state(GAME_WIDTH / 2 - PLAYER_WIDTH / 2);
 	let moveLeft = $state(false);
 	let moveRight = $state(false);
+	let gamepadFireCooldown = $state(0);
+	let gamepadStartWasPressed = $state(false);
 	let playerInvulnerable = $state(false);
 	let playerInvulnerableUntil = $state(0);
 	let playerExplosion = $state<{ x: number; y: number; id: number; expiresAt: number } | null>(
@@ -241,6 +245,8 @@
 		playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
 		moveLeft = false;
 		moveRight = false;
+		gamepadFireCooldown = 0;
+		gamepadStartWasPressed = false;
 		playerInvulnerable = false;
 		playerInvulnerableUntil = 0;
 		playerExplosion = null;
@@ -539,6 +545,55 @@
 			);
 		}
 
+		// Gamepad input
+		const gamepads = navigator.getGamepads();
+		for (let gi = 0; gi < gamepads.length; gi++) {
+			const gp = gamepads[gi];
+			if (!gp) continue;
+
+			// Left stick / D-pad horizontal
+			const axisX = gp.axes[0];
+			if (Math.abs(axisX) > GAMEPAD_DEADZONE) {
+				playerX = Math.max(
+					0,
+					Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX + axisX * PLAYER_MOVE_SPEED * (dt / 1000))
+				);
+			}
+
+			// D-pad horizontal (buttons 14=left, 15=right)
+			if (gp.buttons[14]?.pressed) {
+				playerX = Math.max(0, playerX - PLAYER_MOVE_SPEED * (dt / 1000));
+			}
+			if (gp.buttons[15]?.pressed) {
+				playerX = Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX + PLAYER_MOVE_SPEED * (dt / 1000));
+			}
+
+			// A button (0) or Right trigger (7) to shoot
+			gamepadFireCooldown -= dt;
+			if (gamepadFireCooldown <= 0 && (gp.buttons[0]?.pressed || gp.buttons[7]?.pressed)) {
+				if (!gameStarted) {
+					gameStarted = true;
+					running = true;
+					requestAnimationFrame(update);
+				} else if (!paused && !gameOver && !gameWon) {
+					shoot();
+				}
+				gamepadFireCooldown = GAMEPAD_FIRE_COOLDOWN;
+			}
+
+			// Start button (9) to pause
+			if (gp.buttons[9]?.pressed && !gamepadStartWasPressed) {
+				paused = !paused;
+				if (!paused) {
+					lastTime = performance.now();
+					requestAnimationFrame(update);
+				}
+				gamepadStartWasPressed = true;
+			} else if (!gp.buttons[9]?.pressed) {
+				gamepadStartWasPressed = false;
+			}
+		}
+
 		const totalAliens = ALIEN_ROWS * ALIEN_COLS;
 		const aliveAliensNow = aliens.filter((a) => a.alive);
 		const destroyedAliens = totalAliens - aliveAliensNow.length;
@@ -736,8 +791,30 @@
 		window.addEventListener('keydown', handleKeydown);
 		window.addEventListener('keyup', handleKeyup);
 		window.addEventListener('blur', clearMovement);
+		window.addEventListener('gamepadconnected', () => {});
+		window.addEventListener('gamepaddisconnected', () => {});
+
+		const gamepadPoll = setInterval(() => {
+			if (gameStarted && running) return;
+
+			const gamepads = navigator.getGamepads();
+			for (let gi = 0; gi < gamepads.length; gi++) {
+				const gp = gamepads[gi];
+				if (!gp) continue;
+
+				if (gp.buttons[0]?.pressed && !gameStarted) {
+					gameStarted = true;
+					running = true;
+					lastTime = performance.now();
+					requestAnimationFrame(update);
+					return;
+				}
+			}
+		}, 100);
+
 		return () => {
 			running = false;
+			clearInterval(gamepadPoll);
 			stopUfoHum();
 			if (audioCtx) {
 				audioCtx.close();
@@ -746,6 +823,8 @@
 			window.removeEventListener('keydown', handleKeydown);
 			window.removeEventListener('keyup', handleKeyup);
 			window.removeEventListener('blur', clearMovement);
+			window.removeEventListener('gamepadconnected', () => {});
+			window.removeEventListener('gamepaddisconnected', () => {});
 		};
 	});
 </script>
