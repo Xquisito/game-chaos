@@ -10,35 +10,77 @@
 	const ALIEN_COLS = 10;
 	const ALIEN_WIDTH = 40;
 	const ALIEN_HEIGHT = 30;
+	const SHIELD_COUNT = 4;
+	const SHIELD_COLS = 8;
+	const SHIELD_ROWS = 8;
+	const SHIELD_CELL_WIDTH = 8;
+	const SHIELD_CELL_HEIGHT = 6;
+	const SHIELD_WIDTH = SHIELD_COLS * SHIELD_CELL_WIDTH;
+	const SHIELD_HEIGHT = SHIELD_ROWS * SHIELD_CELL_HEIGHT;
+	const SHIELD_PLAYER_GAP = 92;
+	const ALIEN_DESCENT_SPEED_BOOST = 0.2;
+	const ALIEN_ENDGAME_SPEED_BOOST = 1.25;
+	const ALIEN_KILL_SPEED_BOOST = 0.035;
+	const BASE_ALIEN_FIRE_CHANCE = 0.08;
+	const ALIEN_FIRE_DESCENT_BONUS = 0.018;
+	const ALIEN_FIRE_ENDGAME_BONUS = 0.16;
+	const MAX_ALIEN_FIRE_CHANCE = 0.3;
+	const BASE_ALIEN_BULLET_SPEED = 3;
+	const ALIEN_BULLET_SPEED_DESCENT_BONUS = 0.12;
+	const ALIEN_BULLET_SPEED_ENDGAME_BONUS = 1.1;
+	const MAX_ALIEN_BULLET_SPEED = 5.4;
+	const PLAYER_HIT_ANIMATION_MS = 350;
 
 	// State
 	let score = $state(0);
+	let lives = $state(3);
 	let gameOver = $state(false);
 	let gameWon = $state(false);
 	let playerX = $state(GAME_WIDTH / 2 - PLAYER_WIDTH / 2);
+	let playerExplosion = $state<{ x: number; y: number; id: number; expiresAt: number } | null>(
+		null
+	);
 	let bullets = $state<{ x: number; y: number; type: 'player' | 'alien'; id: number }[]>([]);
 	let nextBulletId = 0;
+	let nextExplosionId = 0;
 	let aliens = $state<{ x: number; y: number; alive: boolean; id: number; legFrame: number }[]>([]);
 	let alienDirection = $state(1); // 1 for right, -1 for left
 	let alienStep = $state(0);
 	let alienSpeed = $state(1);
+	let alienDescents = $state(0);
 	let lastTime = 0;
 	let showChaosModal = $state(false);
 	let chaosMode = $state(false);
 	let globalTick = $state(0);
-	let animFrame = $state(0);
+	let shields = $state<{ x: number; y: number; pixels: boolean[][] }[]>([]);
+
+	// Shield pixel patterns (8x8 grid, true = pixel present)
+	const SHIELD_PATTERN = [
+		[0, 0, 1, 1, 1, 1, 1, 1],
+		[0, 1, 1, 1, 1, 1, 1, 0],
+		[1, 1, 1, 1, 1, 1, 1, 1],
+		[1, 1, 1, 1, 1, 1, 1, 1],
+		[1, 1, 1, 1, 1, 1, 1, 1],
+		[1, 1, 0, 0, 0, 0, 1, 1],
+		[1, 1, 0, 1, 1, 0, 1, 1],
+		[1, 1, 0, 1, 1, 0, 1, 1]
+	];
 
 	function initGame() {
 		score = 0;
+		lives = 3;
 		gameOver = false;
 		gameWon = false;
 		playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
+		playerExplosion = null;
 		bullets = [];
 		aliens = [];
 		alienDirection = 1;
 		alienStep = 0;
 		alienSpeed = 1;
+		alienDescents = 0;
 		chaosMode = false;
+		globalTick = 0;
 
 		for (let r = 0; r < ALIEN_ROWS; r++) {
 			for (let c = 0; c < ALIEN_COLS; c++) {
@@ -50,6 +92,16 @@
 					legFrame: 0
 				});
 			}
+		}
+
+		// Create 4 shields
+		const shieldY = GAME_HEIGHT - PLAYER_HEIGHT - SHIELD_PLAYER_GAP;
+		const spacing = GAME_WIDTH / (SHIELD_COUNT + 1);
+		shields = [];
+		for (let i = 0; i < SHIELD_COUNT; i++) {
+			const sx = (i + 1) * spacing - SHIELD_WIDTH / 2;
+			const pixels = SHIELD_PATTERN.map((row) => row.map((val) => val === 1));
+			shields.push({ x: sx, y: shieldY, pixels });
 		}
 	}
 
@@ -69,31 +121,126 @@
 		if (bullets.filter((b) => b.type === 'player').length < 3 || chaosMode) {
 			bullets.push({
 				x: playerX + PLAYER_WIDTH / 2 - 2,
-				y: GAME_HEIGHT - PLAYER_HEIGHT - 10,
+				y: GAME_HEIGHT - PLAYER_HEIGHT - 36,
 				type: 'player',
 				id: nextBulletId++
 			});
 		}
 	}
 
+	function damageShield(shield: { pixels: boolean[][] }, px: number, py: number) {
+		if (px < 0 || px >= SHIELD_COLS || py < 0 || py >= SHIELD_ROWS || !shield.pixels[py][px]) {
+			return false;
+		}
+
+		shield.pixels[py][px] = false;
+		const dirs = [
+			[-1, 0],
+			[1, 0],
+			[0, -1],
+			[0, 1],
+			[-1, -1],
+			[1, -1],
+			[-1, 1],
+			[1, 1]
+		];
+
+		dirs.forEach(([dx, dy]) => {
+			const nx = px + dx;
+			const ny = py + dy;
+			if (nx >= 0 && nx < SHIELD_COLS && ny >= 0 && ny < SHIELD_ROWS && shield.pixels[ny][nx]) {
+				shield.pixels[ny][nx] = false;
+			}
+		});
+
+		return true;
+	}
+
+	function hitShield(bullet: { x: number; y: number; type: 'player' | 'alien'; id: number }) {
+		const bulletTop = bullet.y;
+		const bulletBottom = bullet.y + 15;
+		const collisionY = bullet.type === 'player' ? bulletTop : bulletBottom;
+
+		for (const shield of shields) {
+			if (
+				bullet.x < shield.x ||
+				bullet.x >= shield.x + SHIELD_WIDTH ||
+				collisionY < shield.y ||
+				collisionY >= shield.y + SHIELD_HEIGHT
+			) {
+				continue;
+			}
+
+			const px = Math.floor((bullet.x - shield.x) / SHIELD_CELL_WIDTH);
+			const py = Math.floor((collisionY - shield.y) / SHIELD_CELL_HEIGHT);
+
+			if (damageShield(shield, px, py)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	function getAlienShooter(aliveAliens: typeof aliens) {
+		const columnShooters = Array.from({ length: ALIEN_COLS }, (_, col) => {
+			const columnAliens = aliveAliens.filter((alien) => alien.id % ALIEN_COLS === col);
+			return columnAliens.reduce<(typeof aliveAliens)[number] | undefined>((lowest, alien) => {
+				if (!lowest || alien.y > lowest.y) return alien;
+				return lowest;
+			}, undefined);
+		}).filter((alien): alien is (typeof aliveAliens)[number] => Boolean(alien));
+
+		if (columnShooters.length === 0) return null;
+
+		return columnShooters[Math.floor(Math.random() * columnShooters.length)];
+	}
+
 	function update(time: number) {
 		if (gameOver || gameWon) return;
+
+		if (playerExplosion && playerExplosion.expiresAt <= time) {
+			playerExplosion = null;
+		}
 
 		const dt = time - lastTime;
 		lastTime = time;
 
+		const totalAliens = ALIEN_ROWS * ALIEN_COLS;
+		const aliveAliensNow = aliens.filter((a) => a.alive);
+		const destroyedAliens = totalAliens - aliveAliensNow.length;
+		const endgameIntensity = 1 - aliveAliensNow.length / totalAliens;
+		const alienBulletSpeed = Math.min(
+			MAX_ALIEN_BULLET_SPEED,
+			(BASE_ALIEN_BULLET_SPEED +
+				alienDescents * ALIEN_BULLET_SPEED_DESCENT_BONUS +
+				endgameIntensity * ALIEN_BULLET_SPEED_ENDGAME_BONUS) *
+				(chaosMode ? 1.35 : 1)
+		);
+
 		// Update Bullets
 		bullets = bullets
-			.map((b) => ({ ...b, y: b.y + (b.type === 'player' ? -5 : 3) * (chaosMode ? 2 : 1) }))
+			.map((b) => ({
+				...b,
+				y: b.y + (b.type === 'player' ? -5 * (chaosMode ? 2 : 1) : alienBulletSpeed)
+			}))
 			.filter((b) => b.y > 0 && b.y < GAME_HEIGHT);
 
 		// Alien Movement
-		alienStep += dt * 0.001 * alienSpeed * (chaosMode ? 3 : 1);
+		alienStep +=
+			dt *
+			0.001 *
+			(alienSpeed +
+				endgameIntensity * ALIEN_ENDGAME_SPEED_BOOST +
+				destroyedAliens * ALIEN_KILL_SPEED_BOOST) *
+			(chaosMode ? 3 : 1);
 		if (alienStep > 0.5) {
 			alienStep = 0;
+			globalTick = (globalTick + 1) % 2;
 			let hitEdge = false;
 			aliens.forEach((a) => {
 				if (a.alive) {
+					a.legFrame = globalTick;
 					a.x += 10 * alienDirection;
 					if (a.x > GAME_WIDTH - ALIEN_WIDTH || a.x < 0) hitEdge = true;
 				}
@@ -101,6 +248,7 @@
 
 			if (hitEdge) {
 				alienDirection *= -1;
+				alienDescents += 1;
 				aliens.forEach((a) => {
 					if (a.alive) {
 						a.y += 20;
@@ -109,14 +257,23 @@
 						}
 					}
 				});
-				alienSpeed += 0.1;
+				alienSpeed += ALIEN_DESCENT_SPEED_BOOST;
 			}
 
 			// Random Alien Shoot
-			if (Math.random() < 0.1 * alienSpeed) {
-				const aliveAliens = aliens.filter((a) => a.alive);
-				if (aliveAliens.length > 0) {
-					const shooter = aliveAliens[Math.floor(Math.random() * aliveAliens.length)];
+			const aliveAliens = aliens.filter((a) => a.alive);
+			const currentEndgameIntensity = 1 - aliveAliens.length / totalAliens;
+			const fireRamp = Math.pow(currentEndgameIntensity, 1.35);
+			const fireChance = Math.min(
+				MAX_ALIEN_FIRE_CHANCE,
+				(BASE_ALIEN_FIRE_CHANCE +
+					alienDescents * ALIEN_FIRE_DESCENT_BONUS +
+					fireRamp * ALIEN_FIRE_ENDGAME_BONUS) *
+					(chaosMode ? 1.5 : 1)
+			);
+			if (Math.random() < fireChance && aliveAliens.length > 0) {
+				const shooter = getAlienShooter(aliveAliens);
+				if (shooter) {
 					bullets.push({
 						x: shooter.x + ALIEN_WIDTH / 2,
 						y: shooter.y + ALIEN_HEIGHT,
@@ -128,9 +285,18 @@
 		}
 
 		// Collision Detection
-		bullets.forEach((b, bi) => {
+		for (let bi = bullets.length - 1; bi >= 0; bi--) {
+			const b = bullets[bi];
+
+			if (hitShield(b)) {
+				bullets.splice(bi, 1);
+				continue;
+			}
+
+			// Check alien collision (player bullets only)
 			if (b.type === 'player') {
-				aliens.forEach((a) => {
+				for (let ai = 0; ai < aliens.length; ai++) {
+					const a = aliens[ai];
 					if (
 						a.alive &&
 						b.x > a.x &&
@@ -141,33 +307,43 @@
 						a.alive = false;
 						bullets.splice(bi, 1);
 						score += 100;
+						break;
 					}
-				});
-			} else {
+				}
+			}
+
+			// Alien bullet hits player
+			if (b.type === 'alien') {
 				if (
 					b.x > playerX &&
 					b.x < playerX + PLAYER_WIDTH &&
 					b.y > GAME_HEIGHT - PLAYER_HEIGHT - 20 &&
 					b.y < GAME_HEIGHT - 20
 				) {
-					gameOver = true;
+					playerExplosion = {
+						x: playerX,
+						y: GAME_HEIGHT - PLAYER_HEIGHT - 28,
+						id: nextExplosionId++,
+						expiresAt: time + PLAYER_HIT_ANIMATION_MS
+					};
+					bullets.splice(bi, 1);
+
+					if (lives <= 1) {
+						lives = 0;
+						gameOver = true;
+					} else {
+						lives -= 1;
+						playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
+						bullets = bullets.filter((bullet) => bullet.type === 'player');
+					}
+
+					break;
 				}
 			}
-		});
+		}
 
 		if (aliens.every((a) => !a.alive)) {
 			gameWon = true;
-		}
-
-		// Animate leg frames (toggle every ~500ms)
-		animFrame = (animFrame + 1) % 3;
-		if (animFrame === 0) {
-			globalTick = (globalTick + 1) % 2;
-			aliens.forEach((a) => {
-				if (a.alive) {
-					a.legFrame = globalTick;
-				}
-			});
 		}
 
 		requestAnimationFrame(update);
@@ -207,6 +383,7 @@
 		<!-- Score & Stats -->
 		<div class="absolute top-4 left-4 z-20 flex gap-4 text-2xl font-black">
 			<span class="bg-green-400 px-2 text-black">SCORE: {score}</span>
+			<span class="bg-green-400 px-2 text-black">LIVES: {lives}</span>
 			{#if chaosMode}
 				<span class="animate-bounce bg-red-600 px-2 text-white">CHAOS ACTIVE! 🔥</span>
 			{/if}
@@ -223,6 +400,19 @@
 		>
 			<div class="absolute -top-4 left-1/2 h-4 w-4 -translate-x-1/2 bg-green-400"></div>
 		</div>
+
+		{#if playerExplosion}
+			{#key playerExplosion.id}
+				<div
+					class="player-hit-burst absolute"
+					style:left="{playerExplosion.x - 8}px"
+					style:top="{playerExplosion.y - 8}px"
+				>
+					<div class="player-hit-core"></div>
+					<div class="player-hit-ring"></div>
+				</div>
+			{/key}
+		{/if}
 
 		<!-- Aliens -->
 		{#each aliens as alien (alien.id)}
@@ -342,6 +532,31 @@
 			{/if}
 		{/each}
 
+		<!-- Shields -->
+		{#each shields as shield (shield.x)}
+			<div
+				class="absolute"
+				style:left="{shield.x}px"
+				style:top="{shield.y}px"
+				style:width="{SHIELD_WIDTH}px"
+				style:height="{SHIELD_HEIGHT}px"
+			>
+				{#each shield.pixels as pixelRow, rowIndex}
+					{#each pixelRow as pixel, colIndex}
+						{#if pixel}
+							<div
+								class="absolute bg-green-400"
+								style:left="{colIndex * SHIELD_CELL_WIDTH}px"
+								style:top="{rowIndex * SHIELD_CELL_HEIGHT}px"
+								style:width="{SHIELD_CELL_WIDTH}px"
+								style:height="{SHIELD_CELL_HEIGHT}px"
+							></div>
+						{/if}
+					{/each}
+				{/each}
+			</div>
+		{/each}
+
 		<!-- Bullets -->
 		{#each bullets as bullet (bullet.id)}
 			<div
@@ -435,5 +650,58 @@
 		margin: 0;
 		padding: 0;
 		background: #2d1b4e;
+	}
+
+	.player-hit-burst {
+		width: 66px;
+		height: 66px;
+		pointer-events: none;
+	}
+
+	.player-hit-core,
+	.player-hit-ring {
+		position: absolute;
+		inset: 0;
+		border-radius: 9999px;
+	}
+
+	.player-hit-core {
+		background: radial-gradient(
+			circle,
+			rgb(250 204 21 / 0.95) 0 24%,
+			rgb(248 113 113 / 0.8) 25% 52%,
+			transparent 53%
+		);
+		animation: player-hit-core 350ms ease-out forwards;
+	}
+
+	.player-hit-ring {
+		border: 4px solid rgb(250 204 21 / 0.95);
+		box-shadow: 0 0 20px rgb(248 113 113 / 0.7);
+		animation: player-hit-ring 350ms ease-out forwards;
+	}
+
+	@keyframes player-hit-core {
+		from {
+			transform: scale(0.35);
+			opacity: 1;
+		}
+
+		to {
+			transform: scale(1.15);
+			opacity: 0;
+		}
+	}
+
+	@keyframes player-hit-ring {
+		from {
+			transform: scale(0.2);
+			opacity: 0.95;
+		}
+
+		to {
+			transform: scale(1.3);
+			opacity: 0;
+		}
 	}
 </style>
