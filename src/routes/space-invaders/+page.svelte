@@ -2,6 +2,123 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 
+	// Audio
+	let audioCtx: AudioContext | null = null;
+
+	function ensureAudioCtx() {
+		if (!audioCtx) {
+			audioCtx = new AudioContext();
+		}
+		return audioCtx;
+	}
+
+	function playMarchTone(index: number) {
+		const ctx = ensureAudioCtx();
+		const osc = ctx.createOscillator();
+		const gain = ctx.createGain();
+		osc.type = 'square';
+		const baseFreqs = [36, 42, 48, 54];
+		const freqBoost = Math.min(alienDescents * 2, 24);
+		osc.frequency.value = baseFreqs[index % 4] + freqBoost;
+		gain.gain.setValueAtTime(0.04, ctx.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06);
+		osc.connect(gain);
+		gain.connect(ctx.destination);
+		osc.start(ctx.currentTime);
+		osc.stop(ctx.currentTime + 0.06);
+	}
+
+	function playPlayerShot() {
+		const ctx = ensureAudioCtx();
+		const osc = ctx.createOscillator();
+		const gain = ctx.createGain();
+		osc.type = 'square';
+		osc.frequency.setValueAtTime(880, ctx.currentTime);
+		osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.12);
+		gain.gain.setValueAtTime(0.08, ctx.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+		osc.connect(gain);
+		gain.connect(ctx.destination);
+		osc.start(ctx.currentTime);
+		osc.stop(ctx.currentTime + 0.12);
+	}
+
+	function playAlienHit() {
+		const ctx = ensureAudioCtx();
+		const bufferSize = ctx.sampleRate * 0.1;
+		const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+		const data = buffer.getChannelData(0);
+		for (let i = 0; i < bufferSize; i++) {
+			data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+		}
+		const source = ctx.createBufferSource();
+		source.buffer = buffer;
+		const gain = ctx.createGain();
+		gain.gain.setValueAtTime(0.15, ctx.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+		source.connect(gain);
+		gain.connect(ctx.destination);
+		source.start(ctx.currentTime);
+	}
+
+	function playPlayerDeath() {
+		const ctx = ensureAudioCtx();
+		const osc = ctx.createOscillator();
+		const gain = ctx.createGain();
+		osc.type = 'sawtooth';
+		osc.frequency.setValueAtTime(440, ctx.currentTime);
+		osc.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 0.6);
+		gain.gain.setValueAtTime(0.15, ctx.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+		osc.connect(gain);
+		gain.connect(ctx.destination);
+		osc.start(ctx.currentTime);
+		osc.stop(ctx.currentTime + 0.6);
+	}
+
+	function playUfoHit() {
+		const ctx = ensureAudioCtx();
+		const osc = ctx.createOscillator();
+		const gain = ctx.createGain();
+		osc.type = 'sine';
+		osc.frequency.setValueAtTime(1200, ctx.currentTime);
+		osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.2);
+		gain.gain.setValueAtTime(0.12, ctx.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+		osc.connect(gain);
+		gain.connect(ctx.destination);
+		osc.start(ctx.currentTime);
+		osc.stop(ctx.currentTime + 0.2);
+	}
+
+	let ufoOsc: OscillatorNode | null = null;
+	let ufoGain: GainNode | null = null;
+
+	function startUfoHum() {
+		const ctx = ensureAudioCtx();
+		if (ufoOsc) return;
+		ufoOsc = ctx.createOscillator();
+		ufoGain = ctx.createGain();
+		ufoOsc.type = 'sine';
+		ufoOsc.frequency.value = 240;
+		ufoGain.gain.value = 0.04;
+		ufoOsc.connect(ufoGain);
+		ufoGain.connect(ctx.destination);
+		ufoOsc.start(ctx.currentTime);
+	}
+
+	function stopUfoHum() {
+		if (ufoOsc) {
+			ufoOsc.stop();
+			ufoOsc.disconnect();
+			ufoOsc = null;
+		}
+		if (ufoGain) {
+			ufoGain.disconnect();
+			ufoGain = null;
+		}
+	}
+
 	// Game Constants
 	const GAME_WIDTH = 800;
 	const GAME_HEIGHT = 600;
@@ -39,6 +156,13 @@
 	const PLAYER_HIT_ANIMATION_MS = 350;
 	const PLAYER_RESPAWN_INVULNERABILITY_MS = 1100;
 	const ALIEN_FRONTLINE_FIRE_REDUCTION = 90;
+	const UFO_WIDTH = 48;
+	const UFO_HEIGHT = 20;
+	const UFO_Y = 30;
+	const UFO_SPEED = 180;
+	const UFO_FIRE_INTERVAL_MIN = 18000;
+	const UFO_FIRE_INTERVAL_MAX = 32000;
+	const UFO_SCORES = [50, 100, 150, 300];
 
 	type BulletVariant = 'player' | 'alien';
 	type Bullet = {
@@ -55,6 +179,7 @@
 
 	// State
 	let score = $state(0);
+	let highScore = $state(0);
 	let lives = $state(3);
 	let gameOver = $state(false);
 	let gameWon = $state(false);
@@ -73,11 +198,24 @@
 	let alienDirection = $state(1); // 1 for right, -1 for left
 	let alienStep = $state(0);
 	let alienDescents = $state(0);
+	let marchToneIndex = $state(0);
 	let alienFireCooldown = $state(BASE_ALIEN_FIRE_INTERVAL);
+	let ufo = $state<{ x: number; direction: number; score?: number; active: boolean }>({
+		x: 0,
+		direction: 1,
+		active: false
+	});
+	let ufoFireTimer = $state(UFO_FIRE_INTERVAL_MIN);
+	let ufoScorePopup = $state<{ x: number; y: number; score: number; expiresAt: number } | null>(
+		null
+	);
 	let lastTime = 0;
 	let showChaosModal = $state(false);
 	let chaosMode = $state(false);
 	let globalTick = $state(0);
+	let running = $state(false);
+	let paused = $state(false);
+	let gameStarted = $state(false);
 	let shields = $state<{ x: number; y: number; pixels: boolean[][] }[]>([]);
 
 	// Shield pixel patterns (8x8 grid, true = pixel present)
@@ -97,6 +235,9 @@
 		lives = 3;
 		gameOver = false;
 		gameWon = false;
+		gameStarted = false;
+		running = false;
+		paused = false;
 		playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
 		moveLeft = false;
 		moveRight = false;
@@ -108,9 +249,18 @@
 		alienDirection = 1;
 		alienStep = 0;
 		alienDescents = 0;
+		marchToneIndex = 0;
 		alienFireCooldown = BASE_ALIEN_FIRE_INTERVAL;
+		ufo = { x: 0, direction: 1, active: false };
+		ufoFireTimer = UFO_FIRE_INTERVAL_MIN;
+		ufoScorePopup = null;
 		chaosMode = false;
 		globalTick = 0;
+
+		const saved = localStorage.getItem('space-chaos-high-score');
+		if (saved) {
+			highScore = parseInt(saved, 10);
+		}
 
 		for (let r = 0; r < ALIEN_ROWS; r++) {
 			for (let c = 0; c < ALIEN_COLS; c++) {
@@ -136,7 +286,27 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (gameOver || gameWon) return;
+		if (!gameStarted) {
+			if (e.key === ' ' || e.key === 'Enter') {
+				e.preventDefault();
+				gameStarted = true;
+				running = true;
+				requestAnimationFrame(update);
+			}
+			return;
+		}
+
+		if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+			e.preventDefault();
+			paused = !paused;
+			if (!paused) {
+				lastTime = performance.now();
+				requestAnimationFrame(update);
+			}
+			return;
+		}
+
+		if (paused || gameOver || gameWon) return;
 
 		if (e.key === 'ArrowLeft') {
 			moveLeft = true;
@@ -168,6 +338,8 @@
 		if (bullets.some((b) => b.type === 'player') && !chaosMode) {
 			return;
 		}
+
+		playPlayerShot();
 
 		bullets.push({
 			x: playerX + PLAYER_WIDTH / 2 - 1,
@@ -349,7 +521,7 @@
 	}
 
 	function update(time: number) {
-		if (gameOver || gameWon) return;
+		if (!running || paused || gameOver || gameWon) return;
 
 		if (playerExplosion && playerExplosion.expiresAt <= time) {
 			playerExplosion = null;
@@ -375,6 +547,7 @@
 		const alienStepInterval = getAlienStepInterval(destroyedAliens, endgameIntensity);
 		const alienFireInterval = getAlienFireInterval(destroyedAliens, endgameIntensity);
 		alienFireCooldown -= dt;
+		ufoFireTimer -= dt;
 
 		// Update Bullets
 		bullets = bullets
@@ -390,6 +563,8 @@
 		if (alienStep >= alienStepInterval) {
 			alienStep = 0;
 			globalTick = (globalTick + 1) % 2;
+			marchToneIndex = (marchToneIndex + 1) % 4;
+			playMarchTone(marchToneIndex);
 			let hitEdge = false;
 			aliens.forEach((a) => {
 				if (a.alive) {
@@ -411,6 +586,31 @@
 					}
 				});
 			}
+		}
+
+		// UFO Logic
+		if (ufoFireTimer <= 0 && !ufo.active) {
+			const direction = Math.random() < 0.5 ? 1 : -1;
+			ufo = {
+				x: direction === 1 ? -UFO_WIDTH : GAME_WIDTH,
+				direction,
+				active: true
+			};
+			ufoFireTimer =
+				UFO_FIRE_INTERVAL_MIN + Math.random() * (UFO_FIRE_INTERVAL_MAX - UFO_FIRE_INTERVAL_MIN);
+			startUfoHum();
+		}
+
+		if (ufo.active) {
+			ufo.x += ufo.direction * UFO_SPEED * (dt / 1000);
+			if (ufo.x > GAME_WIDTH + UFO_WIDTH || ufo.x < -UFO_WIDTH * 2) {
+				ufo.active = false;
+				stopUfoHum();
+			}
+		}
+
+		if (ufoScorePopup && ufoScorePopup.expiresAt <= time) {
+			ufoScorePopup = null;
 		}
 
 		if (alienFireCooldown <= 0 && aliveAliensNow.length > 0) {
@@ -435,6 +635,29 @@
 
 			// Check alien collision (player bullets only)
 			if (b.type === 'player') {
+				// Check UFO hit
+				if (
+					ufo.active &&
+					bulletCenterX > ufo.x &&
+					bulletCenterX < ufo.x + UFO_WIDTH &&
+					bulletTop > UFO_Y &&
+					bulletTop < UFO_Y + UFO_HEIGHT
+				) {
+					const ufoScore = UFO_SCORES[Math.floor(Math.random() * UFO_SCORES.length)];
+					score += ufoScore;
+					ufoScorePopup = {
+						x: ufo.x + UFO_WIDTH / 2,
+						y: UFO_Y - 10,
+						score: ufoScore,
+						expiresAt: time + 800
+					};
+					ufo.active = false;
+					stopUfoHum();
+					playUfoHit();
+					bullets.splice(bi, 1);
+					continue;
+				}
+
 				for (let ai = 0; ai < aliens.length; ai++) {
 					const a = aliens[ai];
 					if (
@@ -447,6 +670,7 @@
 						a.alive = false;
 						bullets.splice(bi, 1);
 						score += getAlienScore(a.id);
+						playAlienHit();
 						break;
 					}
 				}
@@ -467,9 +691,14 @@
 						expiresAt: time + PLAYER_HIT_ANIMATION_MS
 					};
 					bullets.splice(bi, 1);
+					playPlayerDeath();
 
 					if (lives <= 1) {
 						lives = 0;
+						if (score > highScore) {
+							highScore = score;
+							localStorage.setItem('space-chaos-high-score', String(highScore));
+						}
 						gameOver = true;
 					} else {
 						lives -= 1;
@@ -486,6 +715,10 @@
 		}
 
 		if (aliens.every((a) => !a.alive)) {
+			if (score > highScore) {
+				highScore = score;
+				localStorage.setItem('space-chaos-high-score', String(highScore));
+			}
 			gameWon = true;
 		}
 
@@ -503,8 +736,13 @@
 		window.addEventListener('keydown', handleKeydown);
 		window.addEventListener('keyup', handleKeyup);
 		window.addEventListener('blur', clearMovement);
-		requestAnimationFrame(update);
 		return () => {
+			running = false;
+			stopUfoHum();
+			if (audioCtx) {
+				audioCtx.close();
+				audioCtx = null;
+			}
 			window.removeEventListener('keydown', handleKeydown);
 			window.removeEventListener('keyup', handleKeyup);
 			window.removeEventListener('blur', clearMovement);
@@ -530,11 +768,24 @@
 		style:height="{GAME_HEIGHT}px"
 	>
 		<!-- Score & Stats -->
-		<div class="absolute top-4 left-4 z-20 flex gap-4 text-2xl font-black">
-			<span class="bg-green-400 px-2 text-black">SCORE: {score}</span>
-			<span class="bg-green-400 px-2 text-black">LIVES: {lives}</span>
+		<div
+			class="score-hud absolute top-3 right-0 left-0 z-20 flex items-center justify-between px-6"
+		>
+			<div class="flex items-center gap-6">
+				<div class="flex flex-col items-start">
+					<span class="score-label">SCORE</span>
+					<span class="score-value">{score}</span>
+				</div>
+				<div class="flex flex-col items-start">
+					<span class="score-label">HIGH SCORE</span>
+					<span class="score-value">{highScore}</span>
+				</div>
+			</div>
 			{#if chaosMode}
-				<span class="animate-bounce bg-red-600 px-2 text-white">CHAOS ACTIVE! 🔥</span>
+				<span
+					class="animate-bounce rounded bg-red-600 px-3 py-1 text-sm font-black tracking-widest text-white uppercase"
+					>CHAOS ACTIVE</span
+				>
 			{/if}
 		</div>
 
@@ -559,6 +810,36 @@
 				>
 					<div class="player-hit-core"></div>
 					<div class="player-hit-ring"></div>
+				</div>
+			{/key}
+		{/if}
+
+		{#if ufo.active}
+			<div
+				class="ufo-saucer absolute"
+				style:left="{ufo.x}px"
+				style:top="{UFO_Y}px"
+				style:width="{UFO_WIDTH}px"
+				style:height="{UFO_HEIGHT}px"
+			>
+				<svg width={UFO_WIDTH} height={UFO_HEIGHT} viewBox="0 0 48 20">
+					<ellipse cx="24" cy="14" rx="22" ry="5" fill="#f472b6" />
+					<ellipse cx="24" cy="10" rx="10" ry="6" fill="#fb7185" />
+					<circle cx="18" cy="10" r="2" fill="#fde047" />
+					<circle cx="24" cy="8" r="2" fill="#fde047" />
+					<circle cx="30" cy="10" r="2" fill="#fde047" />
+				</svg>
+			</div>
+		{/if}
+
+		{#if ufoScorePopup}
+			{#key ufoScorePopup.score}
+				<div
+					class="ufo-score-popup absolute"
+					style:left="{ufoScorePopup.x}px"
+					style:top="{ufoScorePopup.y}px"
+				>
+					{ufoScorePopup.score}
 				</div>
 			{/key}
 		{/if}
@@ -681,6 +962,16 @@
 			{/if}
 		{/each}
 
+		<!-- Lives -->
+		<div class="lives-bar absolute bottom-2 left-4 z-20 flex items-center gap-3">
+			{#each { length: lives } as _, i (i)}
+				<svg width="24" height="16" viewBox="0 0 50 20" class="life-cannon">
+					<rect x="0" y="12" width="50" height="8" fill="#4ade80" rx="2" />
+					<rect x="21" y="4" width="8" height="10" fill="#4ade80" rx="1" />
+				</svg>
+			{/each}
+		</div>
+
 		<!-- Shields -->
 		{#each shields as shield (shield.x)}
 			<div
@@ -721,6 +1012,108 @@
 		{/each}
 
 		<!-- Game Over Overlays -->
+		{#if !gameStarted}
+			<div
+				class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md"
+			>
+				<div class="mb-12 flex gap-8">
+					<svg
+						width="40"
+						height="30"
+						viewBox="0 0 40 30"
+						class="animate-bounce text-green-400"
+						fill="currentColor"
+						style="animation-delay: 0ms;"
+					>
+						<rect x="8" y="0" width="24" height="4" />
+						<rect x="4" y="4" width="32" height="4" />
+						<rect x="4" y="8" width="8" height="4" />
+						<rect x="12" y="8" width="16" height="4" />
+						<rect x="28" y="8" width="8" height="4" />
+						<rect x="4" y="12" width="4" height="4" />
+						<rect x="12" y="12" width="4" height="4" />
+						<rect x="24" y="12" width="4" height="4" />
+						<rect x="32" y="12" width="4" height="4" />
+						<rect x="12" y="16" width="4" height="4" fill="black" />
+						<rect x="24" y="16" width="4" height="4" fill="black" />
+						<rect x="16" y="20" width="8" height="4" />
+						<rect x="10" y="24" width="4" height="4" />
+						<rect x="26" y="24" width="4" height="4" />
+					</svg>
+					<svg
+						width="40"
+						height="30"
+						viewBox="0 0 40 30"
+						class="animate-bounce text-green-400"
+						fill="currentColor"
+						style="animation-delay: 150ms;"
+					>
+						<rect x="12" y="0" width="16" height="4" />
+						<rect x="8" y="4" width="24" height="4" />
+						<rect x="4" y="8" width="32" height="4" />
+						<rect x="4" y="12" width="8" height="4" />
+						<rect x="12" y="12" width="4" height="4" />
+						<rect x="24" y="12" width="4" height="4" />
+						<rect x="28" y="12" width="8" height="4" />
+						<rect x="12" y="16" width="16" height="4" />
+						<rect x="8" y="20" width="4" height="4" />
+						<rect x="28" y="20" width="4" height="4" />
+						<rect x="12" y="16" width="4" height="4" fill="black" />
+						<rect x="24" y="16" width="4" height="4" fill="black" />
+						<rect x="8" y="0" width="4" height="4" />
+						<rect x="28" y="0" width="4" height="4" />
+						<rect x="8" y="24" width="4" height="4" />
+						<rect x="28" y="24" width="4" height="4" />
+					</svg>
+					<svg
+						width="40"
+						height="30"
+						viewBox="0 0 40 30"
+						class="animate-bounce text-green-400"
+						fill="currentColor"
+						style="animation-delay: 300ms;"
+					>
+						<rect x="12" y="0" width="16" height="4" />
+						<rect x="8" y="4" width="24" height="4" />
+						<rect x="4" y="8" width="32" height="4" />
+						<rect x="4" y="12" width="8" height="4" />
+						<rect x="16" y="12" width="8" height="4" />
+						<rect x="28" y="12" width="8" height="4" />
+						<rect x="12" y="16" width="16" height="4" />
+						<rect x="12" y="16" width="4" height="4" fill="black" />
+						<rect x="24" y="16" width="4" height="4" fill="black" />
+						<rect x="8" y="20" width="4" height="4" />
+						<rect x="16" y="20" width="4" height="4" />
+						<rect x="24" y="20" width="4" height="4" />
+						<rect x="12" y="24" width="4" height="4" />
+						<rect x="24" y="24" width="4" height="4" />
+					</svg>
+				</div>
+				<h2
+					class="mb-4 text-6xl font-black tracking-tighter text-green-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
+				>
+					SPACE CHAOS
+				</h2>
+				<p class="mb-8 text-lg font-bold text-pink-400 italic">← → to move · SPACE to fire</p>
+				<p class="animate-pulse text-2xl font-black tracking-widest text-yellow-400 uppercase">
+					Press SPACE to start
+				</p>
+			</div>
+		{/if}
+
+		{#if paused}
+			<div
+				class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
+			>
+				<h2
+					class="mb-6 text-7xl font-black tracking-tighter text-yellow-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
+				>
+					PAUSED
+				</h2>
+				<p class="animate-pulse text-xl font-bold text-white">Press ESC or P to resume</p>
+			</div>
+		{/if}
+
 		{#if gameOver}
 			<div
 				class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-red-900/80 backdrop-blur-md"
@@ -802,6 +1195,34 @@
 		background: #2d1b4e;
 	}
 
+	.score-hud {
+		font-family: 'Courier New', monospace;
+	}
+
+	.score-label {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 3px;
+		color: #a78bfa;
+		text-transform: uppercase;
+	}
+
+	.score-value {
+		font-size: 22px;
+		font-weight: 900;
+		letter-spacing: 2px;
+		color: #fde047;
+		text-shadow: 0 0 10px rgba(253, 224, 71, 0.5);
+	}
+
+	.lives-bar {
+		filter: drop-shadow(0 0 6px rgba(74, 222, 128, 0.6));
+	}
+
+	.life-cannon {
+		opacity: 0.9;
+	}
+
 	.player-hit-burst {
 		width: 66px;
 		height: 66px;
@@ -869,6 +1290,42 @@
 		50% {
 			opacity: 0.35;
 			filter: drop-shadow(0 0 4px #4ade80);
+		}
+	}
+
+	.ufo-saucer {
+		filter: drop-shadow(0 0 8px #f472b6);
+		animation: ufo-pulse 600ms ease-in-out infinite alternate;
+	}
+
+	@keyframes ufo-pulse {
+		from {
+			filter: drop-shadow(0 0 6px #f472b6);
+		}
+
+		to {
+			filter: drop-shadow(0 0 16px #fb7185);
+		}
+	}
+
+	.ufo-score-popup {
+		font-size: 18px;
+		font-weight: 900;
+		color: #f472b6;
+		text-shadow: 0 0 8px #f472b6;
+		pointer-events: none;
+		animation: ufo-score-float 800ms ease-out forwards;
+	}
+
+	@keyframes ufo-score-float {
+		from {
+			transform: translateY(0);
+			opacity: 1;
+		}
+
+		to {
+			transform: translateY(-30px);
+			opacity: 0;
 		}
 	}
 </style>
