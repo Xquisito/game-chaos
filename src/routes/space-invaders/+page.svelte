@@ -6,6 +6,7 @@
 	const GAME_HEIGHT = 600;
 	const PLAYER_WIDTH = 50;
 	const PLAYER_HEIGHT = 20;
+	const PLAYER_MOVE_SPEED = 360;
 	const ALIEN_ROWS = 5;
 	const ALIEN_COLS = 10;
 	const ALIEN_WIDTH = 40;
@@ -37,6 +38,8 @@
 	let gameOver = $state(false);
 	let gameWon = $state(false);
 	let playerX = $state(GAME_WIDTH / 2 - PLAYER_WIDTH / 2);
+	let moveLeft = $state(false);
+	let moveRight = $state(false);
 	let playerExplosion = $state<{ x: number; y: number; id: number; expiresAt: number } | null>(
 		null
 	);
@@ -72,6 +75,8 @@
 		gameOver = false;
 		gameWon = false;
 		playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
+		moveLeft = false;
+		moveRight = false;
 		playerExplosion = null;
 		bullets = [];
 		aliens = [];
@@ -109,12 +114,29 @@
 		if (gameOver || gameWon) return;
 
 		if (e.key === 'ArrowLeft') {
-			playerX = Math.max(0, playerX - 20);
+			moveLeft = true;
 		} else if (e.key === 'ArrowRight') {
-			playerX = Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX + 20);
+			moveRight = true;
 		} else if (e.key === ' ' || e.key === 'ArrowUp') {
 			shoot();
 		}
+
+		if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowUp') {
+			e.preventDefault();
+		}
+	}
+
+	function handleKeyup(e: KeyboardEvent) {
+		if (e.key === 'ArrowLeft') {
+			moveLeft = false;
+		} else if (e.key === 'ArrowRight') {
+			moveRight = false;
+		}
+	}
+
+	function clearMovement() {
+		moveLeft = false;
+		moveRight = false;
 	}
 
 	function shoot() {
@@ -205,6 +227,14 @@
 
 		const dt = time - lastTime;
 		lastTime = time;
+
+		if (moveLeft !== moveRight) {
+			const direction = moveLeft ? -1 : 1;
+			playerX = Math.max(
+				0,
+				Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX + direction * PLAYER_MOVE_SPEED * (dt / 1000))
+			);
+		}
 
 		const totalAliens = ALIEN_ROWS * ALIEN_COLS;
 		const aliveAliensNow = aliens.filter((a) => a.alive);
@@ -358,8 +388,14 @@
 	onMount(() => {
 		initGame();
 		window.addEventListener('keydown', handleKeydown);
+		window.addEventListener('keyup', handleKeyup);
+		window.addEventListener('blur', clearMovement);
 		requestAnimationFrame(update);
-		return () => window.removeEventListener('keydown', handleKeydown);
+		return () => {
+			window.removeEventListener('keydown', handleKeydown);
+			window.removeEventListener('keyup', handleKeyup);
+			window.removeEventListener('blur', clearMovement);
+		};
 	});
 </script>
 
