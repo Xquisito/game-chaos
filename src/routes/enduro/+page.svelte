@@ -14,13 +14,56 @@
 	let gameStarted = $state(false);
 	let paused = $state(false);
 	let isStarting = $state(false);
+	let gamepadStartWasPressed = $state(false);
 	let highScore = $state(0);
 	let distance = $state(0);
 	let weather = $state<'clear' | 'fog' | 'ice'>('clear');
 	let isNight = $state(false);
 	let iceFactor = $state(0);
+	let gamepadThrottle = $state(false);
+	let gamepadBrake = $state(false);
+	let lastFireBtn = false;
+	let lastJoyUp = false;
+	let lastJoyDown = false;
 
 	let container: HTMLDivElement;
+
+	function moveFocus(direction: number) {
+		const focusable = Array.from(
+			document.querySelectorAll('button:not([disabled]), a:not([disabled])')
+		) as HTMLElement[];
+		if (focusable.length === 0) return;
+
+		let index = focusable.indexOf(document.activeElement as HTMLElement);
+		if (index === -1) {
+			focusable[0].focus();
+			return;
+		}
+
+		index = (index + direction + focusable.length) % focusable.length;
+		focusable[index].focus();
+	}
+
+	$effect(() => {
+		// Auto-focus first button on menu screens
+		if (!gameStarted || gameOver) {
+			const focusFirst = () => {
+				const firstBtn = document.querySelector('button, a') as HTMLElement;
+				if (firstBtn) {
+					firstBtn.focus();
+					return true;
+				}
+				return false;
+			};
+			
+			if (!focusFirst()) {
+				// Try again after a short delay if DOM isn't ready
+				setTimeout(focusFirst, 50);
+			}
+			// One more for safety
+			setTimeout(focusFirst, 250);
+		}
+	});
 
 	const cNormalEven = new THREE.Color(0x1a1a1a);
 	const cNormalOdd = new THREE.Color(0x111111);
@@ -34,11 +77,13 @@
 	let playerCar: THREE.Group;
 	let enemyCars: { mesh: THREE.Group; z: number; x: number; passed: boolean }[] = [];
 	let horizon: THREE.Mesh;
+	let animationId: number;
 
 	const ROAD_WIDTH = 34;
 	const CAR_SPEED = 0.85;
 	const STEER_SPEED = 0.65;
 	const MAX_X = ROAD_WIDTH / 2 - 4.5;
+	const GAMEPAD_DEADZONE = 0.2;
 
 	let keys = $state(new Set<string>());
 	let gamepadSteer = $state(0);
@@ -344,14 +389,108 @@
 	}
 
 	function animate() {
-		requestAnimationFrame(animate);
+		animationId = requestAnimationFrame(animate);
 		if (!renderer || !scene || !camera) return;
 
+		// Gamepad handling (following Space Invaders pattern)
+		const gamepads = navigator.getGamepads();
+		let gpThrottle = false;
+		let gpBrake = false;
+		let gpSteer = 0;
+
+		for (let gi = 0; gi < gamepads.length; gi++) {
+			const gp = gamepads[gi];
+			if (!gp) continue;
+
+			// Steering (X-axis or D-pad)
+			const axisX = gp.axes[0];
+			if (Math.abs(axisX) > GAMEPAD_DEADZONE) {
+				gpSteer = axisX;
+			}
+			if (gp.buttons[14]?.pressed) gpSteer = -1;
+			if (gp.buttons[15]?.pressed) gpSteer = 1;
+
+			// Throttle/Brake (Y-axis or D-pad or Buttons)
+			const axisY = gp.axes[1];
+			if (axisY < -GAMEPAD_DEADZONE) gpThrottle = true;
+			if (axisY > GAMEPAD_DEADZONE) gpBrake = true;
+
+			const joyUp = gp.buttons[12]?.pressed || axisY < -0.5;
+			const joyDown = gp.buttons[13]?.pressed || axisY > 0.5;
+
+			if (joyUp && !lastJoyUp) {
+				if (!gameStarted || gameOver) moveFocus(-1);
+			}
+			if (joyDown && !lastJoyDown) {
+				if (!gameStarted || gameOver) moveFocus(1);
+			}
+			lastJoyUp = joyUp;
+			lastJoyDown = joyDown;
+
+			if (gp.buttons[12]?.pressed) gpThrottle = true; // D-pad Up
+			if (gp.buttons[13]?.pressed) gpBrake = true; // D-pad Down
+
+			// Action Buttons (0=A, 1=B, 2=X, 3=Y, 7=RT)
+			const fireBtn =
+				gp.buttons[0]?.pressed ||
+				gp.buttons[1]?.pressed ||
+				gp.buttons[2]?.pressed ||
+				gp.buttons[3]?.pressed ||
+				gp.buttons[7]?.pressed;
+
+			if (fireBtn && !lastFireBtn) {
+				if (!gameStarted || gameOver) {
+					const active = document.activeElement;
+					if (active instanceof HTMLElement && active.tagName !== 'BODY') {
+						active.click();
+					} else {
+						// Fallback if focus is lost
+						if (gameOver) restartGame();
+						else if (!gameStarted) startGame();
+					}
+				}
+			}
+
+			const pauseBtn = gp.buttons[9]?.pressed; // Start
+			const selectBtn = gp.buttons[8]?.pressed; // Select/Back
+
+			if (selectBtn && !lastFireBtn) {
+				if (!gameStarted) {
+					window.location.href = '/';
+				} else if (gameOver) {
+					goToSplash();
+				}
+			}
+
+			// Mimic original Enduro: fire button = accelerate
+			if (fireBtn && gameStarted && !gameOver && !paused) gpThrottle = true;
+
+			// Start/Pause (9=Start)
+			if (pauseBtn) {
+				if (!gamepadStartWasPressed && gameStarted && !gameOver) {
+					paused = !paused;
+				}
+				gamepadStartWasPressed = true;
+			} else {
+				gamepadStartWasPressed = false;
+			}
+
+			lastFireBtn = fireBtn;
+		}
+
+		gamepadSteer = gpSteer;
+		gamepadThrottle = gpThrottle;
+		gamepadBrake = gpBrake;
+
 		if (gameStarted && !gameOver && !paused) {
-			// Throttle and Brake
-			if (keys.has('ArrowUp') || keys.has('w') || keys.has('W')) {
+			// Throttle and Brake (Combined Keyboard + Gamepad)
+			const isAccelerating =
+				keys.has('ArrowUp') || keys.has('w') || keys.has('W') || gamepadThrottle;
+			const isBraking = keys.has('ArrowDown') || keys.has('s') || keys.has('S') || gamepadBrake;
+
+			if (isAccelerating) {
 				speed = Math.min(maxSpeed, speed + 0.012);
-			} else if (keys.has('ArrowDown') || keys.has('s') || keys.has('S')) {
+			} else if (isBraking) {
 				speed = Math.max(0, speed - 0.025);
 			}
 
@@ -386,6 +525,9 @@
 	}
 
 	function startGame() {
+		initAudio();
+		if (audioCtx?.state === 'suspended') audioCtx.resume();
+
 		gameStarted = true;
 		gameOver = false;
 		paused = false;
@@ -448,19 +590,9 @@
 
 		const onKeyUp = (e: KeyboardEvent) => keys.delete(e.key);
 
-		const pollGamepad = () => {
-			const pads = navigator.getGamepads();
-			for (const pad of pads) {
-				if (pad?.axes?.[0] !== undefined) {
-					gamepadSteer = pad.axes[0];
-					if (Math.abs(gamepadSteer) < 0.18) gamepadSteer = 0;
-				}
-			}
-		};
-
 		window.addEventListener('keydown', onKeyDown);
 		window.addEventListener('keyup', onKeyUp);
-		const gamepadLoop = setInterval(pollGamepad, 16);
+		// Gamepad is now polled in the animate loop
 
 		const handleResize = () => {
 			if (!camera || !renderer) return;
@@ -474,7 +606,7 @@
 			window.removeEventListener('keydown', onKeyDown);
 			window.removeEventListener('keyup', onKeyUp);
 			window.removeEventListener('resize', handleResize);
-			clearInterval(gamepadLoop);
+			if (animationId) cancelAnimationFrame(animationId);
 			if (renderer) {
 				renderer.dispose();
 			}
@@ -508,12 +640,20 @@
 				<span class="mt-4 block text-xs opacity-70">FOG • ICE • NIGHT</span>
 			</div>
 
-			<button
-				onclick={startGame}
-				class="border-4 border-yellow-400 bg-black px-14 py-5 text-4xl font-black text-yellow-400 transition-all hover:bg-yellow-400 hover:text-black active:scale-95"
-			>
-				PRESS START
-			</button>
+			<div class="mt-8 flex flex-col gap-4">
+				<button
+					onclick={startGame}
+					class="border-4 border-yellow-400 bg-black px-14 py-5 text-4xl font-black text-yellow-400 transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none active:scale-95"
+				>
+					PRESS START
+				</button>
+				<a
+					href="/"
+					class="border-4 border-white bg-black px-14 py-4 text-center text-2xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none active:scale-95"
+				>
+					DASHBOARD
+				</a>
+			</div>
 
 			<div class="mt-16 text-sm text-white/60">
 				← → STEER ONLY • ARROWS OR WASD<br />
@@ -597,13 +737,13 @@
 			<div class="flex flex-col gap-4">
 				<button
 					onclick={restartGame}
-					class="border-4 border-white bg-white px-16 py-6 text-4xl font-black text-black hover:bg-yellow-300"
+					class="border-4 border-white bg-white px-16 py-6 text-4xl font-black text-black transition-all hover:scale-110 hover:bg-yellow-300 focus:scale-110 focus:bg-yellow-300 focus:outline-none"
 				>
 					REVIVE
 				</button>
 				<button
 					onclick={goToSplash}
-					class="border-4 border-white px-16 py-6 text-4xl font-black text-white hover:bg-white hover:text-black"
+					class="border-4 border-white px-16 py-6 text-4xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none"
 				>
 					SPLASH
 				</button>
