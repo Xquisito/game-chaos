@@ -1,69 +1,166 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
+	import { onMount, tick } from 'svelte';
 
-	// --- Game Logic ---
 	type PieceType = 'black' | 'white';
 	type Piece = { type: PieceType; isKing: boolean } | null;
 	type Cell = Piece;
+	type Difficulty = 'easy' | 'medium' | 'hard' | 'human';
+	type Screen = 'splash' | 'game' | 'end';
 
 	const SIZE = 8;
+	const WINS_STORAGE_KEY = 'checkers-wins';
+	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
+	const DIFFICULTIES: Difficulty[] = ['human', 'easy', 'medium', 'hard'];
+
 	let board = $state<Cell[][]>([]);
 	let selectedCell = $state<{ r: number; c: number } | null>(null);
 	let turn = $state<PieceType>('white');
 	let gameOver = $state(false);
 	let winner = $state<PieceType | null>(null);
-
-	// AI & Difficulty State
-	type Difficulty = 'easy' | 'medium' | 'hard' | 'human';
 	let difficulty = $state<Difficulty>('human');
+	let selectedDifficulty = $state<Difficulty>('human');
 	let isAiThinking = $state(false);
-
-	// Chaos Modal State
+	let screen = $state<Screen>('splash');
+	let hasActiveRun = $state(false);
+	let wins = $state(0);
 	let showChaosModal = $state(false);
 	let modalMessage = $state('');
 
-	function initGame() {
-		const newBoard: Cell[][] = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+	let aiTurnToken = 0;
 
-		for (let r = 0; r < SIZE; r++) {
-			for (let c = 0; c < SIZE; c++) {
-				if ((r + c) % 2 !== 0) {
-					if (r < 3) {
-						newBoard[r][c] = { type: 'black', isKing: false };
-					} else if (r > 4) {
-						newBoard[r][c] = { type: 'white', isKing: false };
-					}
+	let splashScreen = $derived(screen === 'splash');
+	let gameScreen = $derived(screen === 'game');
+	let endScreen = $derived(screen === 'end');
+	let menuScreen = $derived(splashScreen || endScreen);
+	let activeDifficultyLabel = $derived(formatDifficulty(difficulty));
+	let queuedDifficultyLabel = $derived(formatDifficulty(selectedDifficulty));
+
+	function formatDifficulty(value: Difficulty) {
+		return value === 'human' ? '2 Players' : `${value.toUpperCase()} AI`;
+	}
+
+	function createBoard() {
+		const nextBoard: Cell[][] = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+
+		for (let r = 0; r < SIZE; r += 1) {
+			for (let c = 0; c < SIZE; c += 1) {
+				if ((r + c) % 2 === 0) continue;
+
+				if (r < 3) {
+					nextBoard[r][c] = { type: 'black', isKing: false };
+				} else if (r > 4) {
+					nextBoard[r][c] = { type: 'white', isKing: false };
 				}
 			}
 		}
-		board = newBoard;
+
+		return nextBoard;
+	}
+
+	function initGame() {
+		aiTurnToken += 1;
+		board = createBoard();
 		turn = 'white';
 		gameOver = false;
 		winner = null;
 		selectedCell = null;
+		isAiThinking = false;
 	}
 
-	function handleCellClick(r: number, c: number) {
-		if (gameOver || (difficulty !== 'human' && turn === 'black')) return;
+	function persistWins() {
+		try {
+			localStorage.setItem(WINS_STORAGE_KEY, String(wins));
+		} catch {
+			// Ignore storage failures
+		}
+	}
 
-		const cell = board[r][c];
+	function startGame() {
+		showChaosModal = false;
+		difficulty = selectedDifficulty;
+		initGame();
+		hasActiveRun = true;
+		screen = 'game';
+	}
 
-		if (selectedCell) {
-			if (isValidMove(selectedCell.r, selectedCell.c, r, c)) {
-				executeMove(selectedCell.r, selectedCell.c, r, c);
-				selectedCell = null;
-				return;
-			}
+	function continueGame() {
+		if (!hasActiveRun || board.length === 0) return;
+
+		showChaosModal = false;
+		isAiThinking = false;
+		aiTurnToken += 1;
+		screen = 'game';
+		scheduleAiIfNeeded();
+	}
+
+	function retryGame() {
+		selectedDifficulty = difficulty;
+		startGame();
+	}
+
+	function backToDashboard() {
+		window.location.href = resolve('/');
+	}
+
+	function returnToSplash(preserveRun = false) {
+		showChaosModal = false;
+		isAiThinking = false;
+		aiTurnToken += 1;
+		screen = 'splash';
+		selectedDifficulty = difficulty;
+
+		if (preserveRun) {
+			hasActiveRun = true;
+			focusMenuSoon();
+			return;
 		}
 
-		if (cell && cell.type === turn) {
-			selectedCell = { r, c };
-		} else {
-			selectedCell = null;
+		hasActiveRun = false;
+		selectedCell = null;
+		focusMenuSoon();
+	}
+
+	function handleReturnAction() {
+		if (gameScreen) {
+			returnToSplash(true);
+			return;
 		}
+
+		if (endScreen) {
+			returnToSplash(false);
+			return;
+		}
+
+		backToDashboard();
+	}
+
+	function finishGame(nextWinner: PieceType) {
+		if (gameOver) return;
+
+		gameOver = true;
+		winner = nextWinner;
+		hasActiveRun = false;
+		selectedCell = null;
+		isAiThinking = false;
+		aiTurnToken += 1;
+
+		if (nextWinner === 'white') {
+			wins += 1;
+			persistWins();
+		}
+
+		screen = 'end';
+		focusMenuSoon();
+	}
+
+	function isInsideBoard(r: number, c: number) {
+		return r >= 0 && r < SIZE && c >= 0 && c < SIZE;
 	}
 
 	function isValidMove(fromR: number, fromC: number, toR: number, toC: number): boolean {
+		if (!isInsideBoard(fromR, fromC) || !isInsideBoard(toR, toC)) return false;
+
 		const piece = board[fromR][fromC];
 		if (!piece) return false;
 
@@ -94,26 +191,59 @@
 
 	function getAllValidMoves(player: PieceType) {
 		const moves: { from: { r: number; c: number }; to: { r: number; c: number } }[] = [];
-		for (let r = 0; r < SIZE; r++) {
-			for (let c = 0; c < SIZE; c++) {
+
+		for (let r = 0; r < SIZE; r += 1) {
+			for (let c = 0; c < SIZE; c += 1) {
 				const piece = board[r][c];
-				if (piece && piece.type === player) {
-					// Check all possible destination cells
-					for (let tr = 0; tr < SIZE; tr++) {
-						for (let tc = 0; tc < SIZE; tc++) {
-							if (isValidMove(r, c, tr, tc)) {
-								moves.push({ from: { r, c }, to: { r: tr, c: tc } });
-							}
+				if (!piece || piece.type !== player) continue;
+
+				for (let tr = 0; tr < SIZE; tr += 1) {
+					for (let tc = 0; tc < SIZE; tc += 1) {
+						if (isValidMove(r, c, tr, tc)) {
+							moves.push({ from: { r, c }, to: { r: tr, c: tc } });
 						}
 					}
 				}
 			}
 		}
+
 		return moves;
 	}
 
+	function checkGameOver() {
+		let whiteExists = false;
+		let blackExists = false;
+
+		for (let r = 0; r < SIZE; r += 1) {
+			for (let c = 0; c < SIZE; c += 1) {
+				if (board[r][c]?.type === 'white') whiteExists = true;
+				if (board[r][c]?.type === 'black') blackExists = true;
+			}
+		}
+
+		if (!whiteExists) {
+			finishGame('black');
+			return;
+		}
+
+		if (!blackExists) {
+			finishGame('white');
+			return;
+		}
+
+		if (getAllValidMoves('white').length === 0) {
+			finishGame('black');
+			return;
+		}
+
+		if (getAllValidMoves('black').length === 0) {
+			finishGame('white');
+		}
+	}
+
 	function executeMove(fromR: number, fromC: number, toR: number, toC: number) {
-		const piece = board[fromR][fromC]!;
+		const piece = board[fromR][fromC];
+		if (!piece) return;
 
 		if (Math.abs(toR - fromR) === 2) {
 			const midR = fromR + (toR - fromR) / 2;
@@ -129,95 +259,97 @@
 
 		turn = turn === 'white' ? 'black' : 'white';
 		checkGameOver();
+		scheduleAiIfNeeded();
 	}
 
-	function checkGameOver() {
-		let whiteExists = false;
-		let blackExists = false;
+	function scheduleAiIfNeeded() {
+		if (turn === 'black' && difficulty !== 'human' && gameScreen && !gameOver) {
+			runAiTurn();
+		}
+	}
 
-		for (let r = 0; r < SIZE; r++) {
-			for (let c = 0; c < SIZE; c++) {
-				if (board[r][c]?.type === 'white') whiteExists = true;
-				if (board[r][c]?.type === 'black') blackExists = true;
+	function handleCellClick(r: number, c: number) {
+		if (!gameScreen || gameOver || isAiThinking || (difficulty !== 'human' && turn === 'black')) {
+			return;
+		}
+
+		const cell = board[r]?.[c];
+		if (!cell && !selectedCell) return;
+
+		if (selectedCell) {
+			if (selectedCell.r === r && selectedCell.c === c) {
+				selectedCell = null;
+				return;
+			}
+
+			if (isValidMove(selectedCell.r, selectedCell.c, r, c)) {
+				executeMove(selectedCell.r, selectedCell.c, r, c);
+				selectedCell = null;
+				return;
 			}
 		}
 
-		if (!whiteExists) {
-			gameOver = true;
-			winner = 'black';
-		} else if (!blackExists) {
-			gameOver = true;
-			winner = 'white';
+		if (cell && cell.type === turn) {
+			selectedCell = { r, c };
+		} else {
+			selectedCell = null;
 		}
 	}
 
-	// --- AI Logic ---
 	async function runAiTurn() {
-		if (gameOver || turn !== 'black') return;
+		if (!gameScreen || gameOver || turn !== 'black' || difficulty === 'human') return;
+
+		const runToken = ++aiTurnToken;
 		isAiThinking = true;
 
-		// Simulate thinking time
-		await new Promise((resolve) => setTimeout(resolve, 800));
+		await new Promise((resolveAi) => setTimeout(resolveAi, 800));
+
+		if (runToken !== aiTurnToken || !gameScreen || gameOver || turn !== 'black') {
+			if (runToken === aiTurnToken) isAiThinking = false;
+			return;
+		}
 
 		const moves = getAllValidMoves('black');
 
 		if (moves.length === 0) {
-			// No moves available, check if it's actually game over or just stuck
-			checkGameOver();
-			if (!gameOver) {
-				// If no moves but pieces exist, player might have won by blocking
-				gameOver = true;
-				winner = 'white';
-			}
+			finishGame('white');
+			return;
+		}
+
+		let selectedMove = moves[0];
+
+		if (difficulty === 'easy') {
+			selectedMove = moves[Math.floor(Math.random() * moves.length)];
+		} else if (difficulty === 'medium') {
+			const jumps = moves.filter((move) => Math.abs(move.to.r - move.from.r) === 2);
+			selectedMove =
+				jumps.length > 0
+					? jumps[Math.floor(Math.random() * jumps.length)]
+					: moves[Math.floor(Math.random() * moves.length)];
 		} else {
-			let selectedMove;
+			let bestScore = -Infinity;
 
-			if (difficulty === 'easy') {
-				// Random move
-				selectedMove = moves[Math.floor(Math.random() * moves.length)];
-			} else if (difficulty === 'medium') {
-				// Prioritize jumps
-				const jumps = moves.filter((m) => Math.abs(m.to.r - m.from.r) === 2);
-				selectedMove =
-					jumps.length > 0
-						? jumps[Math.floor(Math.random() * jumps.length)]
-						: moves[Math.floor(Math.random() * moves.length)];
-			} else {
-				// Hard: Minimax-lite (Prioritize jumps, then kings)
-				// We'll implement a simple heuristic: score = (pieces_captured * 10) + (is_king ? 5 : 0)
-				// For simplicity in this single-file version, we'll just pick the best immediate move
-				let bestScore = -Infinity;
-				for (const move of moves) {
-					let score = 0;
-					const isJump = Math.abs(move.to.r - move.from.r) === 2;
-					if (isJump) score += 10;
+			for (const move of moves) {
+				let score = 0;
+				const isJump = Math.abs(move.to.r - move.from.r) === 2;
+				if (isJump) score += 10;
 
-					// Check if it makes the piece a king
-					const piece = board[move.from.r][move.from.c];
-					if (piece?.isKing === false && move.to.r === SIZE - 1) score += 5;
+				const piece = board[move.from.r][move.from.c];
+				if (piece?.isKing === false && move.to.r === SIZE - 1) score += 5;
 
-					if (score > bestScore) {
-						bestScore = score;
-						selectedMove = move;
-					}
+				if (score > bestScore) {
+					bestScore = score;
+					selectedMove = move;
 				}
-				selectedMove = selectedMove || moves[0];
-			}
-
-			if (selectedMove) {
-				executeMove(selectedMove.from.r, selectedMove.from.c, selectedMove.to.r, selectedMove.to.c);
 			}
 		}
 
-		isAiThinking = false;
+		executeMove(selectedMove.from.r, selectedMove.from.c, selectedMove.to.r, selectedMove.to.c);
+
+		if (runToken === aiTurnToken) {
+			isAiThinking = false;
+		}
 	}
-
-	// Watch turn to trigger AI
-	$effect(() => {
-		if (turn === 'black' && difficulty !== 'human' && !gameOver) {
-			runAiTurn();
-		}
-	});
 
 	function triggerChaos() {
 		const messages = [
@@ -227,122 +359,343 @@
 			'Your pieces are feeling threatened. 🕵️‍♂️',
 			'ERROR 404: Victory Not Found. 🧠💨'
 		];
+
 		modalMessage = messages[Math.floor(Math.random() * messages.length)];
 		showChaosModal = true;
 	}
 
+	function closeChaosModal() {
+		showChaosModal = false;
+		if (menuScreen) {
+			focusMenuSoon();
+		}
+	}
+
+	function getMenuButtons() {
+		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
+	}
+
+	function moveFocus(direction: number) {
+		const buttons = getMenuButtons();
+		if (buttons.length === 0) return;
+
+		let index = buttons.indexOf(document.activeElement as HTMLElement);
+		if (index === -1) {
+			buttons[0].focus();
+			return;
+		}
+
+		index = (index + direction + buttons.length) % buttons.length;
+		buttons[index].focus();
+	}
+
+	function activateFocusedMenuItem() {
+		const buttons = getMenuButtons();
+		if (buttons.length === 0) return;
+
+		const active = document.activeElement as HTMLElement | null;
+		if (active && buttons.includes(active)) {
+			active.click();
+			return;
+		}
+
+		buttons[0].focus();
+	}
+
+	async function focusMenuSoon() {
+		await tick();
+		const firstButton = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement | null;
+		firstButton?.focus();
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (showChaosModal && ['Escape', 'Enter', ' ', 'a', 'A', 'b', 'B'].includes(event.key)) {
+			event.preventDefault();
+			closeChaosModal();
+			return;
+		}
+
+		if (event.key === 'Escape' || event.key === 'b' || event.key === 'B') {
+			event.preventDefault();
+			handleReturnAction();
+			return;
+		}
+
+		if (menuScreen && (event.key === 'ArrowUp' || event.key === 'ArrowLeft')) {
+			event.preventDefault();
+			moveFocus(-1);
+			return;
+		}
+
+		if (menuScreen && (event.key === 'ArrowDown' || event.key === 'ArrowRight')) {
+			event.preventDefault();
+			moveFocus(1);
+			return;
+		}
+
+		if (menuScreen && (event.key === 'Enter' || event.key === ' ' || event.key === 'a' || event.key === 'A')) {
+			event.preventDefault();
+			activateFocusedMenuItem();
+		}
+	}
+
+	function getCellLabel(r: number, c: number, cell: Cell) {
+		const position = `Row ${r + 1}, column ${c + 1}`;
+		if (!cell) return `${position}, empty square`;
+		return `${position}, ${cell.type} ${cell.isKing ? 'king' : 'piece'}`;
+	}
+
 	onMount(() => {
-		initGame();
+		try {
+			const savedWins = localStorage.getItem(WINS_STORAGE_KEY);
+			const parsedWins = savedWins ? Number.parseInt(savedWins, 10) : 0;
+			wins = Number.isFinite(parsedWins) ? parsedWins : 0;
+		} catch {
+			wins = 0;
+		}
+
+		focusMenuSoon();
 	});
 </script>
 
-<div
-	class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-orange-400 p-8 font-mono"
->
-	<div class="mb-8 animate-bounce text-center">
-		<h1 class="mb-2 text-5xl font-black text-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
-			🏁 CHECKERS CHAOS 🏁
-		</h1>
-		<p class="text-lg font-bold text-black">VICTORY OR TOTAL ANNIHILATION!</p>
-	</div>
+<svelte:head>
+	<title>Checkers | Game Chaos</title>
+</svelte:head>
 
-	<div class="mb-4 flex gap-2">
-		{#each ['human', 'easy', 'medium', 'hard'] as diff}
-			<button
-				onclick={() => {
-					difficulty = diff as Difficulty;
-					initGame();
-				}}
-				class="border-2 border-black px-3 py-1 text-xs font-black uppercase transition-all
-				{difficulty === diff
-					? 'scale-110 bg-black text-orange-400'
-					: 'bg-white text-black hover:bg-orange-200'}"
-			>
-				{diff}
-			</button>
-		{/each}
-	</div>
+<svelte:window onkeydown={handleKeydown} />
 
-	<div
-		class="relative z-10 flex flex-col items-center gap-6 border-8 border-black bg-white p-6 shadow-[12px_12px_0_rgba(0,0,0,1)]"
-	>
-		<div
-			class="flex w-full items-center justify-between bg-black p-2 px-4 text-xl font-bold text-orange-400"
-		>
-			<span class="flex items-center gap-2">
-				{isAiThinking ? '🤖 AI THINKING...' : `TURN: ${turn.toUpperCase()}`}
-			</span>
-			<button
-				onclick={initGame}
-				class="border-2 border-white bg-orange-400 px-3 py-1 text-sm text-black uppercase transition-colors hover:bg-white"
-			>
-				Reset 🔄
-			</button>
-		</div>
+<div class="relative min-h-screen overflow-hidden bg-orange-400 px-4 py-6 font-mono text-black sm:px-6 sm:py-8">
+	{#if splashScreen}
+		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+			<div class="w-full max-w-5xl border-4 border-black bg-white p-6 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-10">
+				<div class="mb-8 text-center">
+					<div class="mb-3 text-sm font-black tracking-[0.45em] uppercase text-black/60">Game Chaos</div>
+					<h1 class="text-5xl leading-none font-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-7xl">
+						🏁 Checkers Chaos 🏁
+					</h1>
+					<p class="mt-4 text-lg font-bold uppercase sm:text-2xl">Pick white. Pick fights. Pick again.</p>
+				</div>
 
-		{#if gameOver}
-			<div class="animate-pulse text-3xl font-black text-red-600 uppercase">
-				{winner === 'white' ? '🏆 WHITE WINS! 🏆' : '💀 BLACK WINS! 💀'}
-			</div>
-		{/if}
+				<div class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+					<div class="border-4 border-black bg-orange-200 p-5 text-sm font-bold leading-relaxed uppercase sm:text-base">
+						You play white.<br />
+						Tap or click a piece, then tap its destination.<br />
+						Arrow keys / Tab move menu focus.<br />
+						A / Enter = select • B / Esc = return.<br />
+						<span class="mt-4 block text-black/70">
+							During a live match, Esc / B jumps back here and Continue resumes the exact board.
+						</span>
+					</div>
 
-		<div
-			class="grid border-8 border-black shadow-[8px_8px_0_rgba(0,0,0,0.2)]"
-			style:grid-template-columns="repeat({SIZE}, minmax(0, 1fr))"
-		>
-			{#each board as row, r}
-				{#each row as cell, c}
-					<button
-						class="flex h-12 w-12 items-center justify-center text-4xl transition-all sm:h-20 sm:w-20 sm:text-6xl
-						{(r + c) % 2 === 0 ? 'bg-orange-200' : 'bg-orange-800'}
-						{selectedCell?.r === r && selectedCell?.c === c ? 'z-20 scale-110 ring-4 ring-yellow-400' : ''}"
-						onclick={() => handleCellClick(r, c)}
-					>
-						{#if cell}
-							<span
-								class="
-								{cell.type === 'white' ? 'text-white' : 'text-black'}
-								{cell.isKing ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]'}
-							"
+					<div class="border-4 border-black bg-black p-5 text-orange-400">
+						<div class="text-xs font-black tracking-[0.35em] uppercase text-orange-400/70">Score Board</div>
+						<div class="mt-4 text-5xl font-black">{wins}</div>
+						<div class="mt-2 text-lg font-bold uppercase">Player Wins</div>
+						<div class="mt-5 text-xs font-bold leading-relaxed uppercase text-orange-400/70">
+							Live match: {hasActiveRun ? activeDifficultyLabel : 'none'}<br />
+							New game: {queuedDifficultyLabel}
+						</div>
+					</div>
+				</div>
+
+				<div class="mt-8 border-4 border-black bg-white p-5">
+					<div class="mb-3 text-sm font-black tracking-[0.3em] uppercase text-black/60">Difficulty</div>
+					<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+						{#each DIFFICULTIES as diff (diff)}
+							<button
+								type="button"
+								data-menu-button
+								onclick={() => (selectedDifficulty = diff)}
+								class={[
+									'border-4 px-4 py-4 text-lg font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-4 active:scale-[0.98]',
+									selectedDifficulty === diff
+										? 'border-orange-400 bg-black text-orange-400 hover:scale-[1.02] focus-visible:ring-white focus-visible:ring-offset-white'
+										: 'border-black bg-orange-100 text-black hover:scale-[1.02] hover:bg-black hover:text-white focus:bg-black focus:text-white focus-visible:ring-orange-400 focus-visible:ring-offset-white'
+								]}
 							>
-								{cell.isKing ? '👑' : '●'}
-							</span>
-						{/if}
+								{diff === 'human' ? '2 Players' : `${diff} AI`}
+							</button>
+						{/each}
+					</div>
+					{#if hasActiveRun}
+						<p class="mt-4 text-xs font-bold leading-relaxed uppercase text-black/65">
+							Continue keeps the current {activeDifficultyLabel} board. New Game uses the selected mode.
+						</p>
+					{/if}
+				</div>
+
+				<div class="mt-8 flex flex-col gap-4">
+					{#if hasActiveRun}
+						<button
+							type="button"
+							data-menu-button
+							onclick={continueGame}
+							class="border-4 border-orange-400 bg-black px-8 py-5 text-3xl font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+						>
+							Continue
+						</button>
+						<button
+							type="button"
+							data-menu-button
+							onclick={startGame}
+							class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+						>
+							New Game
+						</button>
+					{:else}
+						<button
+							type="button"
+							data-menu-button
+							onclick={startGame}
+							class="border-4 border-orange-400 bg-black px-8 py-5 text-3xl font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+						>
+							Press Start
+						</button>
+					{/if}
+
+					<button
+						type="button"
+						data-menu-button
+						onclick={backToDashboard}
+						class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+					>
+						Dashboard
 					</button>
-				{/each}
-			{/each}
+				</div>
+			</div>
 		</div>
-	</div>
+	{:else}
+		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+			<div class="relative w-full max-w-5xl border-4 border-black bg-white p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-6">
+				<div class="mb-5 flex flex-col gap-3 border-4 border-black bg-black p-3 text-sm font-black uppercase text-orange-400 sm:flex-row sm:items-center sm:justify-between sm:text-lg">
+					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+						<span>{isAiThinking ? 'AI Thinking…' : `Turn ${turn}`}</span>
+						<span>{activeDifficultyLabel}</span>
+						<span>Wins {wins}</span>
+					</div>
+					{#if gameScreen}
+						<button
+							type="button"
+							onclick={handleReturnAction}
+							class="border-4 border-white bg-orange-400 px-4 py-2 text-sm font-black text-black uppercase transition-all hover:bg-white focus:bg-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-[0.98]"
+						>
+							Return
+						</button>
+					{/if}
+				</div>
 
-	<a
-		href="/"
-		class="relative z-10 mt-10 font-bold text-black underline decoration-4 transition-colors hover:text-white"
-	>
-		← BACK TO CHAOS
-	</a>
+				<div class="mb-5 text-center">
+					<h2 class="text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:text-5xl">
+						{endScreen ? (winner === 'white' ? 'White Wins!' : 'Black Wins!') : 'Board Live'}
+					</h2>
+					<p class="mt-2 text-xs font-bold leading-relaxed uppercase text-black/70 sm:text-sm">
+						Select a white piece, then choose its landing square.
+					</p>
+				</div>
 
-	<!-- Forbidden Button -->
+				<div class="mx-auto w-fit border-8 border-black bg-black p-2 shadow-[8px_8px_0_rgba(0,0,0,0.2)]">
+					<div class="grid" style={`grid-template-columns: repeat(${SIZE}, minmax(0, 1fr));`}>
+						{#each board as row, r (r)}
+							{#each row as cell, c (`${r}-${c}`)}
+								<button
+									type="button"
+									tabindex={-1}
+									aria-label={getCellLabel(r, c, cell)}
+									onclick={() => handleCellClick(r, c)}
+									class={[
+										'flex h-12 w-12 items-center justify-center text-4xl transition-all select-none sm:h-20 sm:w-20 sm:text-6xl',
+										(r + c) % 2 === 0 ? 'bg-orange-200' : 'bg-orange-800',
+										selectedCell?.r === r && selectedCell?.c === c
+											? 'z-20 scale-110 ring-4 ring-yellow-400'
+											: '',
+										gameScreen && !gameOver && !isAiThinking ? 'cursor-pointer' : 'cursor-default'
+									]}
+								>
+									{#if cell}
+										<span
+											class={[
+												cell.type === 'white' ? 'text-white' : 'text-black',
+												cell.isKing
+													? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]'
+													: 'drop-shadow-[2px_2px_0_rgba(0,0,0,0.5)]'
+											]}
+										>
+											{cell.isKing ? '👑' : '●'}
+										</span>
+									{/if}
+								</button>
+							{/each}
+						{/each}
+					</div>
+				</div>
+
+				{#if gameScreen}
+					<div class="mt-5 text-center text-xs font-bold leading-relaxed uppercase text-black/65 sm:text-sm">
+						Need a breather? Esc / B returns to splash and Continue resumes this exact match.
+					</div>
+				{/if}
+
+				{#if endScreen}
+					<div class="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]">
+						<div class="w-full max-w-md border-4 border-black bg-white p-6 text-center shadow-[12px_12px_0_rgba(0,0,0,1)] sm:p-8">
+							<div class="text-6xl sm:text-7xl">{winner === 'white' ? '🏆' : '💀'}</div>
+							<h3 class="mt-4 text-4xl font-black uppercase sm:text-5xl">
+								{winner === 'white' ? 'Victory' : 'Defeat'}
+							</h3>
+							<p class="mt-4 text-sm font-bold leading-relaxed uppercase text-black/70 sm:text-base">
+								{winner === 'white'
+									? `White takes it. Total wins: ${wins}.`
+									: 'Black cleaned the board. Retry or head back to splash.'}
+							</p>
+
+							<div class="mt-8 flex flex-col gap-4">
+								<button
+									type="button"
+									data-menu-button
+									onclick={retryGame}
+									class="border-4 border-orange-400 bg-black px-8 py-4 text-2xl font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-[0.98]"
+								>
+									Retry
+								</button>
+								<button
+									type="button"
+									data-menu-button
+									onclick={() => returnToSplash(false)}
+									class="border-4 border-black bg-white px-8 py-4 text-xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-[0.98]"
+								>
+									Back to Splash
+								</button>
+							</div>
+
+							<div class="mt-6 text-xs font-bold uppercase text-black/60">
+								Enter / A to select • Esc / B to return
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
 	<button
+		type="button"
+		tabindex={-1}
 		onclick={triggerChaos}
-		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:rotate-12"
+		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:rotate-6 hover:scale-105 active:scale-95"
 	>
 		Don't Click Me 🚫
 	</button>
 
-	<!-- Chaos Modal -->
 	{#if showChaosModal}
-		<div
-			class="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-		>
-			<div
-				class="animate-in fade-in zoom-in w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)] duration-200"
-			>
+		<div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+			<div class="w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)]">
 				<div class="mb-4 text-6xl">🤬</div>
-				<h2 class="mb-4 text-2xl font-black text-black uppercase">Wait, what?!</h2>
-				<p class="mb-8 text-xl font-bold text-black italic">"{modalMessage}"</p>
+				<h2 class="mb-4 text-2xl font-black uppercase">Wait, what?!</h2>
+				<p class="mb-8 text-xl font-bold italic">&quot;{modalMessage}&quot;</p>
 				<button
-					onclick={() => (showChaosModal = false)}
-					class="w-full border-4 border-white bg-black px-6 py-3 font-black text-white uppercase transition-colors hover:bg-pink-500"
+					type="button"
+					onclick={closeChaosModal}
+					class="w-full border-4 border-white bg-black px-6 py-3 font-black text-white uppercase transition-colors hover:bg-pink-500 focus:bg-pink-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-white"
 				>
 					Fine, I'm sorry 😔
 				</button>

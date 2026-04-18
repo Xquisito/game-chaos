@@ -217,10 +217,34 @@
 	let showChaosModal = $state(false);
 	let chaosMode = $state(false);
 	let globalTick = $state(0);
+	let hasActiveRun = $state(false);
 	let running = $state(false);
 	let paused = $state(false);
 	let gameStarted = $state(false);
+	let touchCapable = $state(false);
+	let viewportWidth = $state(0);
+	let touchSteer = $state(0);
+	let touchSteeringActive = $state(false);
+	let touchFirePressed = $state(false);
+	let touchFireCooldown = $state(0);
+	let gamepadSelectWasPressed = $state(false);
+	let gamepadBackWasPressed = $state(false);
+	let gamepadMenuPrevNegative = $state(false);
+	let gamepadMenuPrevPositive = $state(false);
 	let shields = $state<{ x: number; y: number; pixels: boolean[][] }[]>([]);
+
+	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
+	let splashScreen = $derived(!gameStarted && !gameOver && !gameWon);
+	let endScreen = $derived(gameOver || gameWon);
+	let menuScreen = $derived(splashScreen || endScreen);
+	let showTouchControls = $derived(
+		touchCapable && viewportWidth < 960 && gameStarted && !gameOver && !gameWon
+	);
+	let gameScale = $derived(
+		viewportWidth > 0 ? Math.min(1, Math.max(0.34, (viewportWidth - 24) / GAME_WIDTH)) : 1
+	);
+	let scaledGameWidth = $derived(GAME_WIDTH * gameScale);
+	let scaledGameHeight = $derived(GAME_HEIGHT * gameScale);
 
 	// Shield pixel patterns (8x8 grid, true = pixel present)
 	const SHIELD_PATTERN = [
@@ -239,6 +263,7 @@
 		lives = 3;
 		gameOver = false;
 		gameWon = false;
+		hasActiveRun = false;
 		gameStarted = false;
 		running = false;
 		paused = false;
@@ -262,6 +287,10 @@
 		ufoScorePopup = null;
 		chaosMode = false;
 		globalTick = 0;
+		touchSteer = 0;
+		touchSteeringActive = false;
+		touchFirePressed = false;
+		touchFireCooldown = 0;
 
 		const saved = localStorage.getItem('space-chaos-high-score');
 		if (saved) {
@@ -291,18 +320,222 @@
 		}
 	}
 
-	function handleKeydown(e: KeyboardEvent) {
-		if (!gameStarted) {
-			if (e.key === ' ' || e.key === 'Enter') {
-				e.preventDefault();
-				gameStarted = true;
-				running = true;
-				requestAnimationFrame(update);
-			}
+	function getMenuButtons() {
+		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
+	}
+
+	function moveFocus(direction: number) {
+		const buttons = getMenuButtons();
+		if (buttons.length === 0) return;
+
+		let index = buttons.indexOf(document.activeElement as HTMLElement);
+		if (index === -1) {
+			buttons[0].focus();
 			return;
 		}
 
-		if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+		index = (index + direction + buttons.length) % buttons.length;
+		buttons[index].focus();
+	}
+
+	function activateFocusedMenuItem() {
+		const buttons = getMenuButtons();
+		if (buttons.length === 0) return;
+
+		const active = document.activeElement as HTMLElement | null;
+		if (active && buttons.includes(active)) {
+			active.click();
+			return;
+		}
+
+		buttons[0].focus();
+	}
+
+	function clearTransientControls() {
+		moveLeft = false;
+		moveRight = false;
+		gamepadFireCooldown = 0;
+		touchSteer = 0;
+		touchSteeringActive = false;
+		touchFirePressed = false;
+		touchFireCooldown = 0;
+	}
+
+	function backToDashboard() {
+		window.location.href = resolve('/');
+	}
+
+	function startGame() {
+		initGame();
+		hasActiveRun = true;
+		gameStarted = true;
+		running = true;
+		paused = false;
+		lastTime = performance.now();
+		if (audioCtx?.state === 'suspended') {
+			audioCtx.resume();
+		}
+		requestAnimationFrame(update);
+	}
+
+	function continueGame() {
+		if (!hasActiveRun) return;
+		gameStarted = true;
+		running = true;
+		paused = false;
+		lastTime = performance.now();
+		clearTransientControls();
+		if (audioCtx?.state === 'suspended') {
+			audioCtx.resume();
+		}
+		if (ufo.active) {
+			startUfoHum();
+		}
+		requestAnimationFrame(update);
+	}
+
+	function retryGame() {
+		startGame();
+	}
+
+	function returnToSplash(preserveRun = false) {
+		gameStarted = false;
+		paused = false;
+		running = false;
+		clearTransientControls();
+		stopUfoHum();
+
+		if (preserveRun) {
+			hasActiveRun = true;
+			return;
+		}
+
+		initGame();
+	}
+
+	function handleReturnAction() {
+		if (gameOver || gameWon) {
+			returnToSplash(false);
+			return;
+		}
+
+		if (gameStarted) {
+			returnToSplash(true);
+			return;
+		}
+
+		backToDashboard();
+	}
+
+	function updateTouchSteer(clientX: number, element: HTMLElement) {
+		const rect = element.getBoundingClientRect();
+		const ratio = ((clientX - rect.left) / rect.width) * 2 - 1;
+		touchSteer = Math.max(-1, Math.min(1, ratio));
+	}
+
+	function handleSteerPointerDown(event: PointerEvent) {
+		const element = event.currentTarget;
+		if (!(element instanceof HTMLElement)) return;
+
+		touchSteeringActive = true;
+		element.setPointerCapture(event.pointerId);
+		updateTouchSteer(event.clientX, element);
+	}
+
+	function handleSteerPointerMove(event: PointerEvent) {
+		if (!touchSteeringActive) return;
+
+		const element = event.currentTarget;
+		if (!(element instanceof HTMLElement)) return;
+
+		updateTouchSteer(event.clientX, element);
+	}
+
+	function clearTouchSteer(event?: PointerEvent) {
+		const element = event?.currentTarget;
+		if (event && element instanceof HTMLElement && element.hasPointerCapture(event.pointerId)) {
+			element.releasePointerCapture(event.pointerId);
+		}
+
+		touchSteeringActive = false;
+		touchSteer = 0;
+	}
+
+	function pollGamepadMenuInput() {
+		const gamepads = navigator.getGamepads();
+		let selectPressed = false;
+		let backPressed = false;
+		let negativePressed = false;
+		let positivePressed = false;
+
+		for (let gi = 0; gi < gamepads.length; gi++) {
+			const gp = gamepads[gi];
+			if (!gp) continue;
+
+			selectPressed ||= Boolean(gp.buttons[0]?.pressed);
+			backPressed ||= Boolean(gp.buttons[1]?.pressed || gp.buttons[8]?.pressed);
+			negativePressed ||= Boolean(
+				gp.buttons[12]?.pressed || gp.buttons[14]?.pressed || gp.axes[0] < -GAMEPAD_DEADZONE
+			);
+			positivePressed ||= Boolean(
+				gp.buttons[13]?.pressed || gp.buttons[15]?.pressed || gp.axes[0] > GAMEPAD_DEADZONE
+			);
+		}
+
+		if (backPressed && !gamepadBackWasPressed) {
+			handleReturnAction();
+		}
+
+		if (menuScreen) {
+			if (negativePressed && !gamepadMenuPrevNegative) {
+				moveFocus(-1);
+			}
+
+			if (positivePressed && !gamepadMenuPrevPositive) {
+				moveFocus(1);
+			}
+
+			if (selectPressed && !gamepadSelectWasPressed) {
+				activateFocusedMenuItem();
+			}
+		}
+
+		gamepadSelectWasPressed = selectPressed;
+		gamepadBackWasPressed = backPressed;
+		gamepadMenuPrevNegative = negativePressed;
+		gamepadMenuPrevPositive = positivePressed;
+	}
+
+	function handleKeydown(e: KeyboardEvent) {
+		if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') {
+			e.preventDefault();
+			handleReturnAction();
+			return;
+		}
+
+		if (menuScreen && (e.key === 'ArrowUp' || e.key === 'ArrowLeft')) {
+			e.preventDefault();
+			moveFocus(-1);
+			return;
+		}
+
+		if (menuScreen && (e.key === 'ArrowDown' || e.key === 'ArrowRight')) {
+			e.preventDefault();
+			moveFocus(1);
+			return;
+		}
+
+		if (menuScreen && (e.key === 'Enter' || e.key === ' ' || e.key === 'a' || e.key === 'A')) {
+			e.preventDefault();
+			activateFocusedMenuItem();
+			return;
+		}
+
+		if (!gameStarted) {
+			return;
+		}
+
+		if (e.key === 'p' || e.key === 'P') {
 			e.preventDefault();
 			paused = !paused;
 			if (!paused) {
@@ -336,8 +569,7 @@
 	}
 
 	function clearMovement() {
-		moveLeft = false;
-		moveRight = false;
+		clearTransientControls();
 	}
 
 	function shoot() {
@@ -543,6 +775,19 @@
 				0,
 				Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX + direction * PLAYER_MOVE_SPEED * (dt / 1000))
 			);
+		}
+
+		if (Math.abs(touchSteer) > 0.025) {
+			playerX = Math.max(
+				0,
+				Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX + touchSteer * PLAYER_MOVE_SPEED * (dt / 1000))
+			);
+		}
+
+		touchFireCooldown -= dt;
+		if (touchFirePressed && touchFireCooldown <= 0) {
+			shoot();
+			touchFireCooldown = GAMEPAD_FIRE_COOLDOWN;
 		}
 
 		// Gamepad input
@@ -777,6 +1022,20 @@
 			gameWon = true;
 		}
 
+		if (gameOver || gameWon) {
+			if (score > highScore) {
+				highScore = score;
+				localStorage.setItem('space-chaos-high-score', String(highScore));
+			}
+			hasActiveRun = false;
+			gameStarted = false;
+			running = false;
+			paused = false;
+			clearTransientControls();
+			stopUfoHum();
+			return;
+		}
+
 		requestAnimationFrame(update);
 	}
 
@@ -786,51 +1045,61 @@
 		alienFireCooldown = Math.min(alienFireCooldown, 260);
 	}
 
+	$effect(() => {
+		if (!menuScreen) return;
+
+		const focusFirst = () => {
+			const firstButton = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement | null;
+			if (!firstButton) return false;
+			firstButton.focus();
+			return true;
+		};
+
+		if (focusFirst()) return;
+
+		const retryTimer = setTimeout(focusFirst, 50);
+		const fallbackTimer = setTimeout(focusFirst, 250);
+
+		return () => {
+			clearTimeout(retryTimer);
+			clearTimeout(fallbackTimer);
+		};
+	});
+
 	onMount(() => {
 		initGame();
-		window.addEventListener('keydown', handleKeydown);
-		window.addEventListener('keyup', handleKeyup);
-		window.addEventListener('blur', clearMovement);
-		window.addEventListener('gamepadconnected', () => {});
-		window.addEventListener('gamepaddisconnected', () => {});
+		touchCapable = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
 		const gamepadPoll = setInterval(() => {
-			if (gameStarted && running) return;
-
-			const gamepads = navigator.getGamepads();
-			for (let gi = 0; gi < gamepads.length; gi++) {
-				const gp = gamepads[gi];
-				if (!gp) continue;
-
-				if (gp.buttons[0]?.pressed && !gameStarted) {
-					gameStarted = true;
-					running = true;
-					lastTime = performance.now();
-					requestAnimationFrame(update);
-					return;
-				}
-			}
+			pollGamepadMenuInput();
 		}, 100);
 
 		return () => {
 			running = false;
+			clearTransientControls();
 			clearInterval(gamepadPoll);
 			stopUfoHum();
 			if (audioCtx) {
 				audioCtx.close();
 				audioCtx = null;
 			}
-			window.removeEventListener('keydown', handleKeydown);
-			window.removeEventListener('keyup', handleKeyup);
-			window.removeEventListener('blur', clearMovement);
-			window.removeEventListener('gamepadconnected', () => {});
-			window.removeEventListener('gamepaddisconnected', () => {});
 		};
 	});
 </script>
 
+<svelte:head>
+	<title>Space Chaos | Game Chaos</title>
+</svelte:head>
+
+<svelte:window
+	bind:innerWidth={viewportWidth}
+	onkeydown={handleKeydown}
+	onkeyup={handleKeyup}
+	onblur={clearMovement}
+/>
+
 <div
-	class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-purple-900 p-8 font-mono text-white"
+	class="relative flex min-h-screen flex-col items-center justify-center gap-4 overflow-hidden bg-purple-900 p-4 font-mono text-white sm:p-8"
 >
 	<div class="mb-8 text-center">
 		<h1
@@ -841,402 +1110,527 @@
 		<p class="text-xl font-bold text-pink-400 italic">Pew pew or die!</p>
 	</div>
 
-	<div
-		class="relative border-8 border-black bg-black shadow-[20px_20px_0_rgba(0,0,0,1)]"
-		style:width="{GAME_WIDTH}px"
-		style:height="{GAME_HEIGHT}px"
-	>
-		<!-- Score & Stats -->
+	<div class="relative" style:width={`${scaledGameWidth}px`} style:height={`${scaledGameHeight}px`}>
 		<div
-			class="score-hud absolute top-3 right-0 left-0 z-20 flex items-center justify-between px-6"
+			class="absolute top-0 left-0 origin-top-left border-8 border-black bg-black shadow-[20px_20px_0_rgba(0,0,0,1)]"
+			style:width={`${GAME_WIDTH}px`}
+			style:height={`${GAME_HEIGHT}px`}
+			style:transform={`scale(${gameScale})`}
 		>
-			<div class="flex items-center gap-6">
-				<div class="flex flex-col items-start">
-					<span class="score-label">SCORE</span>
-					<span class="score-value">{score}</span>
-				</div>
-				<div class="flex flex-col items-start">
-					<span class="score-label">HIGH SCORE</span>
-					<span class="score-value">{highScore}</span>
-				</div>
-			</div>
-			{#if chaosMode}
-				<span
-					class="animate-bounce rounded bg-red-600 px-3 py-1 text-sm font-black tracking-widest text-white uppercase"
-					>CHAOS ACTIVE</span
-				>
-			{/if}
-		</div>
-
-		<!-- Player -->
-		<div
-			class={`absolute bg-green-400 transition-all duration-75 ${playerInvulnerable ? 'player-respawn-flicker' : ''}`}
-			style:left="{playerX}px"
-			style:bottom="20px"
-			style:width="{PLAYER_WIDTH}px"
-			style:height="{PLAYER_HEIGHT}px"
-			style:box-shadow="0 0 20px #4ade80"
-		>
-			<div class="absolute -top-4 left-1/2 h-4 w-4 -translate-x-1/2 bg-green-400"></div>
-		</div>
-
-		{#if playerExplosion}
-			{#key playerExplosion.id}
-				<div
-					class="player-hit-burst absolute"
-					style:left="{playerExplosion.x - 8}px"
-					style:top="{playerExplosion.y - 8}px"
-				>
-					<div class="player-hit-core"></div>
-					<div class="player-hit-ring"></div>
-				</div>
-			{/key}
-		{/if}
-
-		{#if ufo.active}
+			<!-- Score & Stats -->
 			<div
-				class="ufo-saucer absolute"
-				style:left="{ufo.x}px"
-				style:top="{UFO_Y}px"
-				style:width="{UFO_WIDTH}px"
-				style:height="{UFO_HEIGHT}px"
+				class="score-hud absolute top-3 right-0 left-0 z-20 flex items-center justify-between px-6"
 			>
-				<svg width={UFO_WIDTH} height={UFO_HEIGHT} viewBox="0 0 48 20">
-					<ellipse cx="24" cy="14" rx="22" ry="5" fill="#f472b6" />
-					<ellipse cx="24" cy="10" rx="10" ry="6" fill="#fb7185" />
-					<circle cx="18" cy="10" r="2" fill="#fde047" />
-					<circle cx="24" cy="8" r="2" fill="#fde047" />
-					<circle cx="30" cy="10" r="2" fill="#fde047" />
-				</svg>
-			</div>
-		{/if}
-
-		{#if ufoScorePopup}
-			{#key ufoScorePopup.score}
-				<div
-					class="ufo-score-popup absolute"
-					style:left="{ufoScorePopup.x}px"
-					style:top="{ufoScorePopup.y}px"
-				>
-					{ufoScorePopup.score}
+				<div class="flex items-center gap-6">
+					<div class="flex flex-col items-start">
+						<span class="score-label">SCORE</span>
+						<span class="score-value">{score}</span>
+					</div>
+					<div class="flex flex-col items-start">
+						<span class="score-label">HIGH SCORE</span>
+						<span class="score-value">{highScore}</span>
+					</div>
 				</div>
-			{/key}
-		{/if}
+				{#if chaosMode}
+					<span
+						class="animate-bounce rounded bg-red-600 px-3 py-1 text-sm font-black tracking-widest text-white uppercase"
+						>CHAOS ACTIVE</span
+					>
+				{/if}
+			</div>
 
-		<!-- Aliens -->
-		{#each aliens as alien (alien.id)}
-			{#if alien.alive}
+			<!-- Player -->
+			<div
+				class={`absolute bg-green-400 transition-all duration-75 ${playerInvulnerable ? 'player-respawn-flicker' : ''}`}
+				style:left="{playerX}px"
+				style:bottom="20px"
+				style:width="{PLAYER_WIDTH}px"
+				style:height="{PLAYER_HEIGHT}px"
+				style:box-shadow="0 0 20px #4ade80"
+			>
+				<div class="absolute -top-4 left-1/2 h-4 w-4 -translate-x-1/2 bg-green-400"></div>
+			</div>
+
+			{#if playerExplosion}
+				{#key playerExplosion.id}
+					<div
+						class="player-hit-burst absolute"
+						style:left="{playerExplosion.x - 8}px"
+						style:top="{playerExplosion.y - 8}px"
+					>
+						<div class="player-hit-core"></div>
+						<div class="player-hit-ring"></div>
+					</div>
+				{/key}
+			{/if}
+
+			{#if ufo.active}
 				<div
-					class="absolute"
-					style:left="{alien.x}px"
-					style:top="{alien.y}px"
-					style:width="{ALIEN_WIDTH}px"
-					style:height="{ALIEN_HEIGHT}px"
+					class="ufo-saucer absolute"
+					style:left="{ufo.x}px"
+					style:top="{UFO_Y}px"
+					style:width="{UFO_WIDTH}px"
+					style:height="{UFO_HEIGHT}px"
 				>
-					{#if alien.id < ALIEN_COLS}
-						<!-- Type 0: squid - top row -->
-						<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
-							<g
-								class="text-green-400"
-								fill="currentColor"
-								style="filter: drop-shadow(0 0 4px #4ade80);"
-							>
-								<!-- Body -->
-								<rect x="8" y="0" width="24" height="4" />
-								<rect x="4" y="4" width="32" height="4" />
-								<rect x="4" y="8" width="8" height="4" />
-								<rect x="12" y="8" width="16" height="4" />
-								<rect x="28" y="8" width="8" height="4" />
-								<rect x="4" y="12" width="4" height="4" />
-								<rect x="12" y="12" width="4" height="4" />
-								<rect x="24" y="12" width="4" height="4" />
-								<rect x="32" y="12" width="4" height="4" />
-								<!-- Eyes -->
-								<rect x="12" y="16" width="4" height="4" fill="black" />
-								<rect x="24" y="16" width="4" height="4" fill="black" />
-								<!-- Mouth -->
-								<rect x="16" y="20" width="8" height="4" />
-								<!-- Legs animation -->
-								{#if alien.legFrame === 0}
-									<rect x="10" y="24" width="4" height="4" />
-									<rect x="26" y="24" width="4" height="4" />
-								{:else}
-									<rect x="14" y="24" width="4" height="4" />
-									<rect x="22" y="24" width="4" height="4" />
-								{/if}
-							</g>
-						</svg>
-					{:else if alien.id < ALIEN_COLS * 2}
-						<!-- Type 1: crab - second/third row -->
-						<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
-							<g
-								class="text-green-400"
-								fill="currentColor"
-								style="filter: drop-shadow(0 0 4px #4ade80);"
-							>
-								<!-- Body -->
-								<rect x="12" y="0" width="16" height="4" />
-								<rect x="8" y="4" width="24" height="4" />
-								<rect x="4" y="8" width="32" height="4" />
-								<rect x="4" y="12" width="8" height="4" />
-								<rect x="12" y="12" width="4" height="4" />
-								<rect x="24" y="12" width="4" height="4" />
-								<rect x="28" y="12" width="8" height="4" />
-								<rect x="12" y="16" width="16" height="4" />
-								<rect x="8" y="20" width="4" height="4" />
-								<rect x="28" y="20" width="4" height="4" />
-								<!-- Eyes -->
-								<rect x="12" y="16" width="4" height="4" fill="black" />
-								<rect x="24" y="16" width="4" height="4" fill="black" />
-								<!-- Antennae -->
-								<rect x="8" y="0" width="4" height="4" />
-								<rect x="28" y="0" width="4" height="4" />
-								<!-- Legs animation -->
-								{#if alien.legFrame === 0}
-									<rect x="8" y="24" width="4" height="4" />
-									<rect x="28" y="24" width="4" height="4" />
-								{:else}
-									<rect x="12" y="24" width="4" height="4" />
-									<rect x="24" y="24" width="4" height="4" />
-								{/if}
-							</g>
-						</svg>
-					{:else}
-						<!-- Type 2: octopus - bottom rows -->
-						<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
-							<g
-								class="text-green-400"
-								fill="currentColor"
-								style="filter: drop-shadow(0 0 4px #4ade80);"
-							>
-								<!-- Dome -->
-								<rect x="12" y="0" width="16" height="4" />
-								<rect x="8" y="4" width="24" height="4" />
-								<rect x="4" y="8" width="32" height="4" />
-								<rect x="4" y="12" width="8" height="4" />
-								<rect x="16" y="12" width="8" height="4" />
-								<rect x="28" y="12" width="8" height="4" />
-								<rect x="12" y="16" width="16" height="4" />
-								<!-- Eyes -->
-								<rect x="12" y="16" width="4" height="4" fill="black" />
-								<rect x="24" y="16" width="4" height="4" fill="black" />
-								<!-- Tentacles animation -->
-								{#if alien.legFrame === 0}
+					<svg width={UFO_WIDTH} height={UFO_HEIGHT} viewBox="0 0 48 20">
+						<ellipse cx="24" cy="14" rx="22" ry="5" fill="#f472b6" />
+						<ellipse cx="24" cy="10" rx="10" ry="6" fill="#fb7185" />
+						<circle cx="18" cy="10" r="2" fill="#fde047" />
+						<circle cx="24" cy="8" r="2" fill="#fde047" />
+						<circle cx="30" cy="10" r="2" fill="#fde047" />
+					</svg>
+				</div>
+			{/if}
+
+			{#if ufoScorePopup}
+				{#key ufoScorePopup.score}
+					<div
+						class="ufo-score-popup absolute"
+						style:left="{ufoScorePopup.x}px"
+						style:top="{ufoScorePopup.y}px"
+					>
+						{ufoScorePopup.score}
+					</div>
+				{/key}
+			{/if}
+
+			<!-- Aliens -->
+			{#each aliens as alien (alien.id)}
+				{#if alien.alive}
+					<div
+						class="absolute"
+						style:left="{alien.x}px"
+						style:top="{alien.y}px"
+						style:width="{ALIEN_WIDTH}px"
+						style:height="{ALIEN_HEIGHT}px"
+					>
+						{#if alien.id < ALIEN_COLS}
+							<!-- Type 0: squid - top row -->
+							<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
+								<g
+									class="text-green-400"
+									fill="currentColor"
+									style="filter: drop-shadow(0 0 4px #4ade80);"
+								>
+									<!-- Body -->
+									<rect x="8" y="0" width="24" height="4" />
+									<rect x="4" y="4" width="32" height="4" />
+									<rect x="4" y="8" width="8" height="4" />
+									<rect x="12" y="8" width="16" height="4" />
+									<rect x="28" y="8" width="8" height="4" />
+									<rect x="4" y="12" width="4" height="4" />
+									<rect x="12" y="12" width="4" height="4" />
+									<rect x="24" y="12" width="4" height="4" />
+									<rect x="32" y="12" width="4" height="4" />
+									<!-- Eyes -->
+									<rect x="12" y="16" width="4" height="4" fill="black" />
+									<rect x="24" y="16" width="4" height="4" fill="black" />
+									<!-- Mouth -->
+									<rect x="16" y="20" width="8" height="4" />
+									<!-- Legs animation -->
+									{#if alien.legFrame === 0}
+										<rect x="10" y="24" width="4" height="4" />
+										<rect x="26" y="24" width="4" height="4" />
+									{:else}
+										<rect x="14" y="24" width="4" height="4" />
+										<rect x="22" y="24" width="4" height="4" />
+									{/if}
+								</g>
+							</svg>
+						{:else if alien.id < ALIEN_COLS * 2}
+							<!-- Type 1: crab - second/third row -->
+							<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
+								<g
+									class="text-green-400"
+									fill="currentColor"
+									style="filter: drop-shadow(0 0 4px #4ade80);"
+								>
+									<!-- Body -->
+									<rect x="12" y="0" width="16" height="4" />
+									<rect x="8" y="4" width="24" height="4" />
+									<rect x="4" y="8" width="32" height="4" />
+									<rect x="4" y="12" width="8" height="4" />
+									<rect x="12" y="12" width="4" height="4" />
+									<rect x="24" y="12" width="4" height="4" />
+									<rect x="28" y="12" width="8" height="4" />
+									<rect x="12" y="16" width="16" height="4" />
 									<rect x="8" y="20" width="4" height="4" />
-									<rect x="16" y="20" width="4" height="4" />
-									<rect x="24" y="20" width="4" height="4" />
-									<rect x="12" y="24" width="4" height="4" />
-									<rect x="24" y="24" width="4" height="4" />
-								{:else}
-									<rect x="4" y="20" width="4" height="4" />
-									<rect x="20" y="20" width="4" height="4" />
 									<rect x="28" y="20" width="4" height="4" />
-									<rect x="16" y="24" width="4" height="4" />
-									<rect x="20" y="24" width="4" height="4" />
-								{/if}
-							</g>
-						</svg>
-					{/if}
-				</div>
-			{/if}
-		{/each}
-
-		<!-- Lives -->
-		<div class="lives-bar absolute bottom-2 left-4 z-20 flex items-center gap-3">
-			{#each { length: lives } as _, i (i)}
-				<svg width="24" height="16" viewBox="0 0 50 20" class="life-cannon">
-					<rect x="0" y="12" width="50" height="8" fill="#4ade80" rx="2" />
-					<rect x="21" y="4" width="8" height="10" fill="#4ade80" rx="1" />
-				</svg>
-			{/each}
-		</div>
-
-		<!-- Shields -->
-		{#each shields as shield (shield.x)}
-			<div
-				class="absolute"
-				style:left="{shield.x}px"
-				style:top="{shield.y}px"
-				style:width="{SHIELD_WIDTH}px"
-				style:height="{SHIELD_HEIGHT}px"
-			>
-				{#each shield.pixels as pixelRow, rowIndex (rowIndex)}
-					{#each pixelRow as pixel, colIndex (colIndex)}
-						{#if pixel}
-							<div
-								class="absolute bg-green-400"
-								style:left="{colIndex * SHIELD_CELL_WIDTH}px"
-								style:top="{rowIndex * SHIELD_CELL_HEIGHT}px"
-								style:width="{SHIELD_CELL_WIDTH}px"
-								style:height="{SHIELD_CELL_HEIGHT}px"
-							></div>
+									<!-- Eyes -->
+									<rect x="12" y="16" width="4" height="4" fill="black" />
+									<rect x="24" y="16" width="4" height="4" fill="black" />
+									<!-- Antennae -->
+									<rect x="8" y="0" width="4" height="4" />
+									<rect x="28" y="0" width="4" height="4" />
+									<!-- Legs animation -->
+									{#if alien.legFrame === 0}
+										<rect x="8" y="24" width="4" height="4" />
+										<rect x="28" y="24" width="4" height="4" />
+									{:else}
+										<rect x="12" y="24" width="4" height="4" />
+										<rect x="24" y="24" width="4" height="4" />
+									{/if}
+								</g>
+							</svg>
+						{:else}
+							<!-- Type 2: octopus - bottom rows -->
+							<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
+								<g
+									class="text-green-400"
+									fill="currentColor"
+									style="filter: drop-shadow(0 0 4px #4ade80);"
+								>
+									<!-- Dome -->
+									<rect x="12" y="0" width="16" height="4" />
+									<rect x="8" y="4" width="24" height="4" />
+									<rect x="4" y="8" width="32" height="4" />
+									<rect x="4" y="12" width="8" height="4" />
+									<rect x="16" y="12" width="8" height="4" />
+									<rect x="28" y="12" width="8" height="4" />
+									<rect x="12" y="16" width="16" height="4" />
+									<!-- Eyes -->
+									<rect x="12" y="16" width="4" height="4" fill="black" />
+									<rect x="24" y="16" width="4" height="4" fill="black" />
+									<!-- Tentacles animation -->
+									{#if alien.legFrame === 0}
+										<rect x="8" y="20" width="4" height="4" />
+										<rect x="16" y="20" width="4" height="4" />
+										<rect x="24" y="20" width="4" height="4" />
+										<rect x="12" y="24" width="4" height="4" />
+										<rect x="24" y="24" width="4" height="4" />
+									{:else}
+										<rect x="4" y="20" width="4" height="4" />
+										<rect x="20" y="20" width="4" height="4" />
+										<rect x="28" y="20" width="4" height="4" />
+										<rect x="16" y="24" width="4" height="4" />
+										<rect x="20" y="24" width="4" height="4" />
+									{/if}
+								</g>
+							</svg>
 						{/if}
-					{/each}
+					</div>
+				{/if}
+			{/each}
+
+			<!-- Lives -->
+			<div class="lives-bar absolute bottom-2 left-4 z-20 flex items-center gap-3">
+				{#each { length: lives } as _, i (i)}
+					<svg width="24" height="16" viewBox="0 0 50 20" class="life-cannon">
+						<rect x="0" y="12" width="50" height="8" fill="#4ade80" rx="2" />
+						<rect x="21" y="4" width="8" height="10" fill="#4ade80" rx="1" />
+					</svg>
 				{/each}
 			</div>
-		{/each}
 
-		<!-- Bullets -->
-		{#each bullets as bullet (bullet.id)}
-			<div
-				class="absolute rounded-full"
-				style:left="{bullet.x}px"
-				style:top="{bullet.y}px"
-				style:width="{bullet.width}px"
-				style:height="{bullet.height}px"
-				style:background={getBulletColor(bullet.variant)}
-				style:transform={getBulletRotation(bullet)}
-				style:box-shadow={getBulletGlow(bullet.variant)}
-			></div>
-		{/each}
-
-		<!-- Game Over Overlays -->
-		{#if !gameStarted}
-			<div
-				class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md"
-			>
-				<div class="mb-12 flex gap-8">
-					<svg
-						width="40"
-						height="30"
-						viewBox="0 0 40 30"
-						class="animate-bounce text-green-400"
-						fill="currentColor"
-						style="animation-delay: 0ms;"
-					>
-						<rect x="8" y="0" width="24" height="4" />
-						<rect x="4" y="4" width="32" height="4" />
-						<rect x="4" y="8" width="8" height="4" />
-						<rect x="12" y="8" width="16" height="4" />
-						<rect x="28" y="8" width="8" height="4" />
-						<rect x="4" y="12" width="4" height="4" />
-						<rect x="12" y="12" width="4" height="4" />
-						<rect x="24" y="12" width="4" height="4" />
-						<rect x="32" y="12" width="4" height="4" />
-						<rect x="12" y="16" width="4" height="4" fill="black" />
-						<rect x="24" y="16" width="4" height="4" fill="black" />
-						<rect x="16" y="20" width="8" height="4" />
-						<rect x="10" y="24" width="4" height="4" />
-						<rect x="26" y="24" width="4" height="4" />
-					</svg>
-					<svg
-						width="40"
-						height="30"
-						viewBox="0 0 40 30"
-						class="animate-bounce text-green-400"
-						fill="currentColor"
-						style="animation-delay: 150ms;"
-					>
-						<rect x="12" y="0" width="16" height="4" />
-						<rect x="8" y="4" width="24" height="4" />
-						<rect x="4" y="8" width="32" height="4" />
-						<rect x="4" y="12" width="8" height="4" />
-						<rect x="12" y="12" width="4" height="4" />
-						<rect x="24" y="12" width="4" height="4" />
-						<rect x="28" y="12" width="8" height="4" />
-						<rect x="12" y="16" width="16" height="4" />
-						<rect x="8" y="20" width="4" height="4" />
-						<rect x="28" y="20" width="4" height="4" />
-						<rect x="12" y="16" width="4" height="4" fill="black" />
-						<rect x="24" y="16" width="4" height="4" fill="black" />
-						<rect x="8" y="0" width="4" height="4" />
-						<rect x="28" y="0" width="4" height="4" />
-						<rect x="8" y="24" width="4" height="4" />
-						<rect x="28" y="24" width="4" height="4" />
-					</svg>
-					<svg
-						width="40"
-						height="30"
-						viewBox="0 0 40 30"
-						class="animate-bounce text-green-400"
-						fill="currentColor"
-						style="animation-delay: 300ms;"
-					>
-						<rect x="12" y="0" width="16" height="4" />
-						<rect x="8" y="4" width="24" height="4" />
-						<rect x="4" y="8" width="32" height="4" />
-						<rect x="4" y="12" width="8" height="4" />
-						<rect x="16" y="12" width="8" height="4" />
-						<rect x="28" y="12" width="8" height="4" />
-						<rect x="12" y="16" width="16" height="4" />
-						<rect x="12" y="16" width="4" height="4" fill="black" />
-						<rect x="24" y="16" width="4" height="4" fill="black" />
-						<rect x="8" y="20" width="4" height="4" />
-						<rect x="16" y="20" width="4" height="4" />
-						<rect x="24" y="20" width="4" height="4" />
-						<rect x="12" y="24" width="4" height="4" />
-						<rect x="24" y="24" width="4" height="4" />
-					</svg>
+			<!-- Shields -->
+			{#each shields as shield (shield.x)}
+				<div
+					class="absolute"
+					style:left="{shield.x}px"
+					style:top="{shield.y}px"
+					style:width="{SHIELD_WIDTH}px"
+					style:height="{SHIELD_HEIGHT}px"
+				>
+					{#each shield.pixels as pixelRow, rowIndex (rowIndex)}
+						{#each pixelRow as pixel, colIndex (colIndex)}
+							{#if pixel}
+								<div
+									class="absolute bg-green-400"
+									style:left="{colIndex * SHIELD_CELL_WIDTH}px"
+									style:top="{rowIndex * SHIELD_CELL_HEIGHT}px"
+									style:width="{SHIELD_CELL_WIDTH}px"
+									style:height="{SHIELD_CELL_HEIGHT}px"
+								></div>
+							{/if}
+						{/each}
+					{/each}
 				</div>
-				<h2
-					class="mb-4 text-6xl font-black tracking-tighter text-green-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
-				>
-					SPACE CHAOS
-				</h2>
-				<p class="mb-8 text-lg font-bold text-pink-400 italic">← → to move · SPACE to fire</p>
-				<p class="animate-pulse text-2xl font-black tracking-widest text-yellow-400 uppercase">
-					Press SPACE to start
-				</p>
-			</div>
-		{/if}
+			{/each}
 
-		{#if paused}
-			<div
-				class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
-			>
-				<h2
-					class="mb-6 text-7xl font-black tracking-tighter text-yellow-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
-				>
-					PAUSED
-				</h2>
-				<p class="animate-pulse text-xl font-bold text-white">Press ESC or P to resume</p>
-			</div>
-		{/if}
+			<!-- Bullets -->
+			{#each bullets as bullet (bullet.id)}
+				<div
+					class="absolute rounded-full"
+					style:left="{bullet.x}px"
+					style:top="{bullet.y}px"
+					style:width="{bullet.width}px"
+					style:height="{bullet.height}px"
+					style:background={getBulletColor(bullet.variant)}
+					style:transform={getBulletRotation(bullet)}
+					style:box-shadow={getBulletGlow(bullet.variant)}
+				></div>
+			{/each}
 
-		{#if gameOver}
-			<div
-				class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-red-900/80 backdrop-blur-md"
-			>
-				<h2 class="mb-8 text-8xl font-black text-white uppercase shadow-black drop-shadow-2xl">
-					WASTED 💀
-				</h2>
-				<button
-					onclick={initGame}
-					class="border-4 border-white bg-black px-10 py-5 text-4xl font-black text-white uppercase shadow-[8px_8px_0_white] hover:scale-110 active:translate-y-1"
+			<!-- Game Over Overlays -->
+			{#if splashScreen}
+				<div
+					class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md"
 				>
-					Restart 🔄
-				</button>
-			</div>
-		{/if}
+					<div class="mb-12 flex gap-8">
+						<svg
+							width="40"
+							height="30"
+							viewBox="0 0 40 30"
+							class="animate-bounce text-green-400"
+							fill="currentColor"
+							style="animation-delay: 0ms;"
+						>
+							<rect x="8" y="0" width="24" height="4" />
+							<rect x="4" y="4" width="32" height="4" />
+							<rect x="4" y="8" width="8" height="4" />
+							<rect x="12" y="8" width="16" height="4" />
+							<rect x="28" y="8" width="8" height="4" />
+							<rect x="4" y="12" width="4" height="4" />
+							<rect x="12" y="12" width="4" height="4" />
+							<rect x="24" y="12" width="4" height="4" />
+							<rect x="32" y="12" width="4" height="4" />
+							<rect x="12" y="16" width="4" height="4" fill="black" />
+							<rect x="24" y="16" width="4" height="4" fill="black" />
+							<rect x="16" y="20" width="8" height="4" />
+							<rect x="10" y="24" width="4" height="4" />
+							<rect x="26" y="24" width="4" height="4" />
+						</svg>
+						<svg
+							width="40"
+							height="30"
+							viewBox="0 0 40 30"
+							class="animate-bounce text-green-400"
+							fill="currentColor"
+							style="animation-delay: 150ms;"
+						>
+							<rect x="12" y="0" width="16" height="4" />
+							<rect x="8" y="4" width="24" height="4" />
+							<rect x="4" y="8" width="32" height="4" />
+							<rect x="4" y="12" width="8" height="4" />
+							<rect x="12" y="12" width="4" height="4" />
+							<rect x="24" y="12" width="4" height="4" />
+							<rect x="28" y="12" width="8" height="4" />
+							<rect x="12" y="16" width="16" height="4" />
+							<rect x="8" y="20" width="4" height="4" />
+							<rect x="28" y="20" width="4" height="4" />
+							<rect x="12" y="16" width="4" height="4" fill="black" />
+							<rect x="24" y="16" width="4" height="4" fill="black" />
+							<rect x="8" y="0" width="4" height="4" />
+							<rect x="28" y="0" width="4" height="4" />
+							<rect x="8" y="24" width="4" height="4" />
+							<rect x="28" y="24" width="4" height="4" />
+						</svg>
+						<svg
+							width="40"
+							height="30"
+							viewBox="0 0 40 30"
+							class="animate-bounce text-green-400"
+							fill="currentColor"
+							style="animation-delay: 300ms;"
+						>
+							<rect x="12" y="0" width="16" height="4" />
+							<rect x="8" y="4" width="24" height="4" />
+							<rect x="4" y="8" width="32" height="4" />
+							<rect x="4" y="12" width="8" height="4" />
+							<rect x="16" y="12" width="8" height="4" />
+							<rect x="28" y="12" width="8" height="4" />
+							<rect x="12" y="16" width="16" height="4" />
+							<rect x="12" y="16" width="4" height="4" fill="black" />
+							<rect x="24" y="16" width="4" height="4" fill="black" />
+							<rect x="8" y="20" width="4" height="4" />
+							<rect x="16" y="20" width="4" height="4" />
+							<rect x="24" y="20" width="4" height="4" />
+							<rect x="12" y="24" width="4" height="4" />
+							<rect x="24" y="24" width="4" height="4" />
+						</svg>
+					</div>
+					<h2
+						class="mb-4 text-6xl font-black tracking-tighter text-green-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
+					>
+						SPACE CHAOS
+					</h2>
+					<div
+						class="mb-8 max-w-md border-4 border-green-400 bg-black/80 p-5 text-center text-sm leading-relaxed text-white sm:text-base"
+					>
+						DEFEND THE LINE, SHRED THE SWARM, AND CHASE THE UFO.<br />
+						<span class="mt-3 block text-white/70">
+							KEYBOARD / GAMEPAD / TOUCH READY<br />
+							A / ENTER = SELECT • B / ESC = RETURN
+						</span>
+					</div>
 
-		{#if gameWon}
-			<div
-				class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-green-900/80 backdrop-blur-md"
-			>
-				<h2 class="mb-8 text-8xl font-black text-white uppercase shadow-black drop-shadow-2xl">
-					VICTORY 🏆
-				</h2>
-				<button
-					onclick={initGame}
-					class="border-4 border-white bg-black px-10 py-5 text-4xl font-black text-white uppercase shadow-[8px_8px_0_white] hover:scale-110 active:translate-y-1"
+					<div class="flex flex-col gap-4">
+						{#if hasActiveRun}
+							<button
+								data-menu-button
+								onclick={continueGame}
+								class="border-4 border-yellow-400 bg-black px-12 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+							>
+								CONTINUE
+							</button>
+							<button
+								data-menu-button
+								onclick={startGame}
+								class="border-4 border-white bg-black px-10 py-4 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+							>
+								NEW GAME
+							</button>
+						{:else}
+							<button
+								data-menu-button
+								onclick={startGame}
+								class="border-4 border-yellow-400 bg-black px-12 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+							>
+								PRESS START
+							</button>
+						{/if}
+
+						<button
+							data-menu-button
+							onclick={backToDashboard}
+							class="border-4 border-white bg-black px-10 py-4 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+						>
+							DASHBOARD
+						</button>
+					</div>
+
+					<div class="mt-8 text-center text-xs leading-relaxed text-white/60 sm:text-sm">
+						← → MOVE • SPACE / ↑ FIRE<br />
+						D-PAD / STICK MOVE • TOUCH DRAG + FIRE BUTTON
+					</div>
+				</div>
+			{/if}
+
+			{#if paused}
+				<div
+					class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm"
 				>
-					Play Again 🔄
-				</button>
-			</div>
-		{/if}
+					<h2
+						class="mb-6 text-7xl font-black tracking-tighter text-yellow-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
+					>
+						PAUSED
+					</h2>
+					<p class="text-center text-xl font-bold text-white">P to resume • ESC / B to splash</p>
+				</div>
+			{/if}
+
+			{#if gameOver}
+				<div
+					class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-red-900/80 backdrop-blur-md"
+				>
+					<h2 class="mb-8 text-8xl font-black text-white uppercase shadow-black drop-shadow-2xl">
+						WASTED 💀
+					</h2>
+					<div class="mb-6 text-3xl font-black text-yellow-300 uppercase">Score {score}</div>
+					<div class="flex flex-col gap-4">
+						<button
+							data-menu-button
+							onclick={retryGame}
+							class="border-4 border-white bg-white px-10 py-5 text-4xl font-black text-black uppercase shadow-[8px_8px_0_white] transition-all hover:scale-110 hover:bg-yellow-300 focus:scale-110 focus:bg-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:translate-y-1"
+						>
+							Retry 🔄
+						</button>
+						<button
+							data-menu-button
+							onclick={() => returnToSplash(false)}
+							class="border-4 border-white bg-black px-8 py-4 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+						>
+							Back to Splash
+						</button>
+					</div>
+				</div>
+			{/if}
+
+			{#if gameWon}
+				<div
+					class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-green-900/80 backdrop-blur-md"
+				>
+					<h2 class="mb-8 text-8xl font-black text-white uppercase shadow-black drop-shadow-2xl">
+						VICTORY 🏆
+					</h2>
+					<div class="mb-6 text-3xl font-black text-yellow-300 uppercase">Score {score}</div>
+					<div class="flex flex-col gap-4">
+						<button
+							data-menu-button
+							onclick={retryGame}
+							class="border-4 border-white bg-white px-10 py-5 text-4xl font-black text-black uppercase shadow-[8px_8px_0_white] transition-all hover:scale-110 hover:bg-yellow-300 focus:scale-110 focus:bg-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:translate-y-1"
+						>
+							Retry 🔄
+						</button>
+						<button
+							data-menu-button
+							onclick={() => returnToSplash(false)}
+							class="border-4 border-white bg-black px-8 py-4 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+						>
+							Back to Splash
+						</button>
+					</div>
+				</div>
+			{/if}
+		</div>
 	</div>
 
-	<a
-		href={resolve('/')}
-		class="mt-10 text-2xl font-black text-white underline decoration-8 transition-colors hover:text-green-400"
-	>
-		← ESCAPE TO REALITY
-	</a>
+	{#if showTouchControls}
+		<div class="w-full max-w-xl px-2 text-white">
+			<div class="mb-2 text-xs font-black tracking-[0.35em] text-white/60">TOUCH CONTROLS</div>
+			<div class="flex items-end gap-3">
+				<div class="flex-1">
+					<div
+						class="relative h-24 touch-none border-4 border-white bg-black/75 px-4 py-3 select-none"
+						role="slider"
+						tabindex="0"
+						aria-label="Touch steering"
+						aria-valuemin={-100}
+						aria-valuemax={100}
+						aria-valuenow={Math.round(touchSteer * 100)}
+						onpointerdown={handleSteerPointerDown}
+						onpointermove={handleSteerPointerMove}
+						onpointerup={clearTouchSteer}
+						onpointercancel={clearTouchSteer}
+						onpointerleave={clearTouchSteer}
+					>
+						<div class="flex h-full items-center justify-between text-3xl font-black text-white/35">
+							<span>←</span>
+							<span>→</span>
+						</div>
+						<div class="absolute top-1/2 right-4 left-4 h-1 -translate-y-1/2 bg-white/20"></div>
+						<div
+							class="absolute top-1/2 h-10 w-10 -translate-y-1/2 rounded-full border-4 border-yellow-400 bg-black"
+							style:left={`calc(50% + ${touchSteer * 42}px)`}
+							style:transform="translate(-50%, -50%)"
+						></div>
+					</div>
+				</div>
+
+				<div class="flex shrink-0 flex-col gap-3">
+					<button
+						class={[
+							'min-w-28 touch-none border-4 px-5 py-4 text-lg font-black text-white transition-all select-none',
+							touchFirePressed
+								? 'scale-95 border-yellow-400 bg-yellow-400 text-black'
+								: 'border-white bg-black/75'
+						]}
+						onpointerdown={() => {
+							touchFirePressed = true;
+							shoot();
+							touchFireCooldown = GAMEPAD_FIRE_COOLDOWN;
+						}}
+						onpointerup={() => (touchFirePressed = false)}
+						onpointercancel={() => (touchFirePressed = false)}
+						onpointerleave={() => (touchFirePressed = false)}
+					>
+						FIRE
+					</button>
+					<button
+						class="min-w-28 touch-none border-4 border-white bg-black/75 px-5 py-4 text-lg font-black text-white transition-all select-none active:scale-95"
+						onclick={handleReturnAction}
+					>
+						RETURN
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 
 	<!-- Chaos Button -->
 	<button
 		onclick={triggerChaos}
-		class="absolute right-8 bottom-8 border-8 border-black bg-pink-500 p-8 text-xl font-black text-white uppercase shadow-[10px_10px_0_rgba(0,0,0,1)] transition-transform hover:scale-110 hover:rotate-12"
+		class="mt-2 border-8 border-black bg-pink-500 p-6 text-xl font-black text-white uppercase shadow-[10px_10px_0_rgba(0,0,0,1)] transition-transform hover:scale-110 hover:rotate-12"
 	>
 		DO NOT PRESS 🚫
 	</button>

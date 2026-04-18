@@ -1,85 +1,231 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
+	import { onMount, tick } from 'svelte';
 
-	// Game configuration
 	const ROWS = 10;
 	const COLS = 10;
 	const MINES_COUNT = 15;
+	const WINS_STORAGE_KEY = 'minesweeper-wins';
+	const LONG_PRESS_MS = 360;
+	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
 
-	// Types
 	type CellValue = 'mine' | 'empty' | number;
 	type CellState = 'hidden' | 'revealed' | 'flagged';
+	type Screen = 'splash' | 'game' | 'end';
+	type EndMode = 'won' | 'lost' | null;
 
 	interface Cell {
 		value: CellValue;
 		state: CellState;
 	}
 
-	// State
 	let grid = $state<Cell[][]>([]);
-	let gameOver = $state(false);
-	let gameWon = $state(false);
-	let minesLeft = $state(MINES_COUNT);
-
-	// Modal State
+	let screen = $state<Screen>('splash');
+	let endMode = $state<EndMode>(null);
+	let hasActiveRun = $state(false);
+	let wins = $state(0);
 	let showChaosModal = $state(false);
 	let modalMessage = $state('');
 
-	// Initialize game
-	function initGame() {
-		gameOver = false;
-		gameWon = false;
-		minesLeft = MINES_COUNT;
+	let splashScreen = $derived(screen === 'splash');
+	let gameScreen = $derived(screen === 'game');
+	let endScreen = $derived(screen === 'end');
+	let menuScreen = $derived(splashScreen || endScreen);
+	let gameWon = $derived(endMode === 'won');
+	let gameOver = $derived(endMode === 'lost');
+	let minesLeft = $derived.by(() => {
+		let flagged = 0;
+		for (const row of grid) {
+			for (const cell of row) {
+				if (cell.state === 'flagged') flagged += 1;
+			}
+		}
+		return MINES_COUNT - flagged;
+	});
 
-		// Create empty grid
-		const newGrid: Cell[][] = [];
-		for (let r = 0; r < ROWS; r++) {
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let longPressPointerId: number | null = null;
+	let longPressCellKey = '';
+	let suppressedRevealKeys: string[] = [];
+
+	function createEmptyGrid() {
+		const nextGrid: Cell[][] = [];
+
+		for (let r = 0; r < ROWS; r += 1) {
 			const row: Cell[] = [];
-			for (let c = 0; c < COLS; c++) {
+			for (let c = 0; c < COLS; c += 1) {
 				row.push({ value: 'empty', state: 'hidden' });
 			}
-			newGrid.push(row);
+			nextGrid.push(row);
 		}
 
-		// Place mines
+		return nextGrid;
+	}
+
+	function initGame() {
+		clearLongPress();
+		endMode = null;
+		grid = createEmptyGrid();
+
 		let minesPlaced = 0;
 		while (minesPlaced < MINES_COUNT) {
 			const r = Math.floor(Math.random() * ROWS);
 			const c = Math.floor(Math.random() * COLS);
-			if (newGrid[r][c].value !== 'mine') {
-				newGrid[r][c].value = 'mine';
-				minesPlaced++;
-			}
+
+			if (grid[r][c].value === 'mine') continue;
+
+			grid[r][c].value = 'mine';
+			minesPlaced += 1;
 		}
 
-		// Calculate numbers
-		for (let r = 0; r < ROWS; r++) {
-			for (let c = 0; c < COLS; c++) {
-				if (newGrid[r][c].value === 'mine') continue;
+		for (let r = 0; r < ROWS; r += 1) {
+			for (let c = 0; c < COLS; c += 1) {
+				if (grid[r][c].value === 'mine') continue;
 
 				let count = 0;
-				for (let dr = -1; dr <= 1; dr++) {
-					for (let dc = -1; dc <= 1; dc++) {
+				for (let dr = -1; dr <= 1; dr += 1) {
+					for (let dc = -1; dc <= 1; dc += 1) {
+						if (dr === 0 && dc === 0) continue;
+
 						const nr = r + dr;
 						const nc = c + dc;
-						if (nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS && newGrid[nr][nc].value === 'mine') {
-							count++;
-						}
+						if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+						if (grid[nr][nc].value === 'mine') count += 1;
 					}
 				}
-				newGrid[r][c].value = count === 0 ? 'empty' : count;
+
+				grid[r][c].value = count === 0 ? 'empty' : count;
+			}
+		}
+	}
+
+	function persistWins() {
+		try {
+			localStorage.setItem(WINS_STORAGE_KEY, String(wins));
+		} catch {
+			// Ignore storage failures in private/restricted contexts
+		}
+	}
+
+	function startGame() {
+		showChaosModal = false;
+		initGame();
+		hasActiveRun = true;
+		screen = 'game';
+	}
+
+	function continueGame() {
+		if (!hasActiveRun || grid.length === 0) return;
+		showChaosModal = false;
+		endMode = null;
+		screen = 'game';
+	}
+
+	function retryGame() {
+		startGame();
+	}
+
+	function backToDashboard() {
+		window.location.href = resolve('/');
+	}
+
+	function returnToSplash(preserveRun = false) {
+		clearLongPress();
+		showChaosModal = false;
+		screen = 'splash';
+		focusMenuSoon();
+
+		if (preserveRun) {
+			hasActiveRun = true;
+			endMode = null;
+			return;
+		}
+
+		hasActiveRun = false;
+		endMode = null;
+	}
+
+	function handleReturnAction() {
+		if (gameScreen) {
+			returnToSplash(true);
+			return;
+		}
+
+		if (endScreen) {
+			returnToSplash(false);
+			return;
+		}
+
+		backToDashboard();
+	}
+
+	function revealCell(r: number, c: number) {
+		if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+
+		const cell = grid[r][c];
+		if (cell.state !== 'hidden') return;
+
+		cell.state = 'revealed';
+
+		if (cell.value === 'empty') {
+			for (let dr = -1; dr <= 1; dr += 1) {
+				for (let dc = -1; dc <= 1; dc += 1) {
+					if (dr === 0 && dc === 0) continue;
+					revealCell(r + dr, c + dc);
+				}
+			}
+		}
+	}
+
+	function revealAllMines() {
+		for (const row of grid) {
+			for (const cell of row) {
+				if (cell.value === 'mine') {
+					cell.state = 'revealed';
+				}
+			}
+		}
+	}
+
+	function finishWin() {
+		if (endMode === 'won') return;
+
+		wins += 1;
+		persistWins();
+		hasActiveRun = false;
+		endMode = 'won';
+		screen = 'end';
+		focusMenuSoon();
+	}
+
+	function finishLoss() {
+		hasActiveRun = false;
+		endMode = 'lost';
+		screen = 'end';
+		focusMenuSoon();
+	}
+
+	function checkWin() {
+		for (const row of grid) {
+			for (const cell of row) {
+				if (cell.value !== 'mine' && cell.state !== 'revealed') {
+					return;
+				}
 			}
 		}
 
-		grid = newGrid;
+		finishWin();
 	}
 
 	function handleReveal(r: number, c: number) {
-		if (gameOver || gameWon || grid[r][c].state !== 'hidden') return;
+		if (!gameScreen) return;
 
-		if (grid[r][c].value === 'mine') {
+		const cell = grid[r]?.[c];
+		if (!cell || cell.state !== 'hidden') return;
+
+		if (cell.value === 'mine') {
 			revealAllMines();
-			gameOver = true;
+			finishLoss();
 			return;
 		}
 
@@ -87,55 +233,82 @@
 		checkWin();
 	}
 
-	function revealCell(r: number, c: number) {
-		if (r < 0 || r >= ROWS || c < 0 || c >= COLS || grid[r][c].state !== 'hidden') return;
-
-		grid[r][c].state = 'revealed';
-
-		if (grid[r][c].value === 'empty') {
-			for (let dr = -1; dr <= 1; dr++) {
-				for (let dc = -1; dc <= 1; dc++) {
-					revealCell(r + dr, c + dc);
-				}
-			}
-		}
-	}
-
 	function handleFlag(r: number, c: number) {
-		if (gameOver || gameWon || grid[r][c].state === 'revealed') return;
+		if (!gameScreen) return;
 
-		if (grid[r][c].state === 'flagged') {
-			grid[r][c].state = 'hidden';
-			minesLeft++;
-		} else {
-			grid[r][c].state = 'flagged';
-			minesLeft--;
-		}
+		const cell = grid[r]?.[c];
+		if (!cell || cell.state === 'revealed') return;
+
+		cell.state = cell.state === 'flagged' ? 'hidden' : 'flagged';
 	}
 
-	function revealAllMines() {
-		for (let r = 0; r < ROWS; r++) {
-			for (let c = 0; c < COLS; c++) {
-				if (grid[r][c].value === 'mine') {
-					grid[r][c].state = 'revealed';
-				}
-			}
-		}
+	function getCellKey(r: number, c: number) {
+		return `${r}:${c}`;
 	}
 
-	function checkWin() {
-		let unrevealedNonMines = 0;
-		for (let r = 0; r < ROWS; r++) {
-			for (let c = 0; c < COLS; c++) {
-				if (grid[r][c].value !== 'mine' && grid[r][c].state !== 'revealed') {
-					unrevealedNonMines++;
-				}
+	function clearLongPress(event?: PointerEvent) {
+		if (event) {
+			const element = event.currentTarget;
+			if (
+				element instanceof HTMLElement &&
+				longPressPointerId !== null &&
+				element.hasPointerCapture(longPressPointerId)
+			) {
+				element.releasePointerCapture(longPressPointerId);
 			}
 		}
 
-		if (unrevealedNonMines === 0) {
-			gameWon = true;
+		if (longPressTimer) {
+			clearTimeout(longPressTimer);
+			longPressTimer = null;
 		}
+
+		longPressPointerId = null;
+		longPressCellKey = '';
+	}
+
+	function handleCellPointerDown(event: PointerEvent, r: number, c: number) {
+		if (!gameScreen || event.pointerType === 'mouse') return;
+
+		clearLongPress();
+		longPressPointerId = event.pointerId;
+		longPressCellKey = getCellKey(r, c);
+
+		const element = event.currentTarget;
+		if (element instanceof HTMLElement) {
+			element.setPointerCapture(event.pointerId);
+		}
+
+		longPressTimer = setTimeout(() => {
+			const activeKey = getCellKey(r, c);
+			if (longPressCellKey !== activeKey) return;
+
+			if (!suppressedRevealKeys.includes(activeKey)) {
+				suppressedRevealKeys.push(activeKey);
+			}
+			handleFlag(r, c);
+			longPressTimer = null;
+		}, LONG_PRESS_MS);
+	}
+
+	function handleCellPointerEnd(event: PointerEvent) {
+		clearLongPress(event);
+	}
+
+	function handleCellClick(r: number, c: number) {
+		const key = getCellKey(r, c);
+		const suppressedIndex = suppressedRevealKeys.indexOf(key);
+		if (suppressedIndex !== -1) {
+			suppressedRevealKeys.splice(suppressedIndex, 1);
+			return;
+		}
+
+		handleReveal(r, c);
+	}
+
+	function handleCellContextMenu(event: MouseEvent, r: number, c: number) {
+		event.preventDefault();
+		handleFlag(r, c);
 	}
 
 	function triggerChaos() {
@@ -146,111 +319,324 @@
 			'Your finger is too curious for its own good. 🕵️‍♂️',
 			'ERROR 404: Sanity Not Found. 🧠💨'
 		];
+
 		modalMessage = messages[Math.floor(Math.random() * messages.length)];
 		showChaosModal = true;
 	}
 
 	function closeChaosModal() {
 		showChaosModal = false;
+		if (menuScreen) {
+			focusMenuSoon();
+		}
 	}
 
-	// Initialize on mount
+	function getMenuButtons() {
+		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
+	}
+
+	function moveFocus(direction: number) {
+		const buttons = getMenuButtons();
+		if (buttons.length === 0) return;
+
+		let index = buttons.indexOf(document.activeElement as HTMLElement);
+		if (index === -1) {
+			buttons[0].focus();
+			return;
+		}
+
+		index = (index + direction + buttons.length) % buttons.length;
+		buttons[index].focus();
+	}
+
+	function activateFocusedMenuItem() {
+		const buttons = getMenuButtons();
+		if (buttons.length === 0) return;
+
+		const active = document.activeElement as HTMLElement | null;
+		if (active && buttons.includes(active)) {
+			active.click();
+			return;
+		}
+
+		buttons[0].focus();
+	}
+
+	async function focusMenuSoon() {
+		await tick();
+		const firstButton = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement | null;
+		firstButton?.focus();
+	}
+
+	function handleKeydown(event: KeyboardEvent) {
+		if (showChaosModal && ['Escape', 'Enter', ' ', 'a', 'A', 'b', 'B'].includes(event.key)) {
+			event.preventDefault();
+			closeChaosModal();
+			return;
+		}
+
+		if (event.key === 'Escape' || event.key === 'b' || event.key === 'B') {
+			event.preventDefault();
+			handleReturnAction();
+			return;
+		}
+
+		if (menuScreen && (event.key === 'ArrowUp' || event.key === 'ArrowLeft')) {
+			event.preventDefault();
+			moveFocus(-1);
+			return;
+		}
+
+		if (menuScreen && (event.key === 'ArrowDown' || event.key === 'ArrowRight')) {
+			event.preventDefault();
+			moveFocus(1);
+			return;
+		}
+
+		if (menuScreen && (event.key === 'Enter' || event.key === ' ' || event.key === 'a' || event.key === 'A')) {
+			event.preventDefault();
+			activateFocusedMenuItem();
+		}
+	}
+
+	function getCellLabel(cell: Cell, r: number, c: number) {
+		const position = `Row ${r + 1}, column ${c + 1}`;
+
+		if (cell.state === 'flagged') return `${position}, flagged`;
+		if (cell.state === 'hidden') return `${position}, hidden`;
+		if (cell.value === 'mine') return `${position}, mine`;
+		if (cell.value === 'empty') return `${position}, empty`;
+		return `${position}, ${cell.value} nearby mines`;
+	}
+
 	onMount(() => {
-		initGame();
+		try {
+			const savedWins = localStorage.getItem(WINS_STORAGE_KEY);
+			const parsedWins = savedWins ? Number.parseInt(savedWins, 10) : 0;
+			wins = Number.isFinite(parsedWins) ? parsedWins : 0;
+		} catch {
+			wins = 0;
+		}
+
+		focusMenuSoon();
 	});
 </script>
 
-<div
-	class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-yellow-300 p-8 font-mono"
->
-	<div class="mb-8 animate-bounce text-center">
-		<h1 class="mb-2 text-5xl font-black text-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
-			💣 BOOM BOX 💣
-		</h1>
-		<p class="text-lg font-bold text-black">Don't touch the spicy rocks!</p>
-	</div>
+<svelte:head>
+	<title>Minesweeper | Game Chaos</title>
+</svelte:head>
 
-	<div
-		class="relative z-10 flex flex-col items-center gap-6 border-4 border-black bg-white p-6 shadow-[12px_12px_0_rgba(0,0,0,1)]"
-	>
-		<div
-			class="flex w-full items-center justify-between bg-black p-2 px-4 text-xl font-bold text-yellow-300"
-		>
-			<span>MINES: {minesLeft}</span>
-			<button
-				onclick={initGame}
-				class="border-2 border-white bg-yellow-300 px-3 py-1 text-sm text-black uppercase transition-colors hover:bg-white"
-			>
-				Reset 🔄
-			</button>
-		</div>
+<svelte:window onkeydown={handleKeydown} />
 
-		{#if gameOver}
-			<div class="animate-pulse text-3xl font-black text-red-600 uppercase">💥 KABOOM! 💥</div>
-		{:else if gameWon}
-			<div class="animate-bounce text-3xl font-black text-green-600 uppercase">🏆 VICTORY! 🏆</div>
-		{/if}
+<div class="relative min-h-screen overflow-hidden bg-yellow-300 px-4 py-6 font-mono text-black sm:px-6 sm:py-8">
+	{#if splashScreen}
+		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+			<div class="w-full max-w-4xl border-4 border-black bg-white p-6 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-10">
+				<div class="mb-8 text-center">
+					<div class="mb-3 text-sm font-black tracking-[0.45em] uppercase text-black/60">Game Chaos</div>
+					<h1 class="text-5xl leading-none font-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-7xl">
+						💣 Boom Box 💣
+					</h1>
+					<p class="mt-4 text-lg font-bold uppercase sm:text-2xl">Brutal little minefield. No mercy.</p>
+				</div>
 
-		<div
-			class="grid gap-1 border-4 border-black bg-black p-1"
-			style:grid-template-columns="repeat({COLS}, minmax(0, 1fr))"
-		>
-			{#each grid as row, r}
-				{#each row as cell, c}
+				<div class="grid gap-4 md:grid-cols-[1.3fr_0.7fr]">
+					<div class="border-4 border-black bg-yellow-200 p-5 text-sm font-bold leading-relaxed uppercase sm:text-base">
+						Reveal every safe tile to win.<br />
+						Click or tap to reveal.<br />
+						Right click or long-press to flag.<br />
+						<span class="mt-4 block text-black/70">
+							Arrow keys / Tab move menu focus.<br />
+							A / Enter = select • B / Esc = return.
+						</span>
+					</div>
+
+					<div class="border-4 border-black bg-black p-5 text-yellow-300">
+						<div class="text-xs font-black tracking-[0.35em] uppercase text-yellow-300/70">Score Board</div>
+						<div class="mt-4 text-5xl font-black">{wins}</div>
+						<div class="mt-2 text-lg font-bold uppercase">Total Wins</div>
+						<div class="mt-5 text-xs font-bold leading-relaxed uppercase text-yellow-300/70">
+							10 × 10 grid<br />15 mines<br />Simple. Mean. Loud.
+						</div>
+					</div>
+				</div>
+
+				<div class="mt-8 flex flex-col gap-4">
+					{#if hasActiveRun}
+						<button
+							data-menu-button
+							onclick={continueGame}
+							class="border-4 border-yellow-400 bg-black px-8 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
+						>
+							Continue
+						</button>
+						<button
+							data-menu-button
+							onclick={startGame}
+							class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
+						>
+							New Game
+						</button>
+					{:else}
+						<button
+							data-menu-button
+							onclick={startGame}
+							class="border-4 border-yellow-400 bg-black px-8 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
+						>
+							Press Start
+						</button>
+					{/if}
+
 					<button
-						class="flex h-8 w-8 items-center justify-center text-sm font-black transition-all
-						{cell.state === 'revealed' ? 'bg-white' : 'bg-gray-500 hover:bg-gray-400 active:translate-y-1'}
-						{cell.state === 'flagged' ? 'bg-yellow-400' : ''}"
-						onclick={() => handleReveal(r, c)}
-						oncontextmenu={(e) => {
-							e.preventDefault();
-							handleFlag(r, c);
-						}}
+						data-menu-button
+						onclick={backToDashboard}
+						class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
 					>
-						{#if cell.state === 'revealed'}
-							{#if cell.value === 'mine'}
-								💣
-							{:else if typeof cell.value === 'number' && cell.value > 0}
-								<span class="text-blue-600">{cell.value}</span>
-							{:else}{/if}
-						{:else if cell.state === 'flagged'}
-							🚩
-						{/if}
+						Dashboard
 					</button>
-				{/each}
-			{/each}
+				</div>
+			</div>
 		</div>
-	</div>
+	{:else}
+		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+			<div class="relative w-full max-w-4xl border-4 border-black bg-white p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-6">
+				<div class="mb-5 flex flex-col gap-3 border-4 border-black bg-black p-3 text-sm font-black uppercase text-yellow-300 sm:flex-row sm:items-center sm:justify-between sm:text-lg">
+					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
+						<span>Mines {minesLeft}</span>
+						<span>Wins {wins}</span>
+					</div>
+					{#if gameScreen}
+						<button
+							onclick={handleReturnAction}
+							class="border-4 border-white bg-yellow-300 px-4 py-2 text-sm font-black text-black uppercase transition-all hover:bg-white focus:bg-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-[0.98]"
+						>
+							Return
+						</button>
+					{/if}
+				</div>
 
-	<a
-		href="/"
-		class="relative z-10 mt-10 font-bold text-black underline decoration-4 transition-colors hover:text-white"
-	>
-		← BACK TO CHAOS
-	</a>
+				<div class="mb-5 text-center">
+					<h2 class="text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:text-5xl">
+						{gameWon ? 'Victory!' : gameOver ? 'Kaboom!' : 'Minefield Live'}
+					</h2>
+					<p class="mt-2 text-xs font-bold leading-relaxed uppercase text-black/70 sm:text-sm">
+						Click / tap reveal • Right click / long-press flag • Esc / B returns to splash
+					</p>
+				</div>
 
-	<!-- Funny Backup Button -->
+				<div
+					class="mx-auto grid w-fit gap-1 border-4 border-black bg-black p-1"
+					style={`grid-template-columns: repeat(${COLS}, minmax(0, 1fr));`}
+				>
+					{#each grid as row, r (r)}
+						{#each row as cell, c (`${r}-${c}`)}
+							<button
+								type="button"
+								class={[
+									'cell-button flex h-8 w-8 items-center justify-center border-2 border-black text-sm font-black transition-all select-none sm:h-10 sm:w-10 sm:text-base',
+									cell.state === 'revealed'
+										? 'bg-white text-black'
+										: 'bg-zinc-500 text-white hover:bg-zinc-400 active:translate-y-[2px]',
+									cell.state === 'flagged' ? 'bg-yellow-400 text-black' : '',
+									gameScreen && cell.state === 'hidden' ? 'cursor-pointer' : 'cursor-default'
+								]}
+								tabindex={-1}
+								aria-label={getCellLabel(cell, r, c)}
+								onclick={() => handleCellClick(r, c)}
+								onpointerdown={(event) => handleCellPointerDown(event, r, c)}
+								onpointerup={handleCellPointerEnd}
+								onpointercancel={handleCellPointerEnd}
+								oncontextmenu={(event) => handleCellContextMenu(event, r, c)}
+							>
+								{#if cell.state === 'revealed'}
+									{#if cell.value === 'mine'}
+										💣
+									{:else if typeof cell.value === 'number' && cell.value > 0}
+										<span
+											class={[
+												cell.value === 1 && 'text-blue-600',
+												cell.value === 2 && 'text-green-600',
+												cell.value === 3 && 'text-red-600',
+												cell.value === 4 && 'text-purple-700',
+												cell.value >= 5 && 'text-pink-600'
+											]}
+										>
+											{cell.value}
+										</span>
+									{/if}
+								{:else if cell.state === 'flagged'}
+									🚩
+								{/if}
+							</button>
+						{/each}
+					{/each}
+				</div>
+
+				{#if gameScreen}
+					<div class="mt-5 text-center text-xs font-bold leading-relaxed uppercase text-black/65 sm:text-sm">
+						Need a breather? Esc / B returns to splash and Continue resumes this exact board.
+					</div>
+				{/if}
+
+				{#if endScreen}
+					<div class="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]">
+						<div class="w-full max-w-md border-4 border-black bg-white p-6 text-center shadow-[12px_12px_0_rgba(0,0,0,1)] sm:p-8">
+							<div class="text-6xl sm:text-7xl">{gameWon ? '🏆' : '💥'}</div>
+							<h3 class="mt-4 text-4xl font-black uppercase sm:text-5xl">
+								{gameWon ? 'Victory' : 'Kaboom'}
+							</h3>
+							<p class="mt-4 text-sm font-bold leading-relaxed uppercase text-black/70 sm:text-base">
+								{gameWon
+									? `Board cleared. Total wins: ${wins}.`
+									: 'You poked the spicy rock. Try again or bail to splash.'}
+							</p>
+
+							<div class="mt-8 flex flex-col gap-4">
+								<button
+									data-menu-button
+									onclick={retryGame}
+									class="border-4 border-yellow-400 bg-black px-8 py-4 text-2xl font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-[0.98]"
+								>
+									Retry
+								</button>
+								<button
+									data-menu-button
+									onclick={() => returnToSplash(false)}
+									class="border-4 border-black bg-white px-8 py-4 text-xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-[0.98]"
+								>
+									Back to Splash
+								</button>
+							</div>
+
+							<div class="mt-6 text-xs font-bold uppercase text-black/60">
+								Enter / A to select • Esc / B to return
+							</div>
+						</div>
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
+
 	<button
+		type="button"
+		tabindex={-1}
 		onclick={triggerChaos}
-		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:rotate-12"
+		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:rotate-6 hover:scale-105 active:scale-95"
 	>
 		Don't Click Me 🚫
 	</button>
 
-	<!-- Chaos Modal -->
 	{#if showChaosModal}
-		<div
-			class="fixed inset-0 z-100 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
-		>
-			<div
-				class="animate-in fade-in zoom-in w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)] duration-200"
-			>
+		<div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+			<div class="w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)]">
 				<div class="mb-4 text-6xl">🤬</div>
-				<h2 class="mb-4 text-2xl font-black text-black uppercase">Wait, what?!</h2>
-				<p class="mb-8 text-xl font-bold text-black italic">"{modalMessage}"</p>
+				<h2 class="mb-4 text-2xl font-black uppercase">Wait, what?!</h2>
+				<p class="mb-8 text-xl font-bold italic">&quot;{modalMessage}&quot;</p>
 				<button
+					type="button"
 					onclick={closeChaosModal}
-					class="w-full border-4 border-white bg-black px-6 py-3 font-black text-white uppercase transition-colors hover:bg-pink-500"
+					class="w-full border-4 border-white bg-black px-6 py-3 font-black text-white uppercase transition-colors hover:bg-pink-500 focus:bg-pink-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-white"
 				>
 					Fine, I'm sorry 😔
 				</button>
@@ -263,5 +649,10 @@
 	:global(body) {
 		margin: 0;
 		padding: 0;
+	}
+
+	.cell-button {
+		touch-action: manipulation;
+		-webkit-touch-callout: none;
 	}
 </style>

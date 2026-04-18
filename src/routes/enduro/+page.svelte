@@ -12,6 +12,7 @@
 	let maxSpeed = $state(1.4);
 	let gameOver = $state(false);
 	let gameStarted = $state(false);
+	let hasActiveRun = $state(false);
 	let paused = $state(false);
 	let isStarting = $state(false);
 	let gamepadStartWasPressed = $state(false);
@@ -23,16 +24,29 @@
 	let fogFactor = $state(0);
 	let gamepadThrottle = $state(false);
 	let gamepadBrake = $state(false);
+	let touchCapable = $state(false);
+	let viewportWidth = $state(0);
+	let touchThrottle = $state(false);
+	let touchBrake = $state(false);
+	let touchSteer = $state(0);
+	let touchSteeringActive = $state(false);
 	let lastFireBtn = false;
+	let lastBackBtn = false;
 	let lastJoyUp = false;
 	let lastJoyDown = false;
 
-	let container: HTMLDivElement;
+	let canvasElement: HTMLCanvasElement;
+
+	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
+	let menuScreen = $derived(!gameStarted || gameOver);
+	let showTouchControls = $derived(touchCapable && viewportWidth < 960 && gameStarted && !gameOver);
+
+	function getMenuButtons() {
+		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
+	}
 
 	function moveFocus(direction: number) {
-		const focusable = Array.from(
-			document.querySelectorAll('button:not([disabled]), a:not([disabled])')
-		) as HTMLElement[];
+		const focusable = getMenuButtons();
 		if (focusable.length === 0) return;
 
 		let index = focusable.indexOf(document.activeElement as HTMLElement);
@@ -45,11 +59,187 @@
 		focusable[index].focus();
 	}
 
+	function activateFocusedMenuItem() {
+		const focusable = getMenuButtons();
+		if (focusable.length === 0) return;
+
+		const active = document.activeElement as HTMLElement | null;
+		if (active && focusable.includes(active)) {
+			active.click();
+			return;
+		}
+
+		focusable[0].focus();
+	}
+
+	function clearTransientControls() {
+		keys.clear();
+		touchThrottle = false;
+		touchBrake = false;
+		touchSteer = 0;
+		touchSteeringActive = false;
+		gamepadThrottle = false;
+		gamepadBrake = false;
+		gamepadSteer = 0;
+	}
+
+	function backToDashboard() {
+		window.location.href = '/';
+	}
+
+	function continueGame() {
+		initAudio();
+		if (audioCtx?.state === 'suspended') audioCtx.resume();
+
+		hasActiveRun = true;
+		gameStarted = true;
+		gameOver = false;
+		paused = false;
+		isStarting = false;
+	}
+
+	function resetRunState() {
+		hasActiveRun = false;
+		speed = 0;
+		score = 0;
+		carsPassed = 0;
+		day = 1;
+		targetCars = 200;
+		distance = 0;
+		playerX = 0;
+		playerZOffset = 0;
+		weather = 'clear';
+		isNight = false;
+		iceFactor = 0;
+		fogFactor = 0;
+		clearTransientControls();
+
+		enemyCars.forEach((c) => scene?.remove(c.mesh));
+		enemyCars = [];
+
+		if (playerCar) {
+			playerCar.position.set(0, 1.2, -2);
+			playerCar.rotation.x = 0.25;
+		}
+
+		if (camera) {
+			camera.position.set(0, 18, 30);
+			camera.lookAt(0, -4, -70);
+		}
+	}
+
+	function returnToSplash(preserveRun = false) {
+		gameStarted = false;
+		gameOver = false;
+		paused = false;
+		isStarting = false;
+
+		if (preserveRun) {
+			hasActiveRun = true;
+			clearTransientControls();
+			return;
+		}
+
+		resetRunState();
+	}
+
+	function handleReturnAction() {
+		if (gameOver) {
+			returnToSplash(false);
+			return;
+		}
+
+		if (gameStarted) {
+			returnToSplash(true);
+			return;
+		}
+
+		backToDashboard();
+	}
+
+	function handleResize() {
+		if (!camera || !renderer) return;
+		camera.aspect = window.innerWidth / window.innerHeight;
+		camera.updateProjectionMatrix();
+		renderer.setSize(window.innerWidth, window.innerHeight);
+	}
+
+	function handleKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') {
+			e.preventDefault();
+			handleReturnAction();
+			return;
+		}
+
+		if (menuScreen && (e.key === 'ArrowUp' || e.key === 'ArrowLeft')) {
+			e.preventDefault();
+			moveFocus(-1);
+			return;
+		}
+
+		if (menuScreen && (e.key === 'ArrowDown' || e.key === 'ArrowRight')) {
+			e.preventDefault();
+			moveFocus(1);
+			return;
+		}
+
+		if (menuScreen && (e.key === 'Enter' || e.key === ' ' || e.key === 'a' || e.key === 'A')) {
+			e.preventDefault();
+			activateFocusedMenuItem();
+			return;
+		}
+
+		keys.add(e.key);
+
+		if (gameStarted && !gameOver && (e.key === 'p' || e.key === 'P')) {
+			e.preventDefault();
+			paused = !paused;
+		}
+	}
+
+	function handleKeyUp(e: KeyboardEvent) {
+		keys.delete(e.key);
+	}
+
+	function updateTouchSteer(clientX: number, element: HTMLElement) {
+		const rect = element.getBoundingClientRect();
+		const ratio = ((clientX - rect.left) / rect.width) * 2 - 1;
+		touchSteer = Math.max(-1, Math.min(1, ratio));
+	}
+
+	function handleSteerPointerDown(event: PointerEvent) {
+		const element = event.currentTarget;
+		if (!(element instanceof HTMLElement)) return;
+
+		touchSteeringActive = true;
+		element.setPointerCapture(event.pointerId);
+		updateTouchSteer(event.clientX, element);
+	}
+
+	function handleSteerPointerMove(event: PointerEvent) {
+		if (!touchSteeringActive) return;
+
+		const element = event.currentTarget;
+		if (!(element instanceof HTMLElement)) return;
+
+		updateTouchSteer(event.clientX, element);
+	}
+
+	function clearTouchSteer(event?: PointerEvent) {
+		const element = event?.currentTarget;
+		if (event && element instanceof HTMLElement && element.hasPointerCapture(event.pointerId)) {
+			element.releasePointerCapture(event.pointerId);
+		}
+
+		touchSteeringActive = false;
+		touchSteer = 0;
+	}
+
 	$effect(() => {
 		// Auto-focus first button on menu screens
-		if (!gameStarted || gameOver) {
+		if (menuScreen) {
 			const focusFirst = () => {
-				const firstBtn = document.querySelector('button, a') as HTMLElement;
+				const firstBtn = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement;
 				if (firstBtn) {
 					firstBtn.focus();
 					return true;
@@ -59,10 +249,13 @@
 			
 			if (!focusFirst()) {
 				// Try again after a short delay if DOM isn't ready
-				setTimeout(focusFirst, 50);
+				const retryTimer = setTimeout(focusFirst, 50);
+				const fallbackTimer = setTimeout(focusFirst, 250);
+				return () => {
+					clearTimeout(retryTimer);
+					clearTimeout(fallbackTimer);
+				};
 			}
-			// One more for safety
-			setTimeout(focusFirst, 250);
 		}
 	});
 
@@ -166,12 +359,12 @@
 		camera.lookAt(0, 0, -60);
 
 		renderer = new THREE.WebGLRenderer({
+			canvas: canvasElement,
 			antialias: false,
 			alpha: false
 		});
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-		container.appendChild(renderer.domElement);
 
 		const skyGeo = new THREE.PlaneGeometry(800, 240);
 		const skyMat = new THREE.MeshBasicMaterial({
@@ -361,6 +554,7 @@
 	function handleCrash() {
 		if (gameOver) return;
 		gameOver = true;
+		hasActiveRun = false;
 		speed = 0;
 		initAudio();
 		playCrashSound();
@@ -516,12 +710,8 @@
 			const pauseBtn = gp.buttons[9]?.pressed; // Start
 			const selectBtn = gp.buttons[8]?.pressed; // Select/Back
 
-			if (selectBtn && !lastFireBtn) {
-				if (!gameStarted) {
-					window.location.href = '/';
-				} else if (gameOver) {
-					goToSplash();
-				}
+			if (selectBtn && !lastBackBtn) {
+				handleReturnAction();
 			}
 
 			// Mimic original Enduro: fire button = accelerate
@@ -538,6 +728,7 @@
 			}
 
 			lastFireBtn = fireBtn;
+			lastBackBtn = selectBtn;
 		}
 
 		gamepadSteer = gpSteer;
@@ -547,8 +738,9 @@
 		if (gameStarted && !gameOver && !paused) {
 			// Throttle and Brake (Combined Keyboard + Gamepad)
 			const isAccelerating =
-				keys.has('ArrowUp') || keys.has('w') || keys.has('W') || gamepadThrottle;
-			const isBraking = keys.has('ArrowDown') || keys.has('s') || keys.has('S') || gamepadBrake;
+				keys.has('ArrowUp') || keys.has('w') || keys.has('W') || gamepadThrottle || touchThrottle;
+			const isBraking =
+				keys.has('ArrowDown') || keys.has('s') || keys.has('S') || gamepadBrake || touchBrake;
 
 			if (isAccelerating) {
 				speed = Math.min(maxSpeed, speed + 0.012);
@@ -562,6 +754,7 @@
 			if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) steer -= 1;
 			if (keys.has('ArrowRight') || keys.has('d') || keys.has('D')) steer += 1;
 			steer += gamepadSteer;
+			steer += touchSteer;
 
 			playerX = Math.max(-MAX_X, Math.min(MAX_X, playerX + steer * STEER_SPEED));
 
@@ -590,6 +783,7 @@
 		initAudio();
 		if (audioCtx?.state === 'suspended') audioCtx.resume();
 
+		hasActiveRun = true;
 		gameStarted = true;
 		gameOver = false;
 		paused = false;
@@ -620,54 +814,17 @@
 	}
 
 	function goToSplash() {
-		gameStarted = false;
-		gameOver = false;
-		paused = false;
-		isStarting = false;
-		speed = 0;
-		score = 0;
-		carsPassed = 0;
-		day = 1;
-		distance = 0;
-		playerX = 0;
-		playerZOffset = 0;
-		weather = 'clear';
-
-		enemyCars.forEach((c) => scene?.remove(c.mesh));
-		enemyCars = [];
+		returnToSplash(false);
 	}
 
 	onMount(() => {
 		const saved = localStorage.getItem('enduro-high-score');
 		if (saved) highScore = parseInt(saved, 10);
+		touchCapable = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
 		initThree();
 
-		const onKeyDown = (e: KeyboardEvent) => {
-			keys.add(e.key);
-			if (!gameStarted && (e.key === ' ' || e.key === 'Enter')) startGame();
-			if (gameOver && (e.key === ' ' || e.key === 'Enter')) restartGame();
-			if (gameStarted && !gameOver && (e.key === 'p' || e.key === 'P')) paused = !paused;
-		};
-
-		const onKeyUp = (e: KeyboardEvent) => keys.delete(e.key);
-
-		window.addEventListener('keydown', onKeyDown);
-		window.addEventListener('keyup', onKeyUp);
-		// Gamepad is now polled in the animate loop
-
-		const handleResize = () => {
-			if (!camera || !renderer) return;
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-			renderer.setSize(window.innerWidth, window.innerHeight);
-		};
-		window.addEventListener('resize', handleResize);
-
 		return () => {
-			window.removeEventListener('keydown', onKeyDown);
-			window.removeEventListener('keyup', onKeyUp);
-			window.removeEventListener('resize', handleResize);
 			if (animationId) cancelAnimationFrame(animationId);
 			if (renderer) {
 				renderer.dispose();
@@ -676,11 +833,17 @@
 	});
 </script>
 
-<div class="relative h-screen w-screen overflow-hidden bg-black font-mono" bind:this={container}>
-	<!-- THREE.JS CANVAS is appended by renderer -->
+<svelte:head>
+	<title>Enduro | Game Chaos</title>
+</svelte:head>
+
+<svelte:window bind:innerWidth={viewportWidth} onkeydown={handleKeyDown} onkeyup={handleKeyUp} onresize={handleResize} />
+
+<div class="relative h-screen w-screen overflow-hidden bg-black font-mono">
+	<canvas bind:this={canvasElement} class="absolute inset-0 h-full w-full"></canvas>
 
 	<!-- SPLASH -->
-	{#if !gameStarted}
+	{#if !gameStarted && !gameOver}
 		<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black">
 			<div class="mb-8 flex scale-125 gap-6">
 				<div class="text-7xl">🏎️</div>
@@ -700,26 +863,49 @@
 				PASS <span class="text-yellow-300">200 CARS</span> ON DAY 1<br />
 				THEN 300+ EVERY DAY AFTER<br />
 				<span class="mt-4 block text-xs opacity-70">FOG • ICE • NIGHT</span>
+				<span class="mt-3 block text-xs leading-relaxed opacity-70">
+					KEYBOARD • GAMEPAD • TOUCH<br />
+					A / ENTER = SELECT • B / ESC = RETURN
+				</span>
 			</div>
 
 			<div class="mt-8 flex flex-col gap-4">
+				{#if hasActiveRun}
+					<button
+						data-menu-button
+						onclick={continueGame}
+						class="border-4 border-yellow-400 bg-black px-14 py-5 text-4xl font-black text-yellow-400 transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+					>
+						CONTINUE
+					</button>
+					<button
+						data-menu-button
+						onclick={startGame}
+						class="border-4 border-white bg-black px-14 py-4 text-center text-2xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+					>
+						NEW GAME
+					</button>
+				{:else}
+					<button
+						data-menu-button
+						onclick={startGame}
+						class="border-4 border-yellow-400 bg-black px-14 py-5 text-4xl font-black text-yellow-400 transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+					>
+						PRESS START
+					</button>
+				{/if}
 				<button
-					onclick={startGame}
-					class="border-4 border-yellow-400 bg-black px-14 py-5 text-4xl font-black text-yellow-400 transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none active:scale-95"
-				>
-					PRESS START
-				</button>
-				<a
-					href="/"
-					class="border-4 border-white bg-black px-14 py-4 text-center text-2xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none active:scale-95"
+					data-menu-button
+					onclick={backToDashboard}
+					class="border-4 border-white bg-black px-14 py-4 text-center text-2xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 				>
 					DASHBOARD
-				</a>
+				</button>
 			</div>
 
 			<div class="mt-16 text-sm text-white/60">
-				← → STEER ONLY • ARROWS OR WASD<br />
-				GAMEPAD STICK SUPPORTED
+				← → / WASD STEER • ↑ ↓ SPEED<br />
+				GAMEPAD + TOUCH DRAG / THROTTLE / BRAKE
 			</div>
 
 			{#if highScore > 0}
@@ -770,6 +956,11 @@
 				<div class="absolute top-8 right-8 text-xs font-bold text-blue-300">NIGHT</div>
 			{/if}
 
+			<div class="absolute right-6 bottom-6 text-right text-xs font-bold text-white/55">
+				ESC / B TO SPLASH<br />
+				P TO PAUSE
+			</div>
+
 			{#if paused}
 				<div class="absolute top-32 left-0 right-0 flex justify-center bg-transparent">
 					<div class="rounded-xl border-4 border-yellow-400 bg-black/80 px-16 py-6">
@@ -779,6 +970,65 @@
 				</div>
 			{/if}
 		</div>
+
+		{#if showTouchControls}
+			<div class="absolute inset-x-0 bottom-0 z-40 flex items-end justify-between gap-4 p-4 text-white sm:p-6">
+				<div class="pointer-events-auto w-[58%] max-w-sm">
+					<div class="mb-2 text-xs font-black tracking-[0.35em] text-white/60">STEER</div>
+					<div
+						class="relative h-24 rounded-none border-4 border-white bg-black/70 px-4 py-3 touch-none select-none"
+						role="slider"
+						tabindex="0"
+						aria-label="Touch steering"
+						aria-valuemin={-100}
+						aria-valuemax={100}
+						aria-valuenow={Math.round(touchSteer * 100)}
+						onpointerdown={handleSteerPointerDown}
+						onpointermove={handleSteerPointerMove}
+						onpointerup={clearTouchSteer}
+						onpointercancel={clearTouchSteer}
+						onpointerleave={clearTouchSteer}
+					>
+						<div class="flex h-full items-center justify-between text-3xl font-black text-white/35">
+							<span>←</span>
+							<span>→</span>
+						</div>
+						<div class="absolute top-1/2 right-4 left-4 h-1 -translate-y-1/2 bg-white/20"></div>
+						<div
+							class="absolute top-1/2 h-10 w-10 -translate-y-1/2 rounded-full border-4 border-yellow-400 bg-black"
+							style={`left: calc(50% + ${touchSteer * 42}px); transform: translate(-50%, -50%);`}
+						></div>
+					</div>
+				</div>
+
+				<div class="pointer-events-auto flex shrink-0 flex-col gap-3">
+					<button
+						class={[
+							'min-w-28 border-4 px-5 py-4 text-lg font-black text-white transition-all touch-none select-none',
+							touchThrottle ? 'border-yellow-400 bg-yellow-400 text-black scale-95' : 'border-white bg-black/75'
+						]}
+						onpointerdown={() => (touchThrottle = true)}
+						onpointerup={() => (touchThrottle = false)}
+						onpointercancel={() => (touchThrottle = false)}
+						onpointerleave={() => (touchThrottle = false)}
+					>
+						THROTTLE
+					</button>
+					<button
+						class={[
+							'min-w-28 border-4 px-5 py-4 text-lg font-black text-white transition-all touch-none select-none',
+							touchBrake ? 'border-red-500 bg-red-500 text-black scale-95' : 'border-white bg-black/75'
+						]}
+						onpointerdown={() => (touchBrake = true)}
+						onpointerup={() => (touchBrake = false)}
+						onpointercancel={() => (touchBrake = false)}
+						onpointerleave={() => (touchBrake = false)}
+					>
+						BRAKE
+					</button>
+				</div>
+			</div>
+		{/if}
 	{/if}
 
 	<!-- GAME OVER -->
@@ -798,29 +1048,24 @@
 
 			<div class="flex flex-col gap-4">
 				<button
+					data-menu-button
 					onclick={restartGame}
-					class="border-4 border-white bg-white px-16 py-6 text-4xl font-black text-black transition-all hover:scale-110 hover:bg-yellow-300 focus:scale-110 focus:bg-yellow-300 focus:outline-none"
+					class="border-4 border-white bg-white px-16 py-6 text-4xl font-black text-black transition-all hover:scale-110 hover:bg-yellow-300 focus:scale-110 focus:bg-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black"
 				>
-					REVIVE
+					RETRY
 				</button>
 				<button
+					data-menu-button
 					onclick={goToSplash}
-					class="border-4 border-white px-16 py-6 text-4xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none"
+					class="border-4 border-white px-16 py-6 text-4xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black"
 				>
-					SPLASH
+					BACK TO SPLASH
 				</button>
 			</div>
 
-			<div class="mt-12 text-sm text-white/50">PRESS SPACE TO RESTART</div>
+			<div class="mt-12 text-sm text-white/50">ENTER / A TO SELECT • ESC / B TO RETURN</div>
 		</div>
 	{/if}
-
-	<a
-		href="/"
-		class="absolute bottom-8 left-8 z-40 text-xl font-black text-white/70 hover:text-white"
-	>
-		← MENU
-	</a>
 </div>
 
 <style>
