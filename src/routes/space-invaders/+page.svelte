@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 
 	// Game Constants
@@ -7,6 +8,7 @@
 	const PLAYER_WIDTH = 50;
 	const PLAYER_HEIGHT = 20;
 	const PLAYER_MOVE_SPEED = 360;
+	const PLAYER_BULLET_SPEED = 6.5;
 	const ALIEN_ROWS = 5;
 	const ALIEN_COLS = 10;
 	const ALIEN_WIDTH = 40;
@@ -19,18 +21,37 @@
 	const SHIELD_WIDTH = SHIELD_COLS * SHIELD_CELL_WIDTH;
 	const SHIELD_HEIGHT = SHIELD_ROWS * SHIELD_CELL_HEIGHT;
 	const SHIELD_PLAYER_GAP = 92;
-	const ALIEN_DESCENT_SPEED_BOOST = 0.2;
-	const ALIEN_ENDGAME_SPEED_BOOST = 1.25;
-	const ALIEN_KILL_SPEED_BOOST = 0.035;
-	const BASE_ALIEN_FIRE_CHANCE = 0.08;
-	const ALIEN_FIRE_DESCENT_BONUS = 0.018;
-	const ALIEN_FIRE_ENDGAME_BONUS = 0.16;
-	const MAX_ALIEN_FIRE_CHANCE = 0.3;
+	const BASE_ALIEN_STEP_INTERVAL = 520;
+	const ALIEN_STEP_DESCENT_REDUCTION = 22;
+	const ALIEN_STEP_KILL_REDUCTION = 4;
+	const ALIEN_STEP_ENDGAME_REDUCTION = 180;
+	const MIN_ALIEN_STEP_INTERVAL = 80;
+	const BASE_ALIEN_FIRE_INTERVAL = 900;
+	const ALIEN_FIRE_DESCENT_REDUCTION = 42;
+	const ALIEN_FIRE_KILL_REDUCTION = 6;
+	const ALIEN_FIRE_ENDGAME_REDUCTION = 210;
+	const MIN_ALIEN_FIRE_INTERVAL = 320;
 	const BASE_ALIEN_BULLET_SPEED = 3;
 	const ALIEN_BULLET_SPEED_DESCENT_BONUS = 0.12;
+	const ALIEN_BULLET_SPEED_KILL_BONUS = 0.03;
 	const ALIEN_BULLET_SPEED_ENDGAME_BONUS = 1.1;
 	const MAX_ALIEN_BULLET_SPEED = 5.4;
 	const PLAYER_HIT_ANIMATION_MS = 350;
+	const PLAYER_RESPAWN_INVULNERABILITY_MS = 1100;
+	const ALIEN_FRONTLINE_FIRE_REDUCTION = 90;
+
+	type BulletVariant = 'player' | 'alien';
+	type Bullet = {
+		x: number;
+		y: number;
+		type: 'player' | 'alien';
+		id: number;
+		variant: BulletVariant;
+		speedX: number;
+		speedY: number;
+		width: number;
+		height: number;
+	};
 
 	// State
 	let score = $state(0);
@@ -40,17 +61,19 @@
 	let playerX = $state(GAME_WIDTH / 2 - PLAYER_WIDTH / 2);
 	let moveLeft = $state(false);
 	let moveRight = $state(false);
+	let playerInvulnerable = $state(false);
+	let playerInvulnerableUntil = $state(0);
 	let playerExplosion = $state<{ x: number; y: number; id: number; expiresAt: number } | null>(
 		null
 	);
-	let bullets = $state<{ x: number; y: number; type: 'player' | 'alien'; id: number }[]>([]);
+	let bullets = $state<Bullet[]>([]);
 	let nextBulletId = 0;
 	let nextExplosionId = 0;
 	let aliens = $state<{ x: number; y: number; alive: boolean; id: number; legFrame: number }[]>([]);
 	let alienDirection = $state(1); // 1 for right, -1 for left
 	let alienStep = $state(0);
-	let alienSpeed = $state(1);
 	let alienDescents = $state(0);
+	let alienFireCooldown = $state(BASE_ALIEN_FIRE_INTERVAL);
 	let lastTime = 0;
 	let showChaosModal = $state(false);
 	let chaosMode = $state(false);
@@ -77,13 +100,15 @@
 		playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
 		moveLeft = false;
 		moveRight = false;
+		playerInvulnerable = false;
+		playerInvulnerableUntil = 0;
 		playerExplosion = null;
 		bullets = [];
 		aliens = [];
 		alienDirection = 1;
 		alienStep = 0;
-		alienSpeed = 1;
 		alienDescents = 0;
+		alienFireCooldown = BASE_ALIEN_FIRE_INTERVAL;
 		chaosMode = false;
 		globalTick = 0;
 
@@ -140,14 +165,120 @@
 	}
 
 	function shoot() {
-		if (bullets.filter((b) => b.type === 'player').length < 3 || chaosMode) {
-			bullets.push({
-				x: playerX + PLAYER_WIDTH / 2 - 2,
-				y: GAME_HEIGHT - PLAYER_HEIGHT - 36,
-				type: 'player',
-				id: nextBulletId++
-			});
+		if (bullets.some((b) => b.type === 'player') && !chaosMode) {
+			return;
 		}
+
+		bullets.push({
+			x: playerX + PLAYER_WIDTH / 2 - 1,
+			y: GAME_HEIGHT - PLAYER_HEIGHT - 36,
+			type: 'player',
+			variant: 'player',
+			speedX: 0,
+			speedY: -PLAYER_BULLET_SPEED * (chaosMode ? 1.2 : 1),
+			width: chaosMode ? 4 : 2,
+			height: 15,
+			id: nextBulletId++
+		});
+	}
+
+	function createAlienBullet(shooter: (typeof aliens)[number], bulletSpeed: number) {
+		const shooterCenterX = shooter.x + ALIEN_WIDTH / 2;
+
+		bullets.push({
+			x: shooterCenterX - 1,
+			y: shooter.y + ALIEN_HEIGHT,
+			type: 'alien',
+			variant: 'alien',
+			speedX: 0,
+			speedY: bulletSpeed,
+			width: 2,
+			height: 16,
+			id: nextBulletId++
+		});
+	}
+
+	function getAlienStepInterval(destroyedAliens: number, endgameIntensity: number) {
+		return Math.max(
+			MIN_ALIEN_STEP_INTERVAL,
+			(BASE_ALIEN_STEP_INTERVAL -
+				alienDescents * ALIEN_STEP_DESCENT_REDUCTION -
+				destroyedAliens * ALIEN_STEP_KILL_REDUCTION -
+				endgameIntensity * ALIEN_STEP_ENDGAME_REDUCTION) *
+				(chaosMode ? 0.68 : 1)
+		);
+	}
+
+	function getAlienFireInterval(destroyedAliens: number, endgameIntensity: number) {
+		return Math.max(
+			MIN_ALIEN_FIRE_INTERVAL,
+			(BASE_ALIEN_FIRE_INTERVAL -
+				alienDescents * ALIEN_FIRE_DESCENT_REDUCTION -
+				destroyedAliens * ALIEN_FIRE_KILL_REDUCTION -
+				endgameIntensity * ALIEN_FIRE_ENDGAME_REDUCTION) *
+				(chaosMode ? 0.72 : 1)
+		);
+	}
+
+	function getAlienBulletSpeed(destroyedAliens: number, endgameIntensity: number) {
+		return Math.min(
+			MAX_ALIEN_BULLET_SPEED,
+			(BASE_ALIEN_BULLET_SPEED +
+				alienDescents * ALIEN_BULLET_SPEED_DESCENT_BONUS +
+				destroyedAliens * ALIEN_BULLET_SPEED_KILL_BONUS +
+				endgameIntensity * ALIEN_BULLET_SPEED_ENDGAME_BONUS) *
+				(chaosMode ? 1.25 : 1)
+		);
+	}
+
+	function fireAlienShot(
+		aliveAliens: typeof aliens,
+		bulletSpeed: number,
+		_endgameIntensity: number
+	) {
+		const shooter = getAlienShooter(aliveAliens);
+		if (!shooter) return 0;
+
+		createAlienBullet(shooter, bulletSpeed);
+
+		return Math.floor(shooter.id / ALIEN_COLS) / (ALIEN_ROWS - 1);
+	}
+
+	function getAlienScore(alienId: number) {
+		const row = Math.floor(alienId / ALIEN_COLS);
+		if (row === 0) return 30;
+		if (row < 3) return 20;
+		return 10;
+	}
+
+	function getBulletCenterX(bullet: Bullet) {
+		return bullet.x + bullet.width / 2;
+	}
+
+	function getBulletBottom(bullet: Bullet) {
+		return bullet.y + bullet.height;
+	}
+
+	function getBulletTop(bullet: Bullet) {
+		return bullet.y;
+	}
+
+	function getBulletCollisionY(bullet: Bullet) {
+		return bullet.type === 'player' ? getBulletTop(bullet) : getBulletBottom(bullet);
+	}
+
+	function getBulletColor(variant: BulletVariant) {
+		if (variant === 'player') return '#fde047';
+		return '#ef4444';
+	}
+
+	function getBulletRotation(bullet: Bullet) {
+		return 'none';
+	}
+
+	function getBulletGlow(variant: BulletVariant) {
+		if (variant === 'player') return '0 0 10px rgba(253, 224, 71, 0.85)';
+		return '0 0 10px rgba(239, 68, 68, 0.8)';
 	}
 
 	function damageShield(shield: { pixels: boolean[][] }, px: number, py: number) {
@@ -178,22 +309,21 @@
 		return true;
 	}
 
-	function hitShield(bullet: { x: number; y: number; type: 'player' | 'alien'; id: number }) {
-		const bulletTop = bullet.y;
-		const bulletBottom = bullet.y + 15;
-		const collisionY = bullet.type === 'player' ? bulletTop : bulletBottom;
+	function hitShield(bullet: Bullet) {
+		const bulletCenterX = getBulletCenterX(bullet);
+		const collisionY = getBulletCollisionY(bullet);
 
 		for (const shield of shields) {
 			if (
-				bullet.x < shield.x ||
-				bullet.x >= shield.x + SHIELD_WIDTH ||
+				bulletCenterX < shield.x ||
+				bulletCenterX >= shield.x + SHIELD_WIDTH ||
 				collisionY < shield.y ||
 				collisionY >= shield.y + SHIELD_HEIGHT
 			) {
 				continue;
 			}
 
-			const px = Math.floor((bullet.x - shield.x) / SHIELD_CELL_WIDTH);
+			const px = Math.floor((bulletCenterX - shield.x) / SHIELD_CELL_WIDTH);
 			const py = Math.floor((collisionY - shield.y) / SHIELD_CELL_HEIGHT);
 
 			if (damageShield(shield, px, py)) {
@@ -224,6 +354,7 @@
 		if (playerExplosion && playerExplosion.expiresAt <= time) {
 			playerExplosion = null;
 		}
+		playerInvulnerable = playerInvulnerableUntil > time;
 
 		const dt = time - lastTime;
 		lastTime = time;
@@ -240,31 +371,23 @@
 		const aliveAliensNow = aliens.filter((a) => a.alive);
 		const destroyedAliens = totalAliens - aliveAliensNow.length;
 		const endgameIntensity = 1 - aliveAliensNow.length / totalAliens;
-		const alienBulletSpeed = Math.min(
-			MAX_ALIEN_BULLET_SPEED,
-			(BASE_ALIEN_BULLET_SPEED +
-				alienDescents * ALIEN_BULLET_SPEED_DESCENT_BONUS +
-				endgameIntensity * ALIEN_BULLET_SPEED_ENDGAME_BONUS) *
-				(chaosMode ? 1.35 : 1)
-		);
+		const alienBulletSpeed = getAlienBulletSpeed(destroyedAliens, endgameIntensity);
+		const alienStepInterval = getAlienStepInterval(destroyedAliens, endgameIntensity);
+		const alienFireInterval = getAlienFireInterval(destroyedAliens, endgameIntensity);
+		alienFireCooldown -= dt;
 
 		// Update Bullets
 		bullets = bullets
 			.map((b) => ({
 				...b,
-				y: b.y + (b.type === 'player' ? -5 * (chaosMode ? 2 : 1) : alienBulletSpeed)
+				x: b.x + b.speedX,
+				y: b.y + b.speedY
 			}))
 			.filter((b) => b.y > 0 && b.y < GAME_HEIGHT);
 
 		// Alien Movement
-		alienStep +=
-			dt *
-			0.001 *
-			(alienSpeed +
-				endgameIntensity * ALIEN_ENDGAME_SPEED_BOOST +
-				destroyedAliens * ALIEN_KILL_SPEED_BOOST) *
-			(chaosMode ? 3 : 1);
-		if (alienStep > 0.5) {
+		alienStep += dt;
+		if (alienStep >= alienStepInterval) {
 			alienStep = 0;
 			globalTick = (globalTick + 1) % 2;
 			let hitEdge = false;
@@ -287,36 +410,23 @@
 						}
 					}
 				});
-				alienSpeed += ALIEN_DESCENT_SPEED_BOOST;
 			}
+		}
 
-			// Random Alien Shoot
-			const aliveAliens = aliens.filter((a) => a.alive);
-			const currentEndgameIntensity = 1 - aliveAliens.length / totalAliens;
-			const fireRamp = Math.pow(currentEndgameIntensity, 1.35);
-			const fireChance = Math.min(
-				MAX_ALIEN_FIRE_CHANCE,
-				(BASE_ALIEN_FIRE_CHANCE +
-					alienDescents * ALIEN_FIRE_DESCENT_BONUS +
-					fireRamp * ALIEN_FIRE_ENDGAME_BONUS) *
-					(chaosMode ? 1.5 : 1)
+		if (alienFireCooldown <= 0 && aliveAliensNow.length > 0) {
+			const frontlinePressure = fireAlienShot(aliveAliensNow, alienBulletSpeed, endgameIntensity);
+			alienFireCooldown = Math.max(
+				MIN_ALIEN_FIRE_INTERVAL,
+				alienFireInterval - frontlinePressure * ALIEN_FRONTLINE_FIRE_REDUCTION
 			);
-			if (Math.random() < fireChance && aliveAliens.length > 0) {
-				const shooter = getAlienShooter(aliveAliens);
-				if (shooter) {
-					bullets.push({
-						x: shooter.x + ALIEN_WIDTH / 2,
-						y: shooter.y + ALIEN_HEIGHT,
-						type: 'alien',
-						id: nextBulletId++
-					});
-				}
-			}
 		}
 
 		// Collision Detection
 		for (let bi = bullets.length - 1; bi >= 0; bi--) {
 			const b = bullets[bi];
+			const bulletCenterX = getBulletCenterX(b);
+			const bulletTop = getBulletTop(b);
+			const bulletBottom = getBulletBottom(b);
 
 			if (hitShield(b)) {
 				bullets.splice(bi, 1);
@@ -329,26 +439,26 @@
 					const a = aliens[ai];
 					if (
 						a.alive &&
-						b.x > a.x &&
-						b.x < a.x + ALIEN_WIDTH &&
-						b.y > a.y &&
-						b.y < a.y + ALIEN_HEIGHT
+						bulletCenterX > a.x &&
+						bulletCenterX < a.x + ALIEN_WIDTH &&
+						bulletTop > a.y &&
+						bulletTop < a.y + ALIEN_HEIGHT
 					) {
 						a.alive = false;
 						bullets.splice(bi, 1);
-						score += 100;
+						score += getAlienScore(a.id);
 						break;
 					}
 				}
 			}
 
 			// Alien bullet hits player
-			if (b.type === 'alien') {
+			if (b.type === 'alien' && !playerInvulnerable) {
 				if (
-					b.x > playerX &&
-					b.x < playerX + PLAYER_WIDTH &&
-					b.y > GAME_HEIGHT - PLAYER_HEIGHT - 20 &&
-					b.y < GAME_HEIGHT - 20
+					bulletCenterX > playerX &&
+					bulletCenterX < playerX + PLAYER_WIDTH &&
+					bulletBottom > GAME_HEIGHT - PLAYER_HEIGHT - 20 &&
+					bulletTop < GAME_HEIGHT - 20
 				) {
 					playerExplosion = {
 						x: playerX,
@@ -364,7 +474,10 @@
 					} else {
 						lives -= 1;
 						playerX = GAME_WIDTH / 2 - PLAYER_WIDTH / 2;
+						playerInvulnerableUntil = time + PLAYER_RESPAWN_INVULNERABILITY_MS;
+						playerInvulnerable = true;
 						bullets = bullets.filter((bullet) => bullet.type === 'player');
+						alienFireCooldown = Math.max(alienFireCooldown, 260);
 					}
 
 					break;
@@ -382,7 +495,7 @@
 	function triggerChaos() {
 		showChaosModal = true;
 		chaosMode = true;
-		alienSpeed *= 2;
+		alienFireCooldown = Math.min(alienFireCooldown, 260);
 	}
 
 	onMount(() => {
@@ -427,7 +540,7 @@
 
 		<!-- Player -->
 		<div
-			class="absolute bg-green-400 transition-all duration-75"
+			class={`absolute bg-green-400 transition-all duration-75 ${playerInvulnerable ? 'player-respawn-flicker' : ''}`}
 			style:left="{playerX}px"
 			style:bottom="20px"
 			style:width="{PLAYER_WIDTH}px"
@@ -577,8 +690,8 @@
 				style:width="{SHIELD_WIDTH}px"
 				style:height="{SHIELD_HEIGHT}px"
 			>
-				{#each shield.pixels as pixelRow, rowIndex}
-					{#each pixelRow as pixel, colIndex}
+				{#each shield.pixels as pixelRow, rowIndex (rowIndex)}
+					{#each pixelRow as pixel, colIndex (colIndex)}
 						{#if pixel}
 							<div
 								class="absolute bg-green-400"
@@ -596,13 +709,14 @@
 		<!-- Bullets -->
 		{#each bullets as bullet (bullet.id)}
 			<div
-				class="absolute w-1"
+				class="absolute rounded-full"
 				style:left="{bullet.x}px"
 				style:top="{bullet.y}px"
-				style:height="15px"
-				class:bg-yellow-300={bullet.type === 'player'}
-				class:bg-red-500={bullet.type === 'alien'}
-				class:w-4={chaosMode && bullet.type === 'player'}
+				style:width="{bullet.width}px"
+				style:height="{bullet.height}px"
+				style:background={getBulletColor(bullet.variant)}
+				style:transform={getBulletRotation(bullet)}
+				style:box-shadow={getBulletGlow(bullet.variant)}
 			></div>
 		{/each}
 
@@ -641,7 +755,7 @@
 	</div>
 
 	<a
-		href="/"
+		href={resolve('/')}
 		class="mt-10 text-2xl font-black text-white underline decoration-8 transition-colors hover:text-green-400"
 	>
 		← ESCAPE TO REALITY
@@ -694,6 +808,10 @@
 		pointer-events: none;
 	}
 
+	.player-respawn-flicker {
+		animation: player-respawn-flicker 120ms steps(1) infinite;
+	}
+
 	.player-hit-core,
 	.player-hit-ring {
 		position: absolute;
@@ -738,6 +856,19 @@
 		to {
 			transform: scale(1.3);
 			opacity: 0;
+		}
+	}
+
+	@keyframes player-respawn-flicker {
+		0%,
+		100% {
+			opacity: 1;
+			filter: drop-shadow(0 0 14px #4ade80);
+		}
+
+		50% {
+			opacity: 0.35;
+			filter: drop-shadow(0 0 4px #4ade80);
 		}
 	}
 </style>
