@@ -1,5 +1,6 @@
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
+import { wuchale } from 'wuchale/vite';
 import { defineConfig } from 'vite';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -9,7 +10,7 @@ const json = readFileSync(file, 'utf8');
 const pkg = JSON.parse(json);
 
 export default defineConfig({
-	plugins: [tailwindcss(), sveltekit()],
+	plugins: [wuchale(), tailwindcss(), sveltekit()],
 	define: {
 		__APP_VERSION__: JSON.stringify(pkg.version)
 	}

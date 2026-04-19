@@ -1,6 +1,7 @@
 <script lang="ts">
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
 
 	let { children } = $props();
 
@@ -26,5 +27,9 @@
 		{@html JSON.stringify(structuredData)}
 	</script>
 </svelte:head>
+
+<div class="fixed top-4 right-4 z-50">
+	<LanguageSwitcher />
+</div>
 
 {@render children()}

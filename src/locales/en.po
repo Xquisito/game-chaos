@@ -1,0 +1,787 @@
+msgid ""
+msgstr ""
+"Plural-Forms: nplurals=2; plural=n == 1 ? 0 : 1;\n"
+"Source-Language: en\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/routes/+layout.svelte
+msgid "GameServer"
+msgstr "GameServer"
+
+#: src/routes/+layout.svelte
+msgid "The Chaos Arcade"
+msgstr "The Chaos Arcade"
+
+#: src/routes/+layout.svelte
+msgid "Uma coleção de jogos vintages e caóticos feitos com SvelteKit."
+msgstr "Uma coleção de jogos vintages e caóticos feitos com SvelteKit."
+
+#: src/routes/+layout.svelte
+msgid "Arcade"
+msgstr "Arcade"
+
+#: src/routes/+layout.svelte
+msgid "Retro"
+msgstr "Retro"
+
+#: src/routes/+layout.svelte
+msgid "Strategy"
+msgstr "Strategy"
+
+#: src/routes/+layout.svelte
+#: src/routes/+layout.svelte
+#: src/routes/+layout.svelte
+msgid "VideoGame"
+msgstr "VideoGame"
+
+#: src/routes/+layout.svelte
+msgid "Minesweeper Chaos"
+msgstr "Minesweeper Chaos"
+
+#: src/routes/+layout.svelte
+#: src/routes/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "Checkers Chaos"
+msgstr "Checkers Chaos"
+
+#: src/routes/+layout.svelte
+msgid "Enduro 3D Chaos"
+msgstr "Enduro 3D Chaos"
+
+#: src/routes/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "Minesweeper"
+msgstr "Minesweeper"
+
+#: src/routes/+page.svelte
+msgid "Avoid the boom with quick reads and cooler nerves."
+msgstr "Avoid the boom with quick reads and cooler nerves."
+
+#: src/routes/+page.svelte
+msgid "Puzzle Bay"
+msgstr "Puzzle Bay"
+
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "Wins"
+msgstr "Wins"
+
+#: src/routes/+page.svelte
+msgid "Insert Coin"
+msgstr "Insert Coin"
+
+#: src/routes/+page.svelte
+msgid "Fast board control in a chunky neon showdown."
+msgstr "Fast board control in a chunky neon showdown."
+
+#: src/routes/+page.svelte
+msgid "Battle Table"
+msgstr "Battle Table"
+
+#: src/routes/+page.svelte
+msgid "Start Match"
+msgstr "Start Match"
+
+#: src/routes/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "Enduro Chaos"
+msgstr "Enduro Chaos"
+
+#: src/routes/+page.svelte
+msgid "Race the night through storms, ice, and blind corners."
+msgstr "Race the night through storms, ice, and blind corners."
+
+#: src/routes/+page.svelte
+msgid "Road Fury"
+msgstr "Road Fury"
+
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "Hi-Score"
+msgstr "Hi-Score"
+
+#: src/routes/+page.svelte
+msgid "Burn Rubber"
+msgstr "Burn Rubber"
+
+#: src/routes/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "Space Chaos"
+msgstr "Space Chaos"
+
+#: src/routes/+page.svelte
+msgid "Scramble the fleet and climb the cosmic score board."
+msgstr "Scramble the fleet and climb the cosmic score board."
+
+#: src/routes/+page.svelte
+msgid "Galaxy Sector"
+msgstr "Galaxy Sector"
+
+#: src/routes/+page.svelte
+msgid "Launch Run"
+msgstr "Launch Run"
+
+#: src/routes/+page.svelte
+msgid "Settings"
+msgstr "Settings"
+
+#: src/routes/+page.svelte
+msgid "Tune the cabinet, inspect scores, and wipe save data."
+msgstr "Tune the cabinet, inspect scores, and wipe save data."
+
+#: src/routes/+page.svelte
+msgid "System Deck"
+msgstr "System Deck"
+
+#: src/routes/+page.svelte
+msgid "Scores • Reset • System"
+msgstr "Scores • Reset • System"
+
+#: src/routes/+page.svelte
+msgid "Open Panel"
+msgstr "Open Panel"
+
+#: src/routes/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "ArrowUp"
+msgstr "ArrowUp"
+
+#: src/routes/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "ArrowDown"
+msgstr "ArrowDown"
+
+#: src/routes/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "ArrowLeft"
+msgstr "ArrowLeft"
+
+#: src/routes/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "ArrowRight"
+msgstr "ArrowRight"
+
+#: src/routes/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "Enter"
+msgstr "Enter"
+
+#: src/routes/+page.svelte
+msgid "The Chaos Arcade | Dashboard"
+msgstr "The Chaos Arcade | Dashboard"
+
+#: src/routes/+page.svelte
+msgid "Arcade Hub // Ready"
+msgstr "Arcade Hub // Ready"
+
+#: src/routes/+page.svelte
+msgid "🕹️ The Chaos Arcade"
+msgstr "🕹️ The Chaos Arcade"
+
+#: src/routes/+page.svelte
+msgid "Tap, tab, or hit the D-pad to jump cabinet-to-cabinet."
+msgstr "Tap, tab, or hit the D-pad to jump cabinet-to-cabinet."
+
+#. 0: dashboardCards.length
+#: src/routes/+page.svelte
+msgid "{0} Hotspots"
+msgstr "{0} Hotspots"
+
+#: src/routes/+page.svelte
+msgid "A / Enter = Launch"
+msgstr "A / Enter = Launch"
+
+#. 0: appVersion
+#: src/routes/+page.svelte
+msgid "v{0}"
+msgstr "v{0}"
+
+#: src/routes/+page.svelte
+msgid "Built with ⚡ SvelteKit & pure chaos"
+msgstr "Built with ⚡ SvelteKit & pure chaos"
+
+#: src/routes/+page.svelte
+msgid "Local scores loaded from cabinet memory"
+msgstr "Local scores loaded from cabinet memory"
+
+#: src/routes/checkers/+page.svelte
+msgid "SYSTEM ERROR: Too much strategy detected! ⚠️"
+msgstr "SYSTEM ERROR: Too much strategy detected! ⚠️"
+
+#: src/routes/checkers/+page.svelte
+msgid "Are you trying to win?! 🤨"
+msgstr "Are you trying to win?! 🤨"
+
+#: src/routes/checkers/+page.svelte
+msgid "Your pieces are feeling threatened. 🕵️‍♂️"
+msgstr "Your pieces are feeling threatened. 🕵️‍♂️"
+
+#: src/routes/checkers/+page.svelte
+msgid "ERROR 404: Victory Not Found. 🧠💨"
+msgstr "ERROR 404: Victory Not Found. 🧠💨"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "Escape"
+msgstr "Escape"
+
+#. 0: r + 1; 1: c + 1
+#. 0: r + 1; 1: c + 1
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Row {0}, column {1}"
+msgstr "Row {0}, column {1}"
+
+#: src/routes/checkers/+page.svelte
+msgid "Checkers | Game Chaos"
+msgstr "Checkers | Game Chaos"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Game Chaos"
+msgstr "Game Chaos"
+
+#: src/routes/checkers/+page.svelte
+msgid "🏁 Checkers Chaos 🏁"
+msgstr "🏁 Checkers Chaos 🏁"
+
+#: src/routes/checkers/+page.svelte
+msgid "Pick white. Pick fights. Pick again."
+msgstr "Pick white. Pick fights. Pick again."
+
+#: src/routes/checkers/+page.svelte
+msgid "You play white.<0/> Tap or click a piece, then tap its destination.<1/> Arrow keys / Tab move menu focus.<2/> A / Enter = select • B / Esc = return.<3/> <4>During a live match, Esc / B jumps back here and Continue resumes the exact board.</4>"
+msgstr "You play white.<0/> Tap or click a piece, then tap its destination.<1/> Arrow keys / Tab move menu focus.<2/> A / Enter = select • B / Esc = return.<3/> <4>During a live match, Esc / B jumps back here and Continue resumes the exact board.</4>"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Score Board"
+msgstr "Score Board"
+
+#: src/routes/checkers/+page.svelte
+msgid "Player Wins"
+msgstr "Player Wins"
+
+#. 0: hasActiveRun ? activeDifficultyLabel \\: 'none'; 1: queuedDifficultyLabel
+#: src/routes/checkers/+page.svelte
+msgid "Live match: {0}<0/> New game: {1}"
+msgstr "Live match: {0}<0/> New game: {1}"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "Difficulty"
+msgstr "Difficulty"
+
+#. 0: activeDifficultyLabel
+#: src/routes/checkers/+page.svelte
+msgid "Continue keeps the current {0} board. New Game uses the selected mode."
+msgstr "Continue keeps the current {0} board. New Game uses the selected mode."
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Continue"
+msgstr "Continue"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "New Game"
+msgstr "New Game"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Press Start"
+msgstr "Press Start"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Dashboard"
+msgstr "Dashboard"
+
+#: src/routes/checkers/+page.svelte
+msgid "AI Thinking…"
+msgstr "AI Thinking…"
+
+#. 0: turn
+#: src/routes/checkers/+page.svelte
+msgid "Turn {0}"
+msgstr "Turn {0}"
+
+#. 0: wins
+#. 0: wins
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Wins {0}"
+msgstr "Wins {0}"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Return"
+msgstr "Return"
+
+#: src/routes/checkers/+page.svelte
+msgid "White Wins!"
+msgstr "White Wins!"
+
+#: src/routes/checkers/+page.svelte
+msgid "Black Wins!"
+msgstr "Black Wins!"
+
+#: src/routes/checkers/+page.svelte
+msgid "Board Live"
+msgstr "Board Live"
+
+#: src/routes/checkers/+page.svelte
+msgid "Select a white piece, then choose its landing square."
+msgstr "Select a white piece, then choose its landing square."
+
+#: src/routes/checkers/+page.svelte
+msgid "Need a breather? Esc / B returns to splash and Continue resumes this exact match."
+msgstr "Need a breather? Esc / B returns to splash and Continue resumes this exact match."
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Victory"
+msgstr "Victory"
+
+#: src/routes/checkers/+page.svelte
+msgid "Defeat"
+msgstr "Defeat"
+
+#. 0: wins
+#: src/routes/checkers/+page.svelte
+msgid "White takes it. Total wins: {0}."
+msgstr "White takes it. Total wins: {0}."
+
+#: src/routes/checkers/+page.svelte
+msgid "Black cleaned the board. Retry or head back to splash."
+msgstr "Black cleaned the board. Retry or head back to splash."
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Retry"
+msgstr "Retry"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "Back to Splash"
+msgstr "Back to Splash"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Enter / A to select • Esc / B to return"
+msgstr "Enter / A to select • Esc / B to return"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Don't Click Me 🚫"
+msgstr "Don't Click Me 🚫"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Wait, what?!"
+msgstr "Wait, what?!"
+
+#: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
+msgid "Fine, I'm sorry 😔"
+msgstr "Fine, I'm sorry 😔"
+
+#: src/routes/demo/+page.svelte
+msgid "playwright"
+msgstr "playwright"
+
+#: src/routes/enduro/+page.svelte
+msgid "Enduro | Game Chaos"
+msgstr "Enduro | Game Chaos"
+
+#: src/routes/enduro/+page.svelte
+msgid "ENDURO"
+msgstr "ENDURO"
+
+#: src/routes/enduro/+page.svelte
+msgid "ACTIVISION"
+msgstr "ACTIVISION"
+
+#: src/routes/enduro/+page.svelte
+msgid "PASS <0>200 CARS</0> ON DAY 1<1/> THEN 300+ EVERY DAY AFTER<2/> <3>FOG • ICE • NIGHT</3> <4>KEYBOARD • GAMEPAD • TOUCH<0/> A / ENTER = SELECT • B / ESC = RETURN</4>"
+msgstr "PASS <0>200 CARS</0> ON DAY 1<1/> THEN 300+ EVERY DAY AFTER<2/> <3>FOG • ICE • NIGHT</3> <4>KEYBOARD • GAMEPAD • TOUCH<0/> A / ENTER = SELECT • B / ESC = RETURN</4>"
+
+#: src/routes/enduro/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "CONTINUE"
+msgstr "CONTINUE"
+
+#: src/routes/enduro/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "NEW GAME"
+msgstr "NEW GAME"
+
+#: src/routes/enduro/+page.svelte
+msgid "PRESS START"
+msgstr "PRESS START"
+
+#: src/routes/enduro/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "DASHBOARD"
+msgstr "DASHBOARD"
+
+#: src/routes/enduro/+page.svelte
+msgid "← → / WASD STEER • ↑ ↓ SPEED<0/> GAMEPAD + TOUCH DRAG / THROTTLE / BRAKE"
+msgstr "← → / WASD STEER • ↑ ↓ SPEED<0/> GAMEPAD + TOUCH DRAG / THROTTLE / BRAKE"
+
+#. 0: highScore
+#: src/routes/enduro/+page.svelte
+msgid "HIGH SCORE — {0}"
+msgstr "HIGH SCORE — {0}"
+
+#: src/routes/enduro/+page.svelte
+msgid "DAY <0/>"
+msgstr "DAY <0/>"
+
+#: src/routes/enduro/+page.svelte
+msgid "PASSED <0/> / <1/>"
+msgstr "PASSED <0/> / <1/>"
+
+#. 0: highScore.toString().padStart(5, '0')
+#: src/routes/enduro/+page.svelte
+msgid "HI {0}"
+msgstr "HI {0}"
+
+#. 0: weather.toUpperCase()
+#: src/routes/enduro/+page.svelte
+msgid "{0} CONDITIONS"
+msgstr "{0} CONDITIONS"
+
+#: src/routes/enduro/+page.svelte
+msgid "GET READY!"
+msgstr "GET READY!"
+
+#: src/routes/enduro/+page.svelte
+msgid "NIGHT"
+msgstr "NIGHT"
+
+#: src/routes/enduro/+page.svelte
+msgid "ESC / B TO SPLASH<0/> P TO PAUSE"
+msgstr "ESC / B TO SPLASH<0/> P TO PAUSE"
+
+#: src/routes/enduro/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "PAUSED"
+msgstr "PAUSED"
+
+#: src/routes/enduro/+page.svelte
+msgid "PRESS 'P' TO RESUME"
+msgstr "PRESS 'P' TO RESUME"
+
+#: src/routes/enduro/+page.svelte
+msgid "STEER"
+msgstr "STEER"
+
+#: src/routes/enduro/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "Touch steering"
+msgstr "Touch steering"
+
+#: src/routes/enduro/+page.svelte
+msgid "THROTTLE"
+msgstr "THROTTLE"
+
+#: src/routes/enduro/+page.svelte
+msgid "BRAKE"
+msgstr "BRAKE"
+
+#: src/routes/enduro/+page.svelte
+msgid "CRASHED"
+msgstr "CRASHED"
+
+#. 0: day; 1: carsPassed
+#: src/routes/enduro/+page.svelte
+msgid "DAY {0} • {1} CARS"
+msgstr "DAY {0} • {1} CARS"
+
+#: src/routes/enduro/+page.svelte
+msgid "NEW HIGH SCORE"
+msgstr "NEW HIGH SCORE"
+
+#: src/routes/enduro/+page.svelte
+msgid "RETRY"
+msgstr "RETRY"
+
+#: src/routes/enduro/+page.svelte
+msgid "BACK TO SPLASH"
+msgstr "BACK TO SPLASH"
+
+#: src/routes/enduro/+page.svelte
+msgid "ENTER / A TO SELECT • ESC / B TO RETURN"
+msgstr "ENTER / A TO SELECT • ESC / B TO RETURN"
+
+#: src/routes/settings/+page.svelte
+msgid "⚙️ SYSTEM SETTINGS ⚙️"
+msgstr "⚙️ SYSTEM SETTINGS ⚙️"
+
+#: src/routes/settings/+page.svelte
+msgid "MEMORY MANAGEMENT UNIT"
+msgstr "MEMORY MANAGEMENT UNIT"
+
+#. 0: highScores.minesweeper
+#. 0: highScores.checkers
+#: src/routes/settings/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "WINS: {0}"
+msgstr "WINS: {0}"
+
+#: src/routes/settings/+page.svelte
+#: src/routes/settings/+page.svelte
+#: src/routes/settings/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "RESET"
+msgstr "RESET"
+
+#. 0: highScores.enduro
+#. 0: highScores['space-chaos']
+#: src/routes/settings/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "HI-SCORE: {0}"
+msgstr "HI-SCORE: {0}"
+
+#: src/routes/settings/+page.svelte
+msgid "RETURN TO DASHBOARD"
+msgstr "RETURN TO DASHBOARD"
+
+#: src/routes/settings/+page.svelte
+msgid "Joystick: A to Select · B to Return"
+msgstr "Joystick: A to Select · B to Return"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "SYSTEM ERROR: Too much chaos detected! ⚠️"
+msgstr "SYSTEM ERROR: Too much chaos detected! ⚠️"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Are you even listening?! 🤨"
+msgstr "Are you even listening?! 🤨"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Your finger is too curious for its own good. 🕵️‍♂️"
+msgstr "Your finger is too curious for its own good. 🕵️‍♂️"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "ERROR 404: Sanity Not Found. 🧠💨"
+msgstr "ERROR 404: Sanity Not Found. 🧠💨"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Minesweeper | Game Chaos"
+msgstr "Minesweeper | Game Chaos"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "💣 Boom Box 💣"
+msgstr "💣 Boom Box 💣"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Vintage little minefield. No mercy."
+msgstr "Vintage little minefield. No mercy."
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Reveal every safe tile to win.<0/> Click or tap to reveal.<1/> Right click or long-press to flag.<2/> <3>Arrow keys / Tab move menu focus.<0/> A / Enter = select • B / Esc = return.</3>"
+msgstr "Reveal every safe tile to win.<0/> Click or tap to reveal.<1/> Right click or long-press to flag.<2/> <3>Arrow keys / Tab move menu focus.<0/> A / Enter = select • B / Esc = return.</3>"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Total Wins"
+msgstr "Total Wins"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "10 × 10 grid<0/>15 mines<1/>Simple. Mean. Loud."
+msgstr "10 × 10 grid<0/>15 mines<1/>Simple. Mean. Loud."
+
+#. 0: minesLeft
+#: src/routes/minesweeper/+page.svelte
+msgid "Mines {0}"
+msgstr "Mines {0}"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Victory!"
+msgstr "Victory!"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Kaboom!"
+msgstr "Kaboom!"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Minefield Live"
+msgstr "Minefield Live"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Click / tap reveal • Right click / long-press flag • Esc / B returns to splash"
+msgstr "Click / tap reveal • Right click / long-press flag • Esc / B returns to splash"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Need a breather? Esc / B returns to splash and Continue resumes this exact board."
+msgstr "Need a breather? Esc / B returns to splash and Continue resumes this exact board."
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Kaboom"
+msgstr "Kaboom"
+
+#. 0: wins
+#: src/routes/minesweeper/+page.svelte
+msgid "Board cleared. Total wins: {0}."
+msgstr "Board cleared. Total wins: {0}."
+
+#: src/routes/minesweeper/+page.svelte
+msgid "You poked the spicy rock. Try again or bail to splash."
+msgstr "You poked the spicy rock. Try again or bail to splash."
+
+#: src/routes/demo/playwright/+page.svelte
+msgid "Playwright e2e test demo"
+msgstr "Playwright e2e test demo"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Easy"
+msgstr "Easy"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Normal"
+msgstr "Normal"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Hard"
+msgstr "Hard"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Space Chaos | Game Chaos"
+msgstr "Space Chaos | Game Chaos"
+
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "SPACE CHAOS"
+msgstr "SPACE CHAOS"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Pew pew or die!"
+msgstr "Pew pew or die!"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "SCORE:"
+msgstr "SCORE:"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "HIGH SCORE:"
+msgstr "HIGH SCORE:"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "CHAOS ACTIVE"
+msgstr "CHAOS ACTIVE"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "DEFEND THE LINE, SHRED THE SWARM, AND CHASE THE UFO. <0>KEYBOARD / GAMEPAD / TOUCH READY<0/> A / ENTER = SELECT • B / ESC = RETURN</0>"
+msgstr "DEFEND THE LINE, SHRED THE SWARM, AND CHASE THE UFO. <0>KEYBOARD / GAMEPAD / TOUCH READY<0/> A / ENTER = SELECT • B / ESC = RETURN</0>"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "← → MOVE • SPACE / ↑ FIRE<0/> D-PAD / STICK MOVE<1/> TOUCH DRAG + FIRE BUTTON"
+msgstr "← → MOVE • SPACE / ↑ FIRE<0/> D-PAD / STICK MOVE<1/> TOUCH DRAG + FIRE BUTTON"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Current run difficulty stays locked until the run ends."
+msgstr "Current run difficulty stays locked until the run ends."
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Hard matches the current Chaos balance. <0/>"
+msgstr "Hard matches the current Chaos balance. <0/>"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "P to resume • ESC / B to splash"
+msgstr "P to resume • ESC / B to splash"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "WASTED 💀"
+msgstr "WASTED 💀"
+
+#. 0: score
+#. 0: score
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "Score {0}"
+msgstr "Score {0}"
+
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+msgid "Retry 🔄"
+msgstr "Retry 🔄"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "VICTORY 🏆"
+msgstr "VICTORY 🏆"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "TOUCH CONTROLS"
+msgstr "TOUCH CONTROLS"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "FIRE"
+msgstr "FIRE"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "RETURN"
+msgstr "RETURN"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "DO NOT PRESS 🚫"
+msgstr "DO NOT PRESS 🚫"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "WHAT HAVE YOU DONE?!"
+msgstr "WHAT HAVE YOU DONE?!"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "\"THE ALIENS ARE NOW ON STEROIDS AND YOUR BULLETS ARE FAT. GOOD LUCK.\""
+msgstr "\"THE ALIENS ARE NOW ON STEROIDS AND YOUR BULLETS ARE FAT. GOOD LUCK.\""
+
+#: src/routes/space-invaders/+page.svelte
+msgid "I REGRET EVERYTHING 😭"
+msgstr "I REGRET EVERYTHING 😭"
+
+#~ msgid "Your pieces are feeling threatened. 🕵️♂️"
+#~ msgstr "Your pieces are feeling threatened. 🕵️♂️"
+
+#~ msgid "ASTROVISION"
+#~ msgstr "ASTROVISION"
+
+#~ msgid "Your finger is too curious for its own good. 🕵️♂️"
+#~ msgstr "Your finger is too curious for its own good. 🕵️♂️"

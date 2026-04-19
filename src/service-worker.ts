@@ -53,7 +53,7 @@ self.addEventListener('fetch', (event) => {
 
 			// if we're offline, fetch can return a value that looks like it failed
 			// (actually it's more like it will throw)
-			if (response.status === 200) {
+			if (response.status === 200 && (url.protocol === 'http:' || url.protocol === 'https:')) {
 				cache.put(event.request, response.clone());
 			}
 
