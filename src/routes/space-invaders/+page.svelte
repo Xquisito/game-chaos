@@ -165,7 +165,9 @@
 	const UFO_FIRE_INTERVAL_MIN = 18000;
 	const UFO_FIRE_INTERVAL_MAX = 32000;
 	const UFO_SCORES = [50, 100, 150, 300];
+	const DIFFICULTY_OPTIONS = ['easy', 'normal', 'hard'] as const;
 
+	type Difficulty = 'easy' | 'normal' | 'hard';
 	type BulletVariant = 'player' | 'alien';
 	type Bullet = {
 		x: number;
@@ -182,6 +184,8 @@
 	// State
 	let score = $state(0);
 	let highScore = $state(0);
+	let difficulty = $state<Difficulty>('hard');
+	let selectedDifficulty = $state<Difficulty>('hard');
 	let lives = $state(3);
 	let gameOver = $state(false);
 	let gameWon = $state(false);
@@ -257,6 +261,33 @@
 		[1, 1, 0, 1, 1, 0, 1, 1],
 		[1, 1, 0, 1, 1, 0, 1, 1]
 	];
+
+	function getDifficultyTuning(level: Difficulty) {
+		if (level === 'easy') {
+			return { step: 1.3, fire: 1.4, bullet: 0.8, aggression: 0.75 };
+		}
+
+		if (level === 'normal') {
+			return { step: 1.15, fire: 1.2, bullet: 0.9, aggression: 0.9 };
+		}
+
+		return { step: 1, fire: 1, bullet: 1, aggression: 1 };
+	}
+
+	function getDifficultyLabel(level: Difficulty) {
+		if (level === 'easy') return 'Easy';
+		if (level === 'normal') return 'Normal';
+		return 'Hard';
+	}
+
+	function selectDifficulty(level: Difficulty) {
+		if (hasActiveRun) {
+			selectedDifficulty = difficulty;
+			return;
+		}
+
+		selectedDifficulty = level;
+	}
 
 	function initGame() {
 		score = 0;
@@ -365,21 +396,9 @@
 		window.location.href = resolve('/');
 	}
 
-	function startGame() {
-		initGame();
-		hasActiveRun = true;
-		gameStarted = true;
-		running = true;
-		paused = false;
-		lastTime = performance.now();
-		if (audioCtx?.state === 'suspended') {
-			audioCtx.resume();
-		}
-		requestAnimationFrame(update);
-	}
-
 	function continueGame() {
 		if (!hasActiveRun) return;
+		selectedDifficulty = difficulty;
 		gameStarted = true;
 		running = true;
 		paused = false;
@@ -395,10 +414,26 @@
 	}
 
 	function retryGame() {
-		startGame();
+		startGame(difficulty);
+	}
+
+	function startGame(nextDifficulty: Difficulty = selectedDifficulty) {
+		difficulty = nextDifficulty;
+		selectedDifficulty = nextDifficulty;
+		initGame();
+		hasActiveRun = true;
+		gameStarted = true;
+		running = true;
+		paused = false;
+		lastTime = performance.now();
+		if (audioCtx?.state === 'suspended') {
+			audioCtx.resume();
+		}
+		requestAnimationFrame(update);
 	}
 
 	function returnToSplash(preserveRun = false) {
+		selectedDifficulty = difficulty;
 		gameStarted = false;
 		paused = false;
 		running = false;
@@ -609,35 +644,47 @@
 	}
 
 	function getAlienStepInterval(destroyedAliens: number, endgameIntensity: number) {
+		const tuning = getDifficultyTuning(difficulty);
+		const scaledEndgameIntensity = endgameIntensity * tuning.aggression;
+
 		return Math.max(
 			MIN_ALIEN_STEP_INTERVAL,
 			(BASE_ALIEN_STEP_INTERVAL -
 				alienDescents * ALIEN_STEP_DESCENT_REDUCTION -
 				destroyedAliens * ALIEN_STEP_KILL_REDUCTION -
-				endgameIntensity * ALIEN_STEP_ENDGAME_REDUCTION) *
-				(chaosMode ? 0.68 : 1)
+				scaledEndgameIntensity * ALIEN_STEP_ENDGAME_REDUCTION) *
+				(chaosMode ? 0.68 : 1) *
+				tuning.step
 		);
 	}
 
 	function getAlienFireInterval(destroyedAliens: number, endgameIntensity: number) {
+		const tuning = getDifficultyTuning(difficulty);
+		const scaledEndgameIntensity = endgameIntensity * tuning.aggression;
+
 		return Math.max(
 			MIN_ALIEN_FIRE_INTERVAL,
 			(BASE_ALIEN_FIRE_INTERVAL -
 				alienDescents * ALIEN_FIRE_DESCENT_REDUCTION -
 				destroyedAliens * ALIEN_FIRE_KILL_REDUCTION -
-				endgameIntensity * ALIEN_FIRE_ENDGAME_REDUCTION) *
-				(chaosMode ? 0.72 : 1)
+				scaledEndgameIntensity * ALIEN_FIRE_ENDGAME_REDUCTION) *
+				(chaosMode ? 0.72 : 1) *
+				tuning.fire
 		);
 	}
 
 	function getAlienBulletSpeed(destroyedAliens: number, endgameIntensity: number) {
+		const tuning = getDifficultyTuning(difficulty);
+		const scaledEndgameIntensity = endgameIntensity * tuning.aggression;
+
 		return Math.min(
 			MAX_ALIEN_BULLET_SPEED,
 			(BASE_ALIEN_BULLET_SPEED +
 				alienDescents * ALIEN_BULLET_SPEED_DESCENT_BONUS +
 				destroyedAliens * ALIEN_BULLET_SPEED_KILL_BONUS +
-				endgameIntensity * ALIEN_BULLET_SPEED_ENDGAME_BONUS) *
-				(chaosMode ? 1.25 : 1)
+				scaledEndgameIntensity * ALIEN_BULLET_SPEED_ENDGAME_BONUS) *
+				(chaosMode ? 1.25 : 1) *
+				tuning.bullet
 		);
 	}
 
@@ -1465,7 +1512,7 @@
 							</button>
 							<button
 								data-menu-button
-								onclick={startGame}
+								onclick={() => startGame()}
 								class="border-4 border-white bg-black px-10 py-4 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 							>
 								NEW GAME
@@ -1473,7 +1520,7 @@
 						{:else}
 							<button
 								data-menu-button
-								onclick={startGame}
+								onclick={() => startGame()}
 								class="border-4 border-yellow-400 bg-black px-12 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 							>
 								PRESS START
@@ -1492,6 +1539,37 @@
 					<div class="mt-8 text-center text-xs leading-relaxed text-white/60 sm:text-sm">
 						← → MOVE • SPACE / ↑ FIRE<br />
 						D-PAD / STICK MOVE • TOUCH DRAG + FIRE BUTTON
+					</div>
+
+					<div class="mt-8 w-full max-w-md border-4 border-pink-400 bg-black/80 p-4 text-center shadow-[0_0_24px_rgba(244,114,182,0.18)]">
+						<div class="text-xs font-black tracking-[0.35em] text-pink-300 uppercase">
+							Difficulty
+						</div>
+						<div class="mt-4 grid grid-cols-3 gap-3">
+							{#each DIFFICULTY_OPTIONS as level (level)}
+								<button
+									type="button"
+									data-menu-button
+									onclick={() => selectDifficulty(level)}
+									aria-pressed={selectedDifficulty === level}
+									class={[
+										'border-4 px-3 py-3 text-sm font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:text-base',
+										selectedDifficulty === level
+											? 'scale-105 border-pink-400 bg-pink-400 text-black shadow-[0_0_18px_rgba(244,114,182,0.45)]'
+											: 'border-white bg-black text-white hover:scale-105 hover:border-pink-300 hover:text-pink-200 focus:scale-105 focus:border-pink-300 focus:text-pink-200',
+										hasActiveRun && level !== difficulty && 'opacity-80'
+									]}
+								>
+									{getDifficultyLabel(level)}
+								</button>
+							{/each}
+						</div>
+						<p class="mt-3 text-xs leading-relaxed text-white/70 sm:text-sm">
+							Hard matches the current Chaos balance.
+							{#if hasActiveRun}
+								<span class="block text-yellow-300">Current run difficulty stays locked until the run ends.</span>
+							{/if}
+						</p>
 					</div>
 				</div>
 			{/if}
