@@ -426,7 +426,10 @@
 </script>
 
 <svelte:head>
-	<title>Minesweeper | Game Chaos</title>
+	<title>Minesweeper Chaos | Vintage Puzzle Game</title>
+	<meta name="description" content="Test your logic with Minesweeper Chaos. A vintage-style minefield puzzle game. Avoid the bombs and clear the grid!" />
+	<meta property="og:title" content="Minesweeper Chaos - The Classic Game" />
+	<meta property="og:description" content="Can you clear the 10x10 grid without hitting a mine? Try the most chaotic Minesweeper yet." />
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />

@@ -1135,7 +1135,10 @@
 </script>
 
 <svelte:head>
-	<title>Space Chaos | Game Chaos</title>
+	<title>Space Chaos | Infinite Arcade Shooter</title>
+	<meta name="description" content="Defend the galaxy in Space Chaos! A high-intensity retro space shooter. Destroy the aliens, hide behind shields, and climb the leaderboard." />
+	<meta property="og:title" content="Space Chaos - Galaxy Defender" />
+	<meta property="og:description" content="The aliens are coming! Can you survive the onslaught in this neon-infused space arcade game?" />
 </svelte:head>
 
 <svelte:window

@@ -23,6 +23,10 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
+	
+	<!-- Canonical URL -->
+	<link rel="canonical" href="https://chaos-arcade.pages.dev/" />
+
 	<script type="application/ld+json">
 		{@html JSON.stringify(structuredData)}
 	</script>

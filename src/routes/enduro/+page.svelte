@@ -834,7 +834,10 @@
 </script>
 
 <svelte:head>
-	<title>Enduro | Game Chaos</title>
+	<title>Enduro Chaos | Retro 3D Racing Game</title>
+	<meta name="description" content="Race against the clock and other cars in Enduro Chaos. A 3D retro racing game inspired by classic 1983 arcade hits. Experience fog, ice, and night racing!" />
+	<meta property="og:title" content="Enduro Chaos - 3D Retro Racing" />
+	<meta property="og:description" content="Can you pass 200 cars on Day 1? Speed through changing weather conditions in this intense vintage racer." />
 </svelte:head>
 
 <svelte:window bind:innerWidth={viewportWidth} onkeydown={handleKeyDown} onkeyup={handleKeyUp} onresize={handleResize} />

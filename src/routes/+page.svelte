@@ -1,5 +1,8 @@
 <svelte:head>
-	<title>The Chaos Arcade | Dashboard</title>
+	<title>The Chaos Arcade | Ultimate Vintage Retro Games</title>
+	<meta name="description" content="Play the best vintage arcade games online. Minesweeper, Checkers, and 3D Racing. 100% Free and Caotic." />
+	<meta property="og:title" content="The Chaos Arcade | Retro Gaming Hub" />
+	<meta property="og:description" content="Experience the thrill of classic arcade games with a modern twist. Play Minesweeper, Checkers, and more!" />
 </svelte:head>
 
 <script lang="ts">

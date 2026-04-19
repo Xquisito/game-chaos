@@ -101,6 +101,12 @@
 	});
 </script>
 
+<svelte:head>
+	<title>System Settings | The Chaos Arcade</title>
+	<meta name="description" content="Manage your Chaos Arcade cabinet. Reset scores, tune performance, and configure system settings." />
+	<meta name="robots" content="noindex" />
+</svelte:head>
+
 <div class="flex min-h-screen flex-col items-center justify-center bg-black p-8 font-mono text-white">
 	<div class="mb-12 text-center">
 		<h1

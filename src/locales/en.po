@@ -198,9 +198,8 @@ msgstr "ArrowRight"
 msgid "Enter"
 msgstr "Enter"
 
-#: src/routes/+page.svelte
-msgid "The Chaos Arcade | Dashboard"
-msgstr "The Chaos Arcade | Dashboard"
+#~ msgid "The Chaos Arcade | Dashboard"
+#~ msgstr "The Chaos Arcade | Dashboard"
 
 #: src/routes/+page.svelte
 msgid "Arcade Hub // Ready"
@@ -268,9 +267,8 @@ msgstr "Escape"
 msgid "Row {0}, column {1}"
 msgstr "Row {0}, column {1}"
 
-#: src/routes/checkers/+page.svelte
-msgid "Checkers | Game Chaos"
-msgstr "Checkers | Game Chaos"
+#~ msgid "Checkers | Game Chaos"
+#~ msgstr "Checkers | Game Chaos"
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
@@ -606,9 +604,8 @@ msgstr "Your finger is too curious for its own good. 🕵️‍♂️"
 msgid "ERROR 404: Sanity Not Found. 🧠💨"
 msgstr "ERROR 404: Sanity Not Found. 🧠💨"
 
-#: src/routes/minesweeper/+page.svelte
-msgid "Minesweeper | Game Chaos"
-msgstr "Minesweeper | Game Chaos"
+#~ msgid "Minesweeper | Game Chaos"
+#~ msgstr "Minesweeper | Game Chaos"
 
 #: src/routes/minesweeper/+page.svelte
 msgid "💣 Boom Box 💣"
@@ -684,9 +681,8 @@ msgstr "Normal"
 msgid "Hard"
 msgstr "Hard"
 
-#: src/routes/space-invaders/+page.svelte
-msgid "Space Chaos | Game Chaos"
-msgstr "Space Chaos | Game Chaos"
+#~ msgid "Space Chaos | Game Chaos"
+#~ msgstr "Space Chaos | Game Chaos"
 
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
@@ -785,3 +781,75 @@ msgstr "I REGRET EVERYTHING 😭"
 
 #~ msgid "Your finger is too curious for its own good. 🕵️♂️"
 #~ msgstr "Your finger is too curious for its own good. 🕵️♂️"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Space Chaos | Infinite Arcade Shooter"
+msgstr "Space Chaos | Infinite Arcade Shooter"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Defend the galaxy in Space Chaos! A high-intensity retro space shooter. Destroy the aliens, hide behind shields, and climb the leaderboard."
+msgstr "Defend the galaxy in Space Chaos! A high-intensity retro space shooter. Destroy the aliens, hide behind shields, and climb the leaderboard."
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Space Chaos - Galaxy Defender"
+msgstr "Space Chaos - Galaxy Defender"
+
+#: src/routes/space-invaders/+page.svelte
+msgid "The aliens are coming! Can you survive the onslaught in this neon-infused space arcade game?"
+msgstr "The aliens are coming! Can you survive the onslaught in this neon-infused space arcade game?"
+
+#: src/routes/+page.svelte
+msgid "The Chaos Arcade | Ultimate Vintage Retro Games"
+msgstr "The Chaos Arcade | Ultimate Vintage Retro Games"
+
+#: src/routes/+page.svelte
+msgid "Play the best vintage arcade games online. Minesweeper, Checkers, and 3D Racing. 100% Free and Caotic."
+msgstr "Play the best vintage arcade games online. Minesweeper, Checkers, and 3D Racing. 100% Free and Caotic."
+
+#: src/routes/+page.svelte
+msgid "The Chaos Arcade | Retro Gaming Hub"
+msgstr "The Chaos Arcade | Retro Gaming Hub"
+
+#: src/routes/+page.svelte
+msgid "Experience the thrill of classic arcade games with a modern twist. Play Minesweeper, Checkers, and more!"
+msgstr "Experience the thrill of classic arcade games with a modern twist. Play Minesweeper, Checkers, and more!"
+
+#: src/routes/checkers/+page.svelte
+msgid "Checkers Chaos | Classic Board Game"
+msgstr "Checkers Chaos | Classic Board Game"
+
+#: src/routes/checkers/+page.svelte
+msgid "Play Checkers Chaos, a fast-paced version of the classic board game. Challenge the AI or play with a friend in this vintage-style arcade cabinet."
+msgstr "Play Checkers Chaos, a fast-paced version of the classic board game. Challenge the AI or play with a friend in this vintage-style arcade cabinet."
+
+#: src/routes/checkers/+page.svelte
+msgid "Checkers Chaos - Strategic Board Battle"
+msgstr "Checkers Chaos - Strategic Board Battle"
+
+#: src/routes/checkers/+page.svelte
+msgid "Master the board in Checkers Chaos. Play against easy, medium, or hard AI and claim your victory!"
+msgstr "Master the board in Checkers Chaos. Play against easy, medium, or hard AI and claim your victory!"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Minesweeper Chaos | Vintage Puzzle Game"
+msgstr "Minesweeper Chaos | Vintage Puzzle Game"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Test your logic with Minesweeper Chaos. A vintage-style minefield puzzle game. Avoid the bombs and clear the grid!"
+msgstr "Test your logic with Minesweeper Chaos. A vintage-style minefield puzzle game. Avoid the bombs and clear the grid!"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Minesweeper Chaos - The Classic Game"
+msgstr "Minesweeper Chaos - The Classic Game"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Can you clear the 10x10 grid without hitting a mine? Try the most chaotic Minesweeper yet."
+msgstr "Can you clear the 10x10 grid without hitting a mine? Try the most chaotic Minesweeper yet."
+
+#: src/routes/settings/+page.svelte
+msgid "System Settings | The Chaos Arcade"
+msgstr "System Settings | The Chaos Arcade"
+
+#: src/routes/settings/+page.svelte
+msgid "Manage your Chaos Arcade cabinet. Reset scores, tune performance, and configure system settings."
+msgstr "Manage your Chaos Arcade cabinet. Reset scores, tune performance, and configure system settings."

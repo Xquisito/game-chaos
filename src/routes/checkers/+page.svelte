@@ -459,7 +459,10 @@
 </script>
 
 <svelte:head>
-	<title>Checkers | Game Chaos</title>
+	<title>Checkers Chaos | Classic Board Game</title>
+	<meta name="description" content="Play Checkers Chaos, a fast-paced version of the classic board game. Challenge the AI or play with a friend in this vintage-style arcade cabinet." />
+	<meta property="og:title" content="Checkers Chaos - Strategic Board Battle" />
+	<meta property="og:description" content="Master the board in Checkers Chaos. Play against easy, medium, or hard AI and claim your victory!" />
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
