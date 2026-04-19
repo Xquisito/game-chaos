@@ -26,7 +26,7 @@ Add a new object to the `games` array following this template:
 
 To keep the arcade consistent, every game MUST follow these "Golden Rules of Chaos":
 
-#### 1. Brutalist Aesthetics
+#### 1. Vintage Aesthetics
 We don't do "subtle" or "minimalist." 
 - **Thick Borders**: Use heavy black borders (`border-4` or `border-8 border-black`).
 - **Hard Shadows**: Use heavy, non-blurred shadows (`shadow-[8px_8px_0_rgba(0,0,0,1)]`).

@@ -393,7 +393,10 @@
 			return;
 		}
 
-		if (menuScreen && (event.key === 'Enter' || event.key === ' ' || event.key === 'a' || event.key === 'A')) {
+		if (
+			menuScreen &&
+			(event.key === 'Enter' || event.key === ' ' || event.key === 'a' || event.key === 'A')
+		) {
 			event.preventDefault();
 			activateFocusedMenuItem();
 		}
@@ -428,20 +431,32 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="relative min-h-screen overflow-hidden bg-yellow-300 px-4 py-6 font-mono text-black sm:px-6 sm:py-8">
+<div
+	class="relative min-h-screen overflow-hidden bg-yellow-300 px-4 py-6 font-mono text-black sm:px-6 sm:py-8"
+>
 	{#if splashScreen}
 		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
-			<div class="w-full max-w-4xl border-4 border-black bg-white p-6 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-10">
+			<div
+				class="w-full max-w-4xl border-4 border-black bg-white p-6 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-10"
+			>
 				<div class="mb-8 text-center">
-					<div class="mb-3 text-sm font-black tracking-[0.45em] uppercase text-black/60">Game Chaos</div>
-					<h1 class="text-5xl leading-none font-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-7xl">
+					<div class="mb-3 text-sm font-black tracking-[0.45em] text-black/60 uppercase">
+						Game Chaos
+					</div>
+					<h1
+						class="text-5xl leading-none font-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-7xl"
+					>
 						💣 Boom Box 💣
 					</h1>
-					<p class="mt-4 text-lg font-bold uppercase sm:text-2xl">Brutal little minefield. No mercy.</p>
+					<p class="mt-4 text-lg font-bold uppercase sm:text-2xl">
+						Vintage little minefield. No mercy.
+					</p>
 				</div>
 
 				<div class="grid gap-4 md:grid-cols-[1.3fr_0.7fr]">
-					<div class="border-4 border-black bg-yellow-200 p-5 text-sm font-bold leading-relaxed uppercase sm:text-base">
+					<div
+						class="border-4 border-black bg-yellow-200 p-5 text-sm leading-relaxed font-bold uppercase sm:text-base"
+					>
 						Reveal every safe tile to win.<br />
 						Click or tap to reveal.<br />
 						Right click or long-press to flag.<br />
@@ -452,10 +467,12 @@
 					</div>
 
 					<div class="border-4 border-black bg-black p-5 text-yellow-300">
-						<div class="text-xs font-black tracking-[0.35em] uppercase text-yellow-300/70">Score Board</div>
+						<div class="text-xs font-black tracking-[0.35em] text-yellow-300/70 uppercase">
+							Score Board
+						</div>
 						<div class="mt-4 text-5xl font-black">{wins}</div>
 						<div class="mt-2 text-lg font-bold uppercase">Total Wins</div>
-						<div class="mt-5 text-xs font-bold leading-relaxed uppercase text-yellow-300/70">
+						<div class="mt-5 text-xs leading-relaxed font-bold text-yellow-300/70 uppercase">
 							10 × 10 grid<br />15 mines<br />Simple. Mean. Loud.
 						</div>
 					</div>
@@ -499,8 +516,12 @@
 		</div>
 	{:else}
 		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
-			<div class="relative w-full max-w-4xl border-4 border-black bg-white p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-6">
-				<div class="mb-5 flex flex-col gap-3 border-4 border-black bg-black p-3 text-sm font-black uppercase text-yellow-300 sm:flex-row sm:items-center sm:justify-between sm:text-lg">
+			<div
+				class="relative w-full max-w-4xl border-4 border-black bg-white p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-6"
+			>
+				<div
+					class="mb-5 flex flex-col gap-3 border-4 border-black bg-black p-3 text-sm font-black text-yellow-300 uppercase sm:flex-row sm:items-center sm:justify-between sm:text-lg"
+				>
 					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
 						<span>Mines {minesLeft}</span>
 						<span>Wins {wins}</span>
@@ -516,10 +537,12 @@
 				</div>
 
 				<div class="mb-5 text-center">
-					<h2 class="text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:text-5xl">
+					<h2
+						class="text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:text-5xl"
+					>
 						{gameWon ? 'Victory!' : gameOver ? 'Kaboom!' : 'Minefield Live'}
 					</h2>
-					<p class="mt-2 text-xs font-bold leading-relaxed uppercase text-black/70 sm:text-sm">
+					<p class="mt-2 text-xs leading-relaxed font-bold text-black/70 uppercase sm:text-sm">
 						Click / tap reveal • Right click / long-press flag • Esc / B returns to splash
 					</p>
 				</div>
@@ -573,19 +596,27 @@
 				</div>
 
 				{#if gameScreen}
-					<div class="mt-5 text-center text-xs font-bold leading-relaxed uppercase text-black/65 sm:text-sm">
+					<div
+						class="mt-5 text-center text-xs leading-relaxed font-bold text-black/65 uppercase sm:text-sm"
+					>
 						Need a breather? Esc / B returns to splash and Continue resumes this exact board.
 					</div>
 				{/if}
 
 				{#if endScreen}
-					<div class="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]">
-						<div class="w-full max-w-md border-4 border-black bg-white p-6 text-center shadow-[12px_12px_0_rgba(0,0,0,1)] sm:p-8">
+					<div
+						class="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]"
+					>
+						<div
+							class="w-full max-w-md border-4 border-black bg-white p-6 text-center shadow-[12px_12px_0_rgba(0,0,0,1)] sm:p-8"
+						>
 							<div class="text-6xl sm:text-7xl">{gameWon ? '🏆' : '💥'}</div>
 							<h3 class="mt-4 text-4xl font-black uppercase sm:text-5xl">
 								{gameWon ? 'Victory' : 'Kaboom'}
 							</h3>
-							<p class="mt-4 text-sm font-bold leading-relaxed uppercase text-black/70 sm:text-base">
+							<p
+								class="mt-4 text-sm leading-relaxed font-bold text-black/70 uppercase sm:text-base"
+							>
 								{gameWon
 									? `Board cleared. Total wins: ${wins}.`
 									: 'You poked the spicy rock. Try again or bail to splash.'}
@@ -608,7 +639,7 @@
 								</button>
 							</div>
 
-							<div class="mt-6 text-xs font-bold uppercase text-black/60">
+							<div class="mt-6 text-xs font-bold text-black/60 uppercase">
 								Enter / A to select • Esc / B to return
 							</div>
 						</div>
@@ -622,14 +653,18 @@
 		type="button"
 		tabindex={-1}
 		onclick={triggerChaos}
-		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:rotate-6 hover:scale-105 active:scale-95"
+		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:scale-105 hover:rotate-6 active:scale-95"
 	>
 		Don't Click Me 🚫
 	</button>
 
 	{#if showChaosModal}
-		<div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-			<div class="w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)]">
+		<div
+			class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+		>
+			<div
+				class="w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)]"
+			>
 				<div class="mb-4 text-6xl">🤬</div>
 				<h2 class="mb-4 text-2xl font-black uppercase">Wait, what?!</h2>
 				<p class="mb-8 text-xl font-bold italic">&quot;{modalMessage}&quot;</p>

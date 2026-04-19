@@ -1,7 +1,7 @@
 {
   "name": "The Chaos Arcade",
   "short_name": "Chaos Arcade",
-  "description": "A arena definitiva do caos digital! Jogos Brutalistas Gratuitos.",
+  "description": "A arena definitiva do caos digital! Jogos Vintages Gratuitos.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",
@@ -27,5 +27,8 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["games", "entertainment"]
+  "categories": [
+    "games",
+    "entertainment"
+  ]
 }
