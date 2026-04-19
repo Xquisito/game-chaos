@@ -184,8 +184,8 @@
 	// State
 	let score = $state(0);
 	let highScore = $state(0);
-	let difficulty = $state<Difficulty>('hard');
-	let selectedDifficulty = $state<Difficulty>('hard');
+	let difficulty = $state<Difficulty>('easy');
+	let selectedDifficulty = $state<Difficulty>('easy');
 	let lives = $state(3);
 	let gameOver = $state(false);
 	let gameWon = $state(false);
@@ -1148,18 +1148,20 @@
 <div
 	class="relative flex min-h-screen flex-col items-center justify-center gap-4 overflow-hidden bg-purple-900 p-4 font-mono text-white sm:p-8"
 >
-	<div class="mb-8 text-center">
-		<h1
-			class="animate-pulse text-6xl font-black tracking-tighter text-green-400 uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
-		>
-			SPACE CHAOS
-		</h1>
-		<p class="text-xl font-bold text-pink-400 italic">Pew pew or die!</p>
-	</div>
+	{#if !menuScreen}
+		<div class="mb-8 text-center">
+			<h1
+				class="animate-pulse text-6xl font-black tracking-tighter text-green-400 uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
+			>
+				SPACE CHAOS
+			</h1>
+			<p class="text-xl font-bold text-pink-400 italic">Pew pew or die!</p>
+		</div>
+	{/if}
 
 	<div class="relative" style:width={`${scaledGameWidth}px`} style:height={`${scaledGameHeight}px`}>
 		<div
-			class="absolute top-0 left-0 origin-top-left border-8 border-black bg-black shadow-[20px_20px_0_rgba(0,0,0,1)]"
+			class="absolute top-0 left-0 origin-top-left overflow-hidden border-8 border-black bg-black shadow-[20px_20px_0_rgba(0,0,0,1)]"
 			style:width={`${GAME_WIDTH}px`}
 			style:height={`${GAME_HEIGHT}px`}
 			style:transform={`scale(${gameScale})`}
@@ -1168,13 +1170,13 @@
 			<div
 				class="score-hud absolute top-3 right-0 left-0 z-20 flex items-center justify-between px-6"
 			>
-				<div class="flex items-center gap-6">
-					<div class="flex flex-col items-start">
-						<span class="score-label">SCORE</span>
+				<div class="flex items-center gap-8">
+					<div class="flex items-center gap-2">
+						<span class="score-label">SCORE:</span>
 						<span class="score-value">{score}</span>
 					</div>
-					<div class="flex flex-col items-start">
-						<span class="score-label">HIGH SCORE</span>
+					<div class="flex items-center gap-2">
+						<span class="score-label">HIGH SCORE:</span>
 						<span class="score-value">{highScore}</span>
 					</div>
 				</div>
@@ -1413,7 +1415,7 @@
 				<div
 					class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md"
 				>
-					<div class="mb-12 flex gap-8">
+					<div class="mb-6 flex gap-8">
 						<svg
 							width="40"
 							height="30"
@@ -1487,33 +1489,33 @@
 						</svg>
 					</div>
 					<h2
-						class="mb-4 text-6xl font-black tracking-tighter text-green-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
+						class="mb-2 text-6xl font-black tracking-tighter text-green-400 uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)]"
 					>
 						SPACE CHAOS
 					</h2>
 					<div
-						class="mb-8 max-w-md border-4 border-green-400 bg-black/80 p-5 text-center text-sm leading-relaxed text-white sm:text-base"
+						class="mb-6 max-w-xl border-4 border-green-400 bg-black/80 p-3 text-center text-sm leading-relaxed text-white sm:text-base"
 					>
-						DEFEND THE LINE, SHRED THE SWARM, AND CHASE THE UFO.<br />
-						<span class="mt-3 block text-white/70">
+						DEFEND THE LINE, SHRED THE SWARM, AND CHASE THE UFO.
+						<span class="mt-2 block text-white/70">
 							KEYBOARD / GAMEPAD / TOUCH READY<br />
 							A / ENTER = SELECT • B / ESC = RETURN
 						</span>
 					</div>
 
-					<div class="flex flex-col gap-4">
+					<div class="flex flex-col gap-3">
 						{#if hasActiveRun}
 							<button
 								data-menu-button
 								onclick={continueGame}
-								class="border-4 border-yellow-400 bg-black px-12 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+								class="border-4 border-yellow-400 bg-black px-12 py-3 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 							>
 								CONTINUE
 							</button>
 							<button
 								data-menu-button
 								onclick={() => startGame()}
-								class="border-4 border-white bg-black px-10 py-4 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+								class="border-4 border-white bg-black px-10 py-2 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 							>
 								NEW GAME
 							</button>
@@ -1521,7 +1523,7 @@
 							<button
 								data-menu-button
 								onclick={() => startGame()}
-								class="border-4 border-yellow-400 bg-black px-12 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+								class="border-4 border-yellow-400 bg-black px-12 py-3 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 							>
 								PRESS START
 							</button>
@@ -1530,22 +1532,23 @@
 						<button
 							data-menu-button
 							onclick={backToDashboard}
-							class="border-4 border-white bg-black px-10 py-4 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+							class="border-4 border-white bg-black px-10 py-2 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 						>
 							DASHBOARD
 						</button>
 					</div>
 
-					<div class="mt-8 text-center text-xs leading-relaxed text-white/60 sm:text-sm">
+					<div class="mt-4 text-center text-xs leading-relaxed text-white/60 sm:text-sm">
 						← → MOVE • SPACE / ↑ FIRE<br />
-						D-PAD / STICK MOVE • TOUCH DRAG + FIRE BUTTON
+						D-PAD / STICK MOVE<br />
+						TOUCH DRAG + FIRE BUTTON
 					</div>
 
-					<div class="mt-8 w-full max-w-md border-4 border-pink-400 bg-black/80 p-4 text-center shadow-[0_0_24px_rgba(244,114,182,0.18)]">
+					<div class="mt-6 w-full max-w-md border-4 border-pink-400 bg-black/80 p-3 text-center shadow-[0_0_24px_rgba(244,114,182,0.18)]">
 						<div class="text-xs font-black tracking-[0.35em] text-pink-300 uppercase">
 							Difficulty
 						</div>
-						<div class="mt-4 grid grid-cols-3 gap-3">
+						<div class="mt-3 grid grid-cols-3 gap-3">
 							{#each DIFFICULTY_OPTIONS as level (level)}
 								<button
 									type="button"
@@ -1553,7 +1556,7 @@
 									onclick={() => selectDifficulty(level)}
 									aria-pressed={selectedDifficulty === level}
 									class={[
-										'border-4 px-3 py-3 text-sm font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:text-base',
+										'border-4 px-3 py-2 text-sm font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:text-base',
 										selectedDifficulty === level
 											? 'scale-105 border-pink-400 bg-pink-400 text-black shadow-[0_0_18px_rgba(244,114,182,0.45)]'
 											: 'border-white bg-black text-white hover:scale-105 hover:border-pink-300 hover:text-pink-200 focus:scale-105 focus:border-pink-300 focus:text-pink-200',
