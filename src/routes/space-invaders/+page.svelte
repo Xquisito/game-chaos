@@ -1503,36 +1503,33 @@
 						</span>
 					</div>
 
-					<div class="flex flex-col gap-3">
-						{#if hasActiveRun}
-							<button
-								data-menu-button
-								onclick={continueGame}
-								class="border-4 border-yellow-400 bg-black px-12 py-3 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
-							>
-								CONTINUE
-							</button>
-							<button
-								data-menu-button
-								onclick={() => startGame()}
-								class="border-4 border-white bg-black px-10 py-2 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
-							>
-								NEW GAME
-							</button>
-						{:else}
-							<button
-								data-menu-button
-								onclick={() => startGame()}
-								class="border-4 border-yellow-400 bg-black px-12 py-3 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
-							>
-								PRESS START
-							</button>
-						{/if}
+					<div class="flex flex-wrap items-center justify-center gap-4">
+						<button
+							data-menu-button
+							onclick={continueGame}
+							disabled={!hasActiveRun}
+							class={[
+								'border-4 px-8 py-2 text-2xl font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95',
+								hasActiveRun
+									? 'border-yellow-400 bg-black text-yellow-400 hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black'
+									: 'cursor-not-allowed border-gray-600 bg-gray-900 text-gray-600 opacity-50'
+							]}
+						>
+							CONTINUE
+						</button>
+
+						<button
+							data-menu-button
+							onclick={() => startGame()}
+							class="border-4 border-white bg-black px-8 py-2 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+						>
+							NEW GAME
+						</button>
 
 						<button
 							data-menu-button
 							onclick={backToDashboard}
-							class="border-4 border-white bg-black px-10 py-2 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+							class="border-4 border-white bg-black px-8 py-2 text-2xl font-black text-white uppercase transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
 						>
 							DASHBOARD
 						</button>
