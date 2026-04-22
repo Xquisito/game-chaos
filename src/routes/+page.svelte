@@ -128,6 +128,11 @@
 	// @ts-ignore
 	const appVersion = __APP_VERSION__;
 
+	function setLanguage(lang: string) {
+		document.cookie = `lang=${lang}; path=/; max-age=31536000`;
+		window.location.reload();
+	}
+
 	function isGameCard(card: DashboardCard): card is GameCard {
 		return 'storageKey' in card;
 	}
@@ -340,69 +345,83 @@
 <svelte:window onfocus={loadScores} onkeydown={handleDashboardKeydown} />
 <svelte:document onvisibilitychange={handleVisibilityChange} />
 
-<div class="min-h-screen bg-yellow-300 px-4 py-5 font-mono text-black sm:px-6 sm:py-6">
-	<div class="mx-auto flex w-full max-w-6xl flex-col gap-6">
-		<header class="border-4 border-black bg-yellow-200 p-4 shadow-[8px_8px_0_rgba(0,0,0,1)] sm:p-5">
-			<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+<div class="min-h-screen bg-yellow-300 px-2 py-3 font-mono text-black sm:px-6 sm:py-6">
+	<div class="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
+		<header class="border-4 border-black bg-yellow-200 p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-5 sm:shadow-[8px_8px_0_rgba(0,0,0,1)]">
+			<div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
 				<div>
-					<p class="text-xs font-black tracking-[0.3em] uppercase sm:text-sm">Arcade Hub // Ready</p>
+					<p class="text-[0.6rem] font-black tracking-[0.3em] uppercase sm:text-sm">Arcade Hub // Ready</p>
 					<h1
-						class="mt-2 text-4xl font-black tracking-tight uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-5xl"
+						class="mt-1 text-3xl font-black tracking-tight uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:mt-2 sm:text-5xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
 					>
-						🕹️ The Chaos Arcade
+						🕹️ Chaos Arcade
 					</h1>
-					<p class="mt-2 max-w-3xl text-sm font-bold uppercase sm:text-base">
-						Tap, tab, or hit the D-pad to jump cabinet-to-cabinet.
+					<p class="mt-1 max-w-3xl text-xs font-bold uppercase sm:mt-2 sm:text-base">
+						Tap or use D-pad to jump cabinets.
 					</p>
 				</div>
 
-				<div class="flex flex-wrap gap-2 text-xs font-black uppercase sm:text-sm">
-					<div class="border-4 border-black bg-black px-3 py-2 text-yellow-300">
+				<div class="flex flex-wrap gap-2 text-[0.65rem] font-black uppercase sm:text-sm">
+					<div class="border-[3px] border-black bg-black px-2 py-1 text-yellow-300 sm:border-4 sm:px-3 sm:py-2">
 						{dashboardCards.length} Hotspots
 					</div>
-					<div class="border-4 border-black bg-white px-3 py-2">A / Enter = Launch</div>
-					<div class="border-4 border-black bg-white px-3 py-2">v{appVersion}</div>
+					<div class="border-[3px] border-black bg-white px-2 py-1 sm:border-4 sm:px-3 sm:py-2">Launch = Enter</div>
+					<div class="border-[3px] border-black bg-white px-2 py-1 sm:border-4 sm:px-3 sm:py-2">v{appVersion}</div>
+					<button
+						type="button"
+						onclick={() => setLanguage('en')}
+						class="border-[3px] border-black bg-white px-2 py-1 hover:bg-black hover:text-white sm:border-4 sm:px-3 sm:py-2"
+					>
+						EN
+					</button>
+					<button
+						type="button"
+						onclick={() => setLanguage('pt-BR')}
+						class="border-[3px] border-black bg-white px-2 py-1 hover:bg-black hover:text-white sm:border-4 sm:px-3 sm:py-2"
+					>
+						PT
+					</button>
 				</div>
 			</div>
 		</header>
 
-		<section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+		<section class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
 			{#each dashboardCards as card (card.id)}
 				<a
 					href={card.href}
 					data-dashboard-action="true"
-					class="group block min-h-44 focus:outline-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black"
+					class="group block min-h-32 focus:outline-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black sm:min-h-44"
 				>
 					<article
-						class="flex h-full flex-col border-4 border-black bg-black shadow-[8px_8px_0_rgba(0,0,0,1)] transition-transform duration-100 group-hover:-translate-y-1 group-focus-visible:-translate-y-1"
+						class="flex h-full flex-col border-4 border-black bg-black shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform duration-100 group-hover:-translate-y-1 group-focus-visible:-translate-y-1 sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
 					>
-						<div class="{card.marquee} flex items-center justify-between border-b-4 border-black px-4 py-2">
-							<p class="text-[0.65rem] font-black tracking-[0.22em] uppercase sm:text-xs">
+						<div class="{card.marquee} flex items-center justify-between border-b-4 border-black px-3 py-1 sm:px-4 sm:py-2">
+							<p class="text-[0.6rem] font-black tracking-[0.22em] uppercase sm:text-xs">
 								{card.kicker}
 							</p>
-							<p class="text-sm font-black uppercase">▶</p>
+							<p class="text-xs font-black uppercase sm:text-sm">▶</p>
 						</div>
 
-						<div class="{card.color} flex flex-1 flex-col justify-between p-4 sm:p-5">
-							<div class="flex items-start gap-4">
+						<div class="{card.color} flex flex-1 flex-col justify-between p-3 sm:p-5">
+							<div class="flex items-start gap-3 sm:gap-4">
 								<div
-									class="flex h-16 w-16 shrink-0 items-center justify-center border-4 border-black bg-black text-3xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl"
+									class="flex h-12 w-12 shrink-0 items-center justify-center border-4 border-black bg-black text-2xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl"
 								>
 									{card.emoji}
 								</div>
 
 								<div class="min-w-0 flex-1">
-									<h2 class="text-2xl font-black leading-none uppercase sm:text-[1.7rem]">
+									<h2 class="text-xl font-black leading-none uppercase sm:text-[1.7rem]">
 										{card.name}
 									</h2>
-									<p class="mt-2 text-sm leading-tight font-bold uppercase sm:text-[0.95rem]">
+									<p class="mt-1 text-xs leading-tight font-bold uppercase sm:mt-2 sm:text-[0.95rem]">
 										{card.description}
 									</p>
 								</div>
 							</div>
 
-							<div class="mt-4 flex items-end justify-between gap-3">
-								<div class="border-4 border-black bg-black px-3 py-2 text-xs font-black uppercase text-yellow-300 sm:text-sm">
+							<div class="mt-3 flex items-end justify-between gap-2 sm:mt-4 sm:gap-3">
+								<div class="border-[3px] border-black bg-black px-2 py-1.5 text-[0.65rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm">
 									{#if isGameCard(card)}
 										{scoreText(card)}
 									{:else}
@@ -411,7 +430,7 @@
 								</div>
 
 								<span
-									class="min-w-32 border-4 border-black bg-white px-3 py-3 text-center text-sm font-black uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-all group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:shadow-none sm:min-w-36 sm:text-base"
+									class="min-w-28 border-[3px] border-black bg-white px-2 py-2 text-center text-xs font-black uppercase shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:shadow-none sm:min-w-36 sm:border-4 sm:px-3 sm:py-3 sm:text-base sm:shadow-[4px_4px_0_rgba(0,0,0,1)]"
 								>
 									{card.cta}
 								</span>
@@ -422,9 +441,9 @@
 			{/each}
 		</section>
 
-		<footer class="flex flex-wrap items-center justify-between gap-3 border-4 border-black bg-black px-4 py-3 text-xs font-black uppercase text-yellow-300 shadow-[8px_8px_0_rgba(0,0,0,1)] sm:text-sm">
-			<p>Built with ⚡ SvelteKit & pure chaos</p>
-			<p>Local scores loaded from cabinet memory</p>
+		<footer class="flex flex-wrap items-center justify-between gap-2 border-4 border-black bg-black px-3 py-2 text-[0.65rem] font-black uppercase text-yellow-300 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:px-4 sm:py-3 sm:text-sm sm:shadow-[8px_8px_0_rgba(0,0,0,1)]">
+			<p>Built with ⚡ SvelteKit</p>
+			<p>Cabinet memory: Online</p>
 		</footer>
 	</div>
 </div>

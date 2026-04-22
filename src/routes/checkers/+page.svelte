@@ -11,22 +11,19 @@
 	const SIZE = 8;
 	const WINS_STORAGE_KEY = 'checkers-wins';
 	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
-	const DIFFICULTIES: Difficulty[] = ['human', 'easy', 'medium', 'hard'];
+	const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'human'];
 
 	let board = $state<Cell[][]>([]);
 	let selectedCell = $state<{ r: number; c: number } | null>(null);
 	let turn = $state<PieceType>('white');
 	let gameOver = $state(false);
 	let winner = $state<PieceType | null>(null);
-	let difficulty = $state<Difficulty>('human');
-	let selectedDifficulty = $state<Difficulty>('human');
+	let difficulty = $state<Difficulty>('easy');
+	let selectedDifficulty = $state<Difficulty>('easy');
 	let isAiThinking = $state(false);
 	let screen = $state<Screen>('splash');
 	let hasActiveRun = $state(false);
 	let wins = $state(0);
-	let showChaosModal = $state(false);
-	let modalMessage = $state('');
-
 	let aiTurnToken = 0;
 
 	let splashScreen = $derived(screen === 'splash');
@@ -77,7 +74,6 @@
 	}
 
 	function startGame() {
-		showChaosModal = false;
 		difficulty = selectedDifficulty;
 		initGame();
 		hasActiveRun = true;
@@ -87,7 +83,6 @@
 	function continueGame() {
 		if (!hasActiveRun || board.length === 0) return;
 
-		showChaosModal = false;
 		isAiThinking = false;
 		aiTurnToken += 1;
 		screen = 'game';
@@ -104,7 +99,6 @@
 	}
 
 	function returnToSplash(preserveRun = false) {
-		showChaosModal = false;
 		isAiThinking = false;
 		aiTurnToken += 1;
 		screen = 'splash';
@@ -351,26 +345,6 @@
 		}
 	}
 
-	function triggerChaos() {
-		const messages = [
-			'STOP TOUCHING THE BOARD! 😤',
-			'SYSTEM ERROR: Too much strategy detected! ⚠️',
-			'Are you trying to win?! 🤨',
-			'Your pieces are feeling threatened. 🕵️‍♂️',
-			'ERROR 404: Victory Not Found. 🧠💨'
-		];
-
-		modalMessage = messages[Math.floor(Math.random() * messages.length)];
-		showChaosModal = true;
-	}
-
-	function closeChaosModal() {
-		showChaosModal = false;
-		if (menuScreen) {
-			focusMenuSoon();
-		}
-	}
-
 	function getMenuButtons() {
 		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
 	}
@@ -404,17 +378,17 @@
 
 	async function focusMenuSoon() {
 		await tick();
+		// On splash screen, focus the currently selected difficulty button
+		const selectedButton = document.querySelector('[data-selected="true"]') as HTMLElement | null;
+		if (selectedButton) {
+			selectedButton.focus();
+			return;
+		}
 		const firstButton = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement | null;
 		firstButton?.focus();
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (showChaosModal && ['Escape', 'Enter', ' ', 'a', 'A', 'b', 'B'].includes(event.key)) {
-			event.preventDefault();
-			closeChaosModal();
-			return;
-		}
-
 		if (event.key === 'Escape' || event.key === 'b' || event.key === 'B') {
 			event.preventDefault();
 			handleReturnAction();
@@ -467,73 +441,66 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="relative min-h-screen overflow-hidden bg-orange-400 px-4 py-6 font-mono text-black sm:px-6 sm:py-8">
+<div class="relative min-h-screen overflow-hidden bg-orange-400 px-1 py-1 font-mono text-black sm:px-6 sm:py-8">
 	{#if splashScreen}
-		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
-			<div class="w-full max-w-5xl border-4 border-black bg-white p-6 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-10">
-				<div class="mb-8 text-center">
-					<div class="mb-3 text-sm font-black tracking-[0.45em] uppercase text-black/60">Game Chaos</div>
-					<h1 class="text-5xl leading-none font-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-7xl">
+		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
+			<div class="w-full max-w-5xl border-4 border-black bg-white p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]">
+				<div class="mb-3 text-center sm:mb-8">
+					<div class="mb-1 text-[0.6rem] font-black tracking-[0.45em] uppercase text-black/60 sm:mb-3 sm:text-sm">Game Chaos</div>
+					<h1 class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
 						🏁 Checkers Chaos 🏁
 					</h1>
-					<p class="mt-4 text-lg font-bold uppercase sm:text-2xl">Pick white. Pick fights. Pick again.</p>
+					<p class="mt-1 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">Pick white. Pick fights.</p>
 				</div>
 
-				<div class="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-					<div class="border-4 border-black bg-orange-200 p-5 text-sm font-bold leading-relaxed uppercase sm:text-base">
-						You play white.<br />
-						Tap or click a piece, then tap its destination.<br />
-						Arrow keys / Tab move menu focus.<br />
-						A / Enter = select • B / Esc = return.<br />
-						<span class="mt-4 block text-black/70">
-							During a live match, Esc / B jumps back here and Continue resumes the exact board.
+				<div class="grid gap-3 sm:gap-4 sm:grid-cols-[1.1fr_0.9fr]">
+					<div class="border-4 border-black bg-orange-200 p-2 text-[0.65rem] font-bold leading-relaxed uppercase sm:p-5 sm:text-base">
+						You play white. Tap/click piece then destination.
+						<span class="mt-1 block text-black/70 sm:mt-4">
+							A / Enter = select • B / Esc = return.
 						</span>
 					</div>
 
-					<div class="border-4 border-black bg-black p-5 text-orange-400">
-						<div class="text-xs font-black tracking-[0.35em] uppercase text-orange-400/70">Score Board</div>
-						<div class="mt-4 text-5xl font-black">{wins}</div>
-						<div class="mt-2 text-lg font-bold uppercase">Player Wins</div>
-						<div class="mt-5 text-xs font-bold leading-relaxed uppercase text-orange-400/70">
-							Live match: {hasActiveRun ? activeDifficultyLabel : 'none'}<br />
-							New game: {queuedDifficultyLabel}
+					<div class="border-4 border-black bg-black p-2 text-orange-400 sm:p-5">
+						<div class="flex items-center justify-between sm:block">
+							<div class="text-[0.6rem] font-black tracking-[0.35em] uppercase text-orange-400/70 sm:text-xs">Score Board</div>
+							<div class="flex items-baseline gap-2 sm:mt-4 sm:block">
+								<div class="text-xl font-black sm:text-5xl">{wins}</div>
+								<div class="text-xs font-bold uppercase sm:mt-2 sm:text-lg">Player Wins</div>
+							</div>
 						</div>
 					</div>
 				</div>
 
-				<div class="mt-8 border-4 border-black bg-white p-5">
-					<div class="mb-3 text-sm font-black tracking-[0.3em] uppercase text-black/60">Difficulty</div>
-					<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+				<div class="mt-2 border-4 border-black bg-white p-2 sm:mt-8 sm:p-5">
+					<div class="mb-2 text-[0.6rem] font-black tracking-[0.3em] uppercase text-black/60 sm:mb-3 sm:text-sm">Difficulty</div>
+					<div class="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
 						{#each DIFFICULTIES as diff (diff)}
 							<button
 								type="button"
 								data-menu-button
+								data-selected={selectedDifficulty === diff ? 'true' : undefined}
 								onclick={() => (selectedDifficulty = diff)}
 								class={[
-									'border-4 px-4 py-4 text-lg font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-4 active:scale-[0.98]',
+									'border-2 px-1 py-1 text-[0.7rem] font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-4 sm:py-4 sm:text-lg sm:focus-visible:ring-offset-4',
 									selectedDifficulty === diff
-										? 'border-orange-400 bg-black text-orange-400 hover:scale-[1.02] focus-visible:ring-white focus-visible:ring-offset-white'
-										: 'border-black bg-orange-100 text-black hover:scale-[1.02] hover:bg-black hover:text-white focus:bg-black focus:text-white focus-visible:ring-orange-400 focus-visible:ring-offset-white'
+										? 'border-4 border-orange-500 bg-black text-orange-400 scale-105 hover:scale-110 focus-visible:ring-white focus-visible:ring-offset-white'
+										: 'border-black bg-orange-100 text-black hover:scale-[1.02] hover:bg-orange-200 focus:bg-orange-200 focus-visible:ring-2 focus-visible:ring-orange-300 focus-visible:ring-offset-white'
 								]}
 							>
-								{diff === 'human' ? '2 Players' : `${diff} AI`}
+								{diff === 'human' ? '2P' : `${diff} AI`}
 							</button>
 						{/each}
 					</div>
-					{#if hasActiveRun}
-						<p class="mt-4 text-xs font-bold leading-relaxed uppercase text-black/65">
-							Continue keeps the current {activeDifficultyLabel} board. New Game uses the selected mode.
-						</p>
-					{/if}
 				</div>
 
-				<div class="mt-8 flex flex-col gap-4">
+				<div class="mt-2 flex flex-col gap-2 sm:mt-8 sm:gap-4">
 					{#if hasActiveRun}
 						<button
 							type="button"
 							data-menu-button
 							onclick={continueGame}
-							class="border-4 border-orange-400 bg-black px-8 py-5 text-3xl font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+							class="border-2 border-orange-400 bg-black px-4 py-2 text-base font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
 						>
 							Continue
 						</button>
@@ -541,7 +508,7 @@
 							type="button"
 							data-menu-button
 							onclick={startGame}
-							class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+							class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
 						>
 							New Game
 						</button>
@@ -550,7 +517,7 @@
 							type="button"
 							data-menu-button
 							onclick={startGame}
-							class="border-4 border-orange-400 bg-black px-8 py-5 text-3xl font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+							class="border-2 border-orange-400 bg-black px-4 py-2 text-base font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
 						>
 							Press Start
 						</button>
@@ -560,7 +527,7 @@
 						type="button"
 						data-menu-button
 						onclick={backToDashboard}
-						class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-orange-300 active:scale-[0.98]"
+						class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
 					>
 						Dashboard
 					</button>
@@ -587,17 +554,8 @@
 					{/if}
 				</div>
 
-				<div class="mb-5 text-center">
-					<h2 class="text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:text-5xl">
-						{endScreen ? (winner === 'white' ? 'White Wins!' : 'Black Wins!') : 'Board Live'}
-					</h2>
-					<p class="mt-2 text-xs font-bold leading-relaxed uppercase text-black/70 sm:text-sm">
-						Select a white piece, then choose its landing square.
-					</p>
-				</div>
-
-				<div class="mx-auto w-fit border-8 border-black bg-black p-2 shadow-[8px_8px_0_rgba(0,0,0,0.2)]">
-					<div class="grid" style={`grid-template-columns: repeat(${SIZE}, minmax(0, 1fr));`}>
+				<div class="mx-auto aspect-square border-0 bg-black p-1 sm:border-8 sm:p-2 w-full max-w-lg">
+					<div class="grid h-full grid-cols-8 grid-rows-8">
 						{#each board as row, r (r)}
 							{#each row as cell, c (`${r}-${c}`)}
 								<button
@@ -606,7 +564,7 @@
 									aria-label={getCellLabel(r, c, cell)}
 									onclick={() => handleCellClick(r, c)}
 									class={[
-										'flex h-12 w-12 items-center justify-center text-4xl transition-all select-none sm:h-20 sm:w-20 sm:text-6xl',
+										'flex items-center justify-center text-[min(9vw,3.5rem)] transition-all select-none overflow-hidden',
 										(r + c) % 2 === 0 ? 'bg-orange-200' : 'bg-orange-800',
 										selectedCell?.r === r && selectedCell?.c === c
 											? 'z-20 scale-110 ring-4 ring-yellow-400'
@@ -680,31 +638,7 @@
 		</div>
 	{/if}
 
-	<button
-		type="button"
-		tabindex={-1}
-		onclick={triggerChaos}
-		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:rotate-6 hover:scale-105 active:scale-95"
-	>
-		Don't Click Me 🚫
-	</button>
 
-	{#if showChaosModal}
-		<div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-			<div class="w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)]">
-				<div class="mb-4 text-6xl">🤬</div>
-				<h2 class="mb-4 text-2xl font-black uppercase">Wait, what?!</h2>
-				<p class="mb-8 text-xl font-bold italic">&quot;{modalMessage}&quot;</p>
-				<button
-					type="button"
-					onclick={closeChaosModal}
-					class="w-full border-4 border-white bg-black px-6 py-3 font-black text-white uppercase transition-colors hover:bg-pink-500 focus:bg-pink-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-4 focus-visible:ring-offset-white"
-				>
-					Fine, I'm sorry 😔
-				</button>
-			</div>
-		</div>
-	{/if}
 </div>
 
 <style>

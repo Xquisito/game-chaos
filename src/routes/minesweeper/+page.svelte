@@ -24,8 +24,10 @@
 	let endMode = $state<EndMode>(null);
 	let hasActiveRun = $state(false);
 	let wins = $state(0);
-	let showChaosModal = $state(false);
-	let modalMessage = $state('');
+	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
+	let longPressPointerId: number | null = null;
+	let longPressCellKey = '';
+	let suppressedRevealKeys: string[] = [];
 
 	let splashScreen = $derived(screen === 'splash');
 	let gameScreen = $derived(screen === 'game');
@@ -42,11 +44,6 @@
 		}
 		return MINES_COUNT - flagged;
 	});
-
-	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
-	let longPressPointerId: number | null = null;
-	let longPressCellKey = '';
-	let suppressedRevealKeys: string[] = [];
 
 	function createEmptyGrid() {
 		const nextGrid: Cell[][] = [];
@@ -108,7 +105,6 @@
 	}
 
 	function startGame() {
-		showChaosModal = false;
 		initGame();
 		hasActiveRun = true;
 		screen = 'game';
@@ -116,7 +112,6 @@
 
 	function continueGame() {
 		if (!hasActiveRun || grid.length === 0) return;
-		showChaosModal = false;
 		endMode = null;
 		screen = 'game';
 	}
@@ -131,7 +126,6 @@
 
 	function returnToSplash(preserveRun = false) {
 		clearLongPress();
-		showChaosModal = false;
 		screen = 'splash';
 		focusMenuSoon();
 
@@ -237,9 +231,10 @@
 		if (!gameScreen) return;
 
 		const cell = grid[r]?.[c];
-		if (!cell || cell.state === 'revealed') return;
+		// Only flag if it's hidden; do not allow toggling off here to avoid race conditions
+		if (!cell || cell.state !== 'hidden') return;
 
-		cell.state = cell.state === 'flagged' ? 'hidden' : 'flagged';
+		cell.state = 'flagged';
 	}
 
 	function getCellKey(r: number, c: number) {
@@ -311,26 +306,6 @@
 		handleFlag(r, c);
 	}
 
-	function triggerChaos() {
-		const messages = [
-			'I TOLD YOU NOT TO CLICK IT! 😤',
-			'SYSTEM ERROR: Too much chaos detected! ⚠️',
-			'Are you even listening?! 🤨',
-			'Your finger is too curious for its own good. 🕵️‍♂️',
-			'ERROR 404: Sanity Not Found. 🧠💨'
-		];
-
-		modalMessage = messages[Math.floor(Math.random() * messages.length)];
-		showChaosModal = true;
-	}
-
-	function closeChaosModal() {
-		showChaosModal = false;
-		if (menuScreen) {
-			focusMenuSoon();
-		}
-	}
-
 	function getMenuButtons() {
 		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
 	}
@@ -369,12 +344,6 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (showChaosModal && ['Escape', 'Enter', ' ', 'a', 'A', 'b', 'B'].includes(event.key)) {
-			event.preventDefault();
-			closeChaosModal();
-			return;
-		}
-
 		if (event.key === 'Escape' || event.key === 'b' || event.key === 'B') {
 			event.preventDefault();
 			handleReturnAction();
@@ -435,65 +404,60 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div
-	class="relative min-h-screen overflow-hidden bg-yellow-300 px-4 py-6 font-mono text-black sm:px-6 sm:py-8"
+	class="relative min-h-screen overflow-hidden bg-yellow-300 px-1 py-1 font-mono text-black sm:px-6 sm:py-8"
 >
 	{#if splashScreen}
-		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
+		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
 			<div
-				class="w-full max-w-4xl border-4 border-black bg-white p-6 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-10"
+				class="w-full max-w-4xl border-4 border-black bg-white p-4 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
 			>
-				<div class="mb-8 text-center">
-					<div class="mb-3 text-sm font-black tracking-[0.45em] text-black/60 uppercase">
+				<div class="mb-5 text-center sm:mb-8">
+					<div class="mb-2 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm">
 						Game Chaos
 					</div>
 					<h1
-						class="text-5xl leading-none font-black uppercase drop-shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-7xl"
+						class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
 					>
 						💣 Boom Box 💣
 					</h1>
-					<p class="mt-4 text-lg font-bold uppercase sm:text-2xl">
-						Vintage little minefield. No mercy.
+					<p class="mt-2 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">
+						Vintage minefield. No mercy.
 					</p>
 				</div>
 
 				<div class="grid gap-4 md:grid-cols-[1.3fr_0.7fr]">
 					<div
-						class="border-4 border-black bg-yellow-200 p-5 text-sm leading-relaxed font-bold uppercase sm:text-base"
+						class="border-4 border-black bg-yellow-200 p-3 text-xs leading-relaxed font-bold uppercase sm:p-5 sm:text-base"
 					>
 						Reveal every safe tile to win.<br />
-						Click or tap to reveal.<br />
-						Right click or long-press to flag.<br />
-						<span class="mt-4 block text-black/70">
-							Arrow keys / Tab move menu focus.<br />
+						Click/tap reveal • Long-press flag.<br />
+						<span class="mt-3 block text-black/70 sm:mt-4">
 							A / Enter = select • B / Esc = return.
 						</span>
 					</div>
 
-					<div class="border-4 border-black bg-black p-5 text-yellow-300">
-						<div class="text-xs font-black tracking-[0.35em] text-yellow-300/70 uppercase">
+					<div class="border-4 border-black bg-black p-3 text-yellow-300 sm:p-5">
+						<div class="text-[0.6rem] font-black tracking-[0.35em] text-yellow-300/70 uppercase sm:text-xs">
 							Score Board
 						</div>
-						<div class="mt-4 text-5xl font-black">{wins}</div>
-						<div class="mt-2 text-lg font-bold uppercase">Total Wins</div>
-						<div class="mt-5 text-xs leading-relaxed font-bold text-yellow-300/70 uppercase">
-							10 × 10 grid<br />15 mines<br />Simple. Mean. Loud.
-						</div>
+						<div class="mt-2 text-3xl font-black sm:mt-4 sm:text-5xl">{wins}</div>
+						<div class="mt-1 text-sm font-bold uppercase sm:mt-2 sm:text-lg">Total Wins</div>
 					</div>
 				</div>
 
-				<div class="mt-8 flex flex-col gap-4">
+				<div class="mt-6 flex flex-col gap-2 sm:mt-8 sm:gap-4">
 					{#if hasActiveRun}
 						<button
 							data-menu-button
 							onclick={continueGame}
-							class="border-4 border-yellow-400 bg-black px-8 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
+							class="border-2 border-yellow-400 bg-black px-4 py-3 text-lg font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
 						>
 							Continue
 						</button>
 						<button
 							data-menu-button
 							onclick={startGame}
-							class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
+							class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
 						>
 							New Game
 						</button>
@@ -501,7 +465,7 @@
 						<button
 							data-menu-button
 							onclick={startGame}
-							class="border-4 border-yellow-400 bg-black px-8 py-5 text-3xl font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
+							class="border-2 border-yellow-400 bg-black px-4 py-3 text-lg font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
 						>
 							Press Start
 						</button>
@@ -510,7 +474,7 @@
 					<button
 						data-menu-button
 						onclick={backToDashboard}
-						class="border-4 border-black bg-white px-8 py-4 text-2xl font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-yellow-300 active:scale-[0.98]"
+						class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
 					>
 						Dashboard
 					</button>
@@ -539,27 +503,25 @@
 					{/if}
 				</div>
 
-				<div class="mb-5 text-center">
-					<h2
-						class="text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:text-5xl"
-					>
-						{gameWon ? 'Victory!' : gameOver ? 'Kaboom!' : 'Minefield Live'}
-					</h2>
-					<p class="mt-2 text-xs leading-relaxed font-bold text-black/70 uppercase sm:text-sm">
-						Click / tap reveal • Right click / long-press flag • Esc / B returns to splash
-					</p>
-				</div>
+			<div class="mb-3 text-center sm:mb-5">
+				<h2 class="hidden text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:block sm:text-5xl">
+					{gameWon ? 'Victory!' : gameOver ? 'Kaboom!' : 'Minefield Live'}
+				</h2>
+				<p class="mt-1 hidden text-xs font-bold leading-relaxed text-black/70 uppercase sm:mt-2 sm:block sm:text-sm">
+					Click / tap reveal • Right click / long-press flag • Esc / B returns to splash
+				</p>
+			</div>
 
 				<div
-					class="mx-auto grid w-fit gap-1 border-4 border-black bg-black p-1"
-					style={`grid-template-columns: repeat(${COLS}, minmax(0, 1fr));`}
+					class="mx-auto w-fit gap-1 border-2 border-black bg-black p-1 sm:border-4 sm:p-1"
+					style={`display: grid; grid-template-columns: repeat(${COLS}, minmax(0, 1fr));`}
 				>
 					{#each grid as row, r (r)}
 						{#each row as cell, c (`${r}-${c}`)}
 							<button
 								type="button"
 								class={[
-									'cell-button flex h-8 w-8 items-center justify-center border-2 border-black text-sm font-black transition-all select-none sm:h-10 sm:w-10 sm:text-base',
+									'cell-button flex h-8 w-8 items-center justify-center border border-black text-sm font-black transition-all select-none sm:h-10 sm:w-10 sm:border-2 sm:text-base',
 									cell.state === 'revealed'
 										? 'bg-white text-black'
 										: 'bg-zinc-500 text-white hover:bg-zinc-400 active:translate-y-[2px]',
@@ -652,35 +614,7 @@
 		</div>
 	{/if}
 
-	<button
-		type="button"
-		tabindex={-1}
-		onclick={triggerChaos}
-		class="absolute right-4 bottom-4 border-4 border-black bg-pink-500 p-4 text-xs font-black text-white uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform hover:scale-105 hover:rotate-6 active:scale-95"
-	>
-		Don't Click Me 🚫
-	</button>
 
-	{#if showChaosModal}
-		<div
-			class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-		>
-			<div
-				class="w-full max-w-sm border-8 border-black bg-white p-8 text-center shadow-[16px_16px_0_rgba(0,0,0,1)]"
-			>
-				<div class="mb-4 text-6xl">🤬</div>
-				<h2 class="mb-4 text-2xl font-black uppercase">Wait, what?!</h2>
-				<p class="mb-8 text-xl font-bold italic">&quot;{modalMessage}&quot;</p>
-				<button
-					type="button"
-					onclick={closeChaosModal}
-					class="w-full border-4 border-white bg-black px-6 py-3 font-black text-white uppercase transition-colors hover:bg-pink-500 focus:bg-pink-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-white"
-				>
-					Fine, I'm sorry 😔
-				</button>
-			</div>
-		</div>
-	{/if}
 </div>
 
 <style>

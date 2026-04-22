@@ -848,43 +848,43 @@
 	<!-- SPLASH -->
 	{#if !gameStarted && !gameOver}
 		<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black">
-			<div class="mb-8 flex scale-125 gap-6">
-				<div class="text-7xl">🏎️</div>
-				<div class="text-7xl text-yellow-400">1983</div>
+			<div class="mb-3 flex gap-4 sm:mb-8 sm:gap-6">
+				<div class="text-4xl sm:text-7xl">🏎️</div>
+				<div class="text-4xl text-yellow-400 sm:text-7xl">1983</div>
 			</div>
 
 			<h1
-				class="mb-3 text-[92px] leading-none font-black tracking-[-6px] text-[#ffcc00] drop-shadow-[0_8px_0_#000]"
+				class="mb-1 text-[56px] leading-none font-black tracking-[-4px] text-[#ffcc00] drop-shadow-[4px_4px_0_#000] sm:mb-3 sm:text-[92px] sm:tracking-[-6px]"
 			>
 				ENDURO
 			</h1>
-			<div class="mb-10 text-4xl font-bold tracking-[6px] text-white">ACTIVISION</div>
+			<div class="mb-3 text-xl font-bold tracking-[4px] text-white sm:mb-10 sm:text-4xl sm:tracking-[6px]">ACTIVISION</div>
 
 			<div
-				class="mb-12 max-w-xs border-4 border-white bg-black p-6 text-center text-lg leading-tight text-white"
+				class="mb-4 max-w-xs border-4 border-white bg-black p-3 text-center text-sm leading-tight text-white shadow-[4px_4px_0_rgba(255,255,255,1)] sm:mb-12 sm:p-6 sm:text-lg"
 			>
 				PASS <span class="text-yellow-300">200 CARS</span> ON DAY 1<br />
 				THEN 300+ EVERY DAY AFTER<br />
-				<span class="mt-4 block text-xs opacity-70">FOG • ICE • NIGHT</span>
-				<span class="mt-3 block text-xs leading-relaxed opacity-70">
+				<span class="mt-2 block text-[0.6rem] opacity-70 sm:mt-4 sm:text-xs">FOG • ICE • NIGHT</span>
+				<span class="mt-1 block text-[0.6rem] leading-relaxed opacity-70 sm:mt-3 sm:text-xs">
 					KEYBOARD • GAMEPAD • TOUCH<br />
 					A / ENTER = SELECT • B / ESC = RETURN
 				</span>
 			</div>
 
-			<div class="mt-8 flex flex-col gap-4">
+			<div class="mt-2 flex flex-col gap-2 sm:mt-8 sm:gap-4">
 				{#if hasActiveRun}
 					<button
 						data-menu-button
 						onclick={continueGame}
-						class="border-4 border-yellow-400 bg-black px-14 py-5 text-4xl font-black text-yellow-400 transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+						class="border-4 border-yellow-400 bg-black px-8 py-2 text-xl font-black text-yellow-400 shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black hover:shadow-none focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-5 sm:text-4xl"
 					>
 						CONTINUE
 					</button>
 					<button
 						data-menu-button
 						onclick={startGame}
-						class="border-4 border-white bg-black px-14 py-4 text-center text-2xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+						class="border-4 border-white bg-black px-8 py-2 text-center text-lg font-black text-white shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-white hover:text-black hover:shadow-none focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-4 sm:text-2xl"
 					>
 						NEW GAME
 					</button>
@@ -892,7 +892,7 @@
 					<button
 						data-menu-button
 						onclick={startGame}
-						class="border-4 border-yellow-400 bg-black px-14 py-5 text-4xl font-black text-yellow-400 transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+						class="border-4 border-yellow-400 bg-black px-8 py-2 text-xl font-black text-yellow-400 shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black hover:shadow-none focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-5 sm:text-4xl"
 					>
 						PRESS START
 					</button>
@@ -900,19 +900,19 @@
 				<button
 					data-menu-button
 					onclick={backToDashboard}
-					class="border-4 border-white bg-black px-14 py-4 text-center text-2xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95"
+					class="border-4 border-white bg-black px-8 py-2 text-center text-lg font-black text-white shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-white hover:text-black hover:shadow-none focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-4 sm:text-2xl"
 				>
 					DASHBOARD
 				</button>
 			</div>
 
-			<div class="mt-16 text-sm text-white/60">
+			<div class="mt-4 text-xs text-white/60 sm:mt-16 sm:text-sm">
 				← → / WASD STEER • ↑ ↓ SPEED<br />
 				GAMEPAD + TOUCH DRAG / THROTTLE / BRAKE
 			</div>
 
 			{#if highScore > 0}
-				<div class="absolute bottom-12 text-xl font-bold text-yellow-400">
+				<div class="absolute bottom-4 text-sm font-bold text-yellow-400 sm:bottom-12 sm:text-xl">
 					HIGH SCORE — {highScore}
 				</div>
 			{/if}
@@ -939,7 +939,7 @@
 
 			{#if weather !== 'clear'}
 				<div
-					class="absolute top-24 left-1/2 -translate-x-1/2 rounded border border-red-500 bg-black/80 px-8 py-2 text-xl font-bold text-red-400 shadow-xl"
+					class="absolute top-24 left-1/2 -translate-x-1/2 border-2 border-red-500 bg-black/80 px-8 py-2 text-xl font-bold text-red-400"
 				>
 					{weather.toUpperCase()} CONDITIONS
 				</div>
@@ -966,7 +966,7 @@
 
 			{#if paused}
 				<div class="absolute top-32 left-0 right-0 flex justify-center bg-transparent">
-					<div class="rounded-xl border-4 border-yellow-400 bg-black/80 px-16 py-6">
+					<div class="border-4 border-yellow-400 bg-black/80 px-16 py-6">
 						<div class="text-5xl font-black tracking-widest text-yellow-400">PAUSED</div>
 						<div class="mt-2 text-center text-lg font-bold text-white/70">PRESS 'P' TO RESUME</div>
 					</div>
@@ -1037,36 +1037,36 @@
 	<!-- GAME OVER -->
 	{#if gameOver}
 		<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95">
-			<div class="mb-6 text-8xl font-black text-red-500 drop-shadow-[0_10px_4px_#000]">CRASHED</div>
+			<div class="mb-2 text-5xl font-black text-red-500 drop-shadow-[4px_4px_0_#000] sm:mb-6 sm:text-8xl">CRASHED</div>
 
-			<div class="mb-8 text-5xl font-bold text-white">DAY {day} • {carsPassed} CARS</div>
+			<div class="mb-3 text-xl font-bold text-white sm:mb-8 sm:text-5xl">DAY {day} • {carsPassed} CARS</div>
 
-			<div class="mb-12 text-6xl font-black text-yellow-400">
+			<div class="mb-6 text-3xl font-black text-yellow-400 sm:mb-12 sm:text-6xl">
 				{score}
 			</div>
 
 			{#if score >= highScore && score > 0}
-				<div class="mb-8 text-3xl font-bold tracking-widest text-lime-400">NEW HIGH SCORE</div>
+				<div class="mb-4 text-lg font-bold tracking-widest text-lime-400 sm:mb-8 sm:text-3xl">NEW HIGH SCORE</div>
 			{/if}
 
-			<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-2 sm:gap-4">
 				<button
 					data-menu-button
 					onclick={restartGame}
-					class="border-4 border-white bg-white px-16 py-6 text-4xl font-black text-black transition-all hover:scale-110 hover:bg-yellow-300 focus:scale-110 focus:bg-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+					class="border-4 border-white bg-white px-8 py-3 text-xl font-black text-black shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-yellow-300 hover:shadow-none focus:scale-110 focus:bg-yellow-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black sm:px-16 sm:py-6 sm:text-4xl"
 				>
 					RETRY
 				</button>
 				<button
 					data-menu-button
 					onclick={goToSplash}
-					class="border-4 border-white px-16 py-6 text-4xl font-black text-white transition-all hover:scale-110 hover:bg-white hover:text-black focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+					class="border-4 border-white px-8 py-3 text-xl font-black text-white shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-white hover:text-black hover:shadow-none focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black sm:px-16 sm:py-6 sm:text-4xl"
 				>
 					BACK TO SPLASH
 				</button>
 			</div>
 
-			<div class="mt-12 text-sm text-white/50">ENTER / A TO SELECT • ESC / B TO RETURN</div>
+			<div class="mt-6 text-xs text-white/50 sm:mt-12 sm:text-sm">ENTER / A TO SELECT • ESC / B TO RETURN</div>
 		</div>
 	{/if}
 </div>
