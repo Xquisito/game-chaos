@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { onMount, tick } from 'svelte';
+	import { KEY_ESCAPE, KEY_ENTER, KEY_SPACE, isArrowKey, normalizeKey } from '$lib/keys';
 
 	const ROWS = 10;
 	const COLS = 10;
@@ -344,19 +345,22 @@
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' || event.key === 'b' || event.key === 'B') {
+		if (event.key === KEY_ESCAPE || event.key === 'b' || event.key === 'B') {
 			event.preventDefault();
 			handleReturnAction();
 			return;
 		}
 
-		if (menuScreen && (event.key === 'ArrowUp' || event.key === 'ArrowLeft')) {
+		const key = normalizeKey(event.key);
+		const arrow = isArrowKey(event.key);
+
+		if (menuScreen && (key === 'w' || key === 'W' || (arrow && key === 'a'))) {
 			event.preventDefault();
 			moveFocus(-1);
 			return;
 		}
 
-		if (menuScreen && (event.key === 'ArrowDown' || event.key === 'ArrowRight')) {
+		if (menuScreen && (key === 's' || key === 'S' || (arrow && key === 'd'))) {
 			event.preventDefault();
 			moveFocus(1);
 			return;
@@ -364,7 +368,7 @@
 
 		if (
 			menuScreen &&
-			(event.key === 'Enter' || event.key === ' ' || event.key === 'a' || event.key === 'A')
+			(event.key === KEY_ENTER || event.key === KEY_SPACE || event.key === 'a' || event.key === 'A')
 		) {
 			event.preventDefault();
 			activateFocusedMenuItem();

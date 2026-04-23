@@ -6,6 +6,8 @@
 </svelte:head>
 
 <script lang="ts">
+	import { KEY_ENTER, KEY_SPACE, ARROW_TO_DIR } from '$lib/keys';
+
 	type ScoreId = 'minesweeper' | 'checkers' | 'enduro' | 'space-chaos';
 	type Direction = 'up' | 'down' | 'left' | 'right';
 
@@ -241,35 +243,16 @@
 		const activeActionable = getFocusedActionable();
 		const canNavigate = !!activeActionable || document.activeElement === document.body;
 
-		if (event.key === 'ArrowUp') {
+		const dir = ARROW_TO_DIR[event.key];
+
+		if (dir) {
 			if (!canNavigate) return;
 			event.preventDefault();
-			moveFocus('up');
+			moveFocus(dir);
 			return;
 		}
 
-		if (event.key === 'ArrowDown') {
-			if (!canNavigate) return;
-			event.preventDefault();
-			moveFocus('down');
-			return;
-		}
-
-		if (event.key === 'ArrowLeft') {
-			if (!canNavigate) return;
-			event.preventDefault();
-			moveFocus('left');
-			return;
-		}
-
-		if (event.key === 'ArrowRight') {
-			if (!canNavigate) return;
-			event.preventDefault();
-			moveFocus('right');
-			return;
-		}
-
-		if ((event.key === 'Enter' || event.key === ' ') && activeActionable && !event.repeat) {
+		if ((event.key === KEY_ENTER || event.key === KEY_SPACE) && activeActionable && !event.repeat) {
 			event.preventDefault();
 			activateFocusedAction();
 		}

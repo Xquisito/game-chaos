@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import * as THREE from 'three';
+	import { KEY_ESCAPE, KEY_ENTER, KEY_SPACE, ARROW_TO_WASD, isArrowKey, normalizeKey } from '$lib/keys';
 
 	let score = $state(0);
 	let carsPassed = $state(0);
@@ -72,8 +73,16 @@
 		focusable[0].focus();
 	}
 
+	let keyUp = $state(false);
+	let keyDown = $state(false);
+	let keyLeft = $state(false);
+	let keyRight = $state(false);
+
 	function clearTransientControls() {
-		keys.clear();
+		keyUp = false;
+		keyDown = false;
+		keyLeft = false;
+		keyRight = false;
 		touchThrottle = false;
 		touchBrake = false;
 		touchSteer = 0;
@@ -164,41 +173,57 @@
 		renderer.setSize(window.innerWidth, window.innerHeight);
 	}
 
+
 	function handleKeyDown(e: KeyboardEvent) {
-		if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') {
+		if (e.key === KEY_ESCAPE || e.key === 'b' || e.key === 'B') {
 			e.preventDefault();
 			handleReturnAction();
 			return;
 		}
 
-		if (menuScreen && (e.key === 'ArrowUp' || e.key === 'ArrowLeft')) {
-			e.preventDefault();
-			moveFocus(-1);
-			return;
+		const key = normalizeKey(e.key);
+
+		// Track key state
+		if (key === 'w' || key === 'W') keyUp = true;
+		if (key === 's' || key === 'S') keyDown = true;
+		if (key === 'a' || key === 'A') keyLeft = true;
+		if (key === 'd' || key === 'D') keyRight = true;
+
+		// Menu navigation (only when on menu screen)
+		if (menuScreen) {
+			const arrow = isArrowKey(e.key);
+			if (key === 'w' || key === 'W' || (arrow && key === 'a')) {
+				e.preventDefault();
+				moveFocus(-1);
+				return;
+			}
+			if (key === 's' || key === 'S' || (arrow && key === 'd')) {
+				e.preventDefault();
+				moveFocus(1);
+				return;
+			}
+			if (e.key === KEY_ENTER || e.key === KEY_SPACE || e.key === 'a' || e.key === 'A') {
+				e.preventDefault();
+				activateFocusedMenuItem();
+				return;
+			}
 		}
 
-		if (menuScreen && (e.key === 'ArrowDown' || e.key === 'ArrowRight')) {
-			e.preventDefault();
-			moveFocus(1);
-			return;
-		}
-
-		if (menuScreen && (e.key === 'Enter' || e.key === ' ' || e.key === 'a' || e.key === 'A')) {
-			e.preventDefault();
-			activateFocusedMenuItem();
-			return;
-		}
-
-		keys.add(e.key);
-
-		if (gameStarted && !gameOver && (e.key === 'p' || e.key === 'P')) {
-			e.preventDefault();
-			paused = !paused;
+		// In-game controls
+		if (gameStarted && !gameOver) {
+			if (e.key === 'p' || e.key === 'P') {
+				e.preventDefault();
+				paused = !paused;
+			}
 		}
 	}
 
 	function handleKeyUp(e: KeyboardEvent) {
-		keys.delete(e.key);
+		const key = normalizeKey(e.key);
+		if (key === 'w' || key === 'W') keyUp = false;
+		if (key === 's' || key === 'S') keyDown = false;
+		if (key === 'a' || key === 'A') keyLeft = false;
+		if (key === 'd' || key === 'D') keyRight = false;
 	}
 
 	function updateTouchSteer(clientX: number, element: HTMLElement) {
@@ -256,6 +281,10 @@
 					clearTimeout(fallbackTimer);
 				};
 			}
+		} else {
+			// Game is running — move focus away from any button so
+			// svelte:window receives all keydown/keyup events directly
+			(document.activeElement as HTMLElement)?.blur();
 		}
 	});
 
@@ -281,7 +310,6 @@
 	const MAX_X = ROAD_WIDTH / 2 - 4.5;
 	const GAMEPAD_DEADZONE = 0.2;
 
-	let keys = $state(new Set<string>());
 	let gamepadSteer = $state(0);
 	let audioCtx: AudioContext | null = null;
 
@@ -738,9 +766,9 @@
 		if (gameStarted && !gameOver && !paused) {
 			// Throttle and Brake (Combined Keyboard + Gamepad)
 			const isAccelerating =
-				keys.has('ArrowUp') || keys.has('w') || keys.has('W') || gamepadThrottle || touchThrottle;
+				keyUp || gamepadThrottle || touchThrottle;
 			const isBraking =
-				keys.has('ArrowDown') || keys.has('s') || keys.has('S') || gamepadBrake || touchBrake;
+				keyDown || gamepadBrake || touchBrake;
 
 			if (isAccelerating) {
 				speed = Math.min(maxSpeed, speed + 0.012);
@@ -751,8 +779,8 @@
 			distance += speed * 12;
 
 			let steer = 0;
-			if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) steer -= 1;
-			if (keys.has('ArrowRight') || keys.has('d') || keys.has('D')) steer += 1;
+			if (keyLeft) steer -= 1;
+			if (keyRight) steer += 1;
 			steer += gamepadSteer;
 			steer += touchSteer;
 
@@ -840,7 +868,7 @@
 	<meta property="og:description" content="Can you pass 200 cars on Day 1? Speed through changing weather conditions in this intense vintage racer." />
 </svelte:head>
 
-<svelte:window bind:innerWidth={viewportWidth} onkeydown={handleKeyDown} onkeyup={handleKeyUp} onresize={handleResize} />
+<svelte:window bind:innerWidth={viewportWidth} onkeydown={handleKeyDown} onkeyup={handleKeyUp} onresize={handleResize} onblur={clearTransientControls} />
 
 <div class="relative h-screen w-screen overflow-hidden bg-black font-mono">
 	<canvas bind:this={canvasElement} class="absolute inset-0 h-full w-full"></canvas>

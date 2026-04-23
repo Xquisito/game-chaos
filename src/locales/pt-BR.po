@@ -145,57 +145,20 @@ msgstr "Recordes • Resetar • Sistema"
 msgid "Open Panel"
 msgstr "Abrir Painel"
 
-#: src/routes/+page.svelte
-#: src/routes/checkers/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/minesweeper/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-msgid "ArrowUp"
-msgstr "Cima"
+#~ msgid "ArrowUp"
+#~ msgstr "ArrowUp"
 
-#: src/routes/+page.svelte
-#: src/routes/checkers/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/minesweeper/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-msgid "ArrowDown"
-msgstr "Baixo"
+#~ msgid "ArrowDown"
+#~ msgstr "ArrowDown"
 
-#: src/routes/+page.svelte
-#: src/routes/checkers/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/minesweeper/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-msgid "ArrowLeft"
-msgstr "Esquerda"
+#~ msgid "ArrowLeft"
+#~ msgstr "ArrowLeft"
 
-#: src/routes/+page.svelte
-#: src/routes/checkers/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/minesweeper/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-msgid "ArrowRight"
-msgstr "Direita"
+#~ msgid "ArrowRight"
+#~ msgstr "ArrowRight"
 
-#: src/routes/+page.svelte
-#: src/routes/checkers/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/minesweeper/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-msgid "Enter"
-msgstr "Enter"
+#~ msgid "Enter"
+#~ msgstr "Enter"
 
 #~ msgid "The Chaos Arcade | Dashboard"
 #~ msgstr "O Fliperama do Caos | Painel"
@@ -241,12 +204,8 @@ msgstr "v{0}"
 #~ msgid "ERROR 404: Victory Not Found. 🧠💨"
 #~ msgstr "ERRO 404: Vitória não encontrada. 🧠💨"
 
-#: src/routes/checkers/+page.svelte
-#: src/routes/enduro/+page.svelte
-#: src/routes/minesweeper/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-msgid "Escape"
-msgstr "Esc"
+#~ msgid "Escape"
+#~ msgstr "Escape"
 
 #. 0: r + 1; 1: c + 1
 #. 0: r + 1; 1: c + 1

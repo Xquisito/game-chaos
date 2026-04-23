@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { KEY_ESCAPE, KEY_ENTER, KEY_SPACE, isArrowKey, normalizeKey } from '$lib/keys';
 
 	// Audio
 	let audioCtx: AudioContext | null = null;
@@ -541,25 +542,28 @@
 	}
 
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === 'Escape' || e.key === 'b' || e.key === 'B') {
+		if (e.key === KEY_ESCAPE || e.key === 'b' || e.key === 'B') {
 			e.preventDefault();
 			handleReturnAction();
 			return;
 		}
 
-		if (menuScreen && (e.key === 'ArrowUp' || e.key === 'ArrowLeft')) {
+		const key = normalizeKey(e.key);
+		const arrow = isArrowKey(e.key);
+
+		if (menuScreen && (key === 'w' || key === 'W' || (arrow && key === 'a'))) {
 			e.preventDefault();
 			moveFocus(-1);
 			return;
 		}
 
-		if (menuScreen && (e.key === 'ArrowDown' || e.key === 'ArrowRight')) {
+		if (menuScreen && (key === 's' || key === 'S' || (arrow && key === 'd'))) {
 			e.preventDefault();
 			moveFocus(1);
 			return;
 		}
 
-		if (menuScreen && (e.key === 'Enter' || e.key === ' ' || e.key === 'a' || e.key === 'A')) {
+		if (menuScreen && (e.key === KEY_ENTER || e.key === KEY_SPACE || e.key === 'a' || e.key === 'A')) {
 			e.preventDefault();
 			activateFocusedMenuItem();
 			return;
@@ -581,23 +585,24 @@
 
 		if (paused || gameOver || gameWon) return;
 
-		if (e.key === 'ArrowLeft') {
+		if (key === 'a' || key === 'A') {
 			moveLeft = true;
-		} else if (e.key === 'ArrowRight') {
+		} else if (key === 'd' || key === 'D') {
 			moveRight = true;
-		} else if (e.key === ' ' || e.key === 'ArrowUp') {
+		} else if (e.key === KEY_SPACE || key === 'w' || key === 'W') {
 			shoot();
 		}
 
-		if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowUp') {
+		if (key === 'a' || key === 'A' || key === 'd' || key === 'D' || e.key === KEY_SPACE || key === 'w' || key === 'W') {
 			e.preventDefault();
 		}
 	}
 
 	function handleKeyup(e: KeyboardEvent) {
-		if (e.key === 'ArrowLeft') {
+		const key = normalizeKey(e.key);
+		if (key === 'a' || key === 'A') {
 			moveLeft = false;
-		} else if (e.key === 'ArrowRight') {
+		} else if (key === 'd' || key === 'D') {
 			moveRight = false;
 		}
 	}
