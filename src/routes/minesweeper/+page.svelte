@@ -232,10 +232,13 @@
 		if (!gameScreen) return;
 
 		const cell = grid[r]?.[c];
-		// Only flag if it's hidden; do not allow toggling off here to avoid race conditions
-		if (!cell || cell.state !== 'hidden') return;
+		if (!cell) return;
 
-		cell.state = 'flagged';
+		if (cell.state === 'hidden') {
+			cell.state = 'flagged';
+		} else if (cell.state === 'flagged') {
+			cell.state = 'hidden';
+		}
 	}
 
 	function getCellKey(r: number, c: number) {
