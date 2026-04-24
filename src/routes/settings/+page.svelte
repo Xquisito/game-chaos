@@ -5,7 +5,8 @@
 		minesweeper: 0,
 		checkers: 0,
 		enduro: 0,
-		'space-chaos': 0
+		'space-chaos': 0,
+		tetris: 0
 	});
 
 	let lastJoyUp = false;
@@ -17,6 +18,7 @@
 		highScores.checkers = parseInt(localStorage.getItem('checkers-wins') || '0', 10);
 		highScores.enduro = parseInt(localStorage.getItem('enduro-high-score') || '0', 10);
 		highScores['space-chaos'] = parseInt(localStorage.getItem('space-chaos-high-score') || '0', 10);
+		highScores.tetris = parseInt(localStorage.getItem('tetris-chaos-high-score') || '0', 10);
 	}
 
 	function resetScore(game: string) {
@@ -24,6 +26,7 @@
 		if (game === 'minesweeper') key = 'minesweeper-wins';
 		else if (game === 'checkers') key = 'checkers-wins';
 		else if (game === 'enduro') key = 'enduro-high-score';
+		else if (game === 'tetris') key = 'tetris-chaos-high-score';
 		else key = 'space-chaos-high-score';
 
 		localStorage.removeItem(key);
@@ -168,6 +171,20 @@
 			</div>
 			<button
 				onclick={() => resetScore('space-chaos')}
+				class="border-4 border-red-500 bg-red-600 px-8 py-3 text-xl font-black text-white transition-all hover:scale-110 focus:scale-110 focus:outline-none active:scale-95"
+			>
+				RESET
+			</button>
+		</div>
+
+		<!-- Tetris -->
+		<div class="flex items-center justify-between border-4 border-white bg-zinc-900 p-6">
+			<div>
+				<h2 class="text-3xl font-black uppercase">Tetris Chaos</h2>
+				<p class="text-lg font-bold text-yellow-400">HI-SCORE: {highScores.tetris}</p>
+			</div>
+			<button
+				onclick={() => resetScore('tetris')}
 				class="border-4 border-red-500 bg-red-600 px-8 py-3 text-xl font-black text-white transition-all hover:scale-110 focus:scale-110 focus:outline-none active:scale-95"
 			>
 				RESET

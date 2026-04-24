@@ -100,7 +100,10 @@ msgstr "Estrada Furiosa"
 
 #: src/routes/+page.svelte
 #: src/routes/+page.svelte
+#: src/routes/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Hi-Score"
 msgstr "Recorde"
 
@@ -145,11 +148,13 @@ msgstr "Recordes • Resetar • Sistema"
 msgid "Open Panel"
 msgstr "Abrir Painel"
 
-#~ msgid "ArrowUp"
-#~ msgstr "ArrowUp"
+#: src/routes/tetris/+page.svelte
+msgid "ArrowUp"
+msgstr "ArrowUp"
 
-#~ msgid "ArrowDown"
-#~ msgstr "ArrowDown"
+#: src/routes/tetris/+page.svelte
+msgid "ArrowDown"
+msgstr "ArrowDown"
 
 #~ msgid "ArrowLeft"
 #~ msgstr "ArrowLeft"
@@ -221,6 +226,7 @@ msgstr "Linha {0}, coluna {1}"
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Game Chaos"
 msgstr "Caos no Jogo"
 
@@ -237,6 +243,7 @@ msgstr "🏁 Dama Caótica 🏁"
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Score Board"
 msgstr "Placar de Pontuação"
 
@@ -250,6 +257,7 @@ msgstr "Vitórias do Jogador"
 #: src/routes/checkers/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Difficulty"
 msgstr "Dificuldade"
 
@@ -259,24 +267,29 @@ msgstr "Dificuldade"
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Continue"
 msgstr "Continuar"
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "New Game"
 msgstr "Novo Jogo"
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Press Start"
 msgstr "Pressione Iniciar"
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Dashboard"
 msgstr "Painel"
 
@@ -337,6 +350,7 @@ msgstr "Preta limpou o tabuleiro. Tente novamente ou volte para o splash."
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Retry"
 msgstr "Tentar Novamente"
 
@@ -507,11 +521,14 @@ msgstr "Vitórias: {0}"
 #: src/routes/settings/+page.svelte
 #: src/routes/settings/+page.svelte
 #: src/routes/settings/+page.svelte
+#: src/routes/settings/+page.svelte
 msgid "RESET"
 msgstr "Resetar"
 
 #. 0: highScores.enduro
 #. 0: highScores['space-chaos']
+#. 0: highScores.tetris
+#: src/routes/settings/+page.svelte
 #: src/routes/settings/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "HI-SCORE: {0}"
@@ -600,14 +617,17 @@ msgid "Playwright e2e test demo"
 msgstr ""
 
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Easy"
 msgstr "Fácil"
 
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Normal"
 msgstr "Normal"
 
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Hard"
 msgstr "Difícil"
 
@@ -870,9 +890,169 @@ msgid "Difficulty: {0}"
 msgstr ""
 
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "Final Score"
 msgstr ""
 
 #: src/routes/space-invaders/+page.svelte
 msgid "Points"
+msgstr ""
+
+#: src/routes/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "Tetris Chaos"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Stack the blocks and survive the falling chaos!"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Block Zone"
+msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Drop In"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Shift"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Control"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Tetris Chaos | Block Stacking Mayhem"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Stack, clear, and survive! A chaotic twist on the classic block puzzle."
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Tetris Chaos - Block Stacking Mayhem"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "The blocks are falling! Can you survive the chaos?"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "🧱 Tetris Chaos 🧱"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Stack the blocks. Survive the chaos."
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Touch controls available during gameplay."
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Arrow keys / WASD to move. Up / W to rotate. Space to hard drop. C to hold piece. Z for counter-clockwise. <0>A / Enter = select • B / Esc = return</0> <1/>"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "The blocks got you!"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Incredible run!"
+msgstr ""
+
+#. 0: level; 1: lines
+#: src/routes/tetris/+page.svelte
+msgid "Level {0} • {1} Lines"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "★ New Record! ★"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Splash Screen"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "⏸ PAUSED ⏸"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Press P to resume • B / Esc to return"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Hold"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Score"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Lines"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Level"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Next"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "←→ Move"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "↑ Rotate"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "↓ Soft Drop"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Space Hard Drop"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "C Hold"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Z Rot CCW"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "P Pause"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Esc Return"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "HOLD"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "DROP"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "💀 GAME OVER 💀"
+msgstr ""
+
+#. 0: score.toLocaleString(); 1: level
+#: src/routes/tetris/+page.svelte
+msgid "{0} pts • Level {1}"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Recorde"
 msgstr ""

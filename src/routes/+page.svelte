@@ -8,7 +8,7 @@
 <script lang="ts">
 	import { KEY_ENTER, KEY_SPACE, ARROW_TO_DIR } from '$lib/keys';
 
-	type ScoreId = 'minesweeper' | 'checkers' | 'enduro' | 'space-chaos';
+	type ScoreId = 'minesweeper' | 'checkers' | 'enduro' | 'space-chaos' | 'tetris';
 	type Direction = 'up' | 'down' | 'left' | 'right';
 
 	type GameCard = {
@@ -92,6 +92,19 @@
 			storageKey: 'space-chaos-high-score',
 			scoreLabel: 'Hi-Score',
 			cta: 'Launch Run'
+		},
+		{
+			id: 'tetris',
+			name: 'Tetris Chaos',
+			description: 'Stack the blocks and survive the falling chaos!',
+			href: '/tetris',
+			emoji: '🧱',
+			kicker: 'Block Zone',
+			color: 'bg-cyan-500',
+			marquee: 'bg-cyan-200',
+			storageKey: 'tetris-chaos-high-score',
+			scoreLabel: 'Hi-Score',
+			cta: 'Drop In'
 		}
 	];
 
@@ -116,7 +129,8 @@
 		minesweeper: 0,
 		checkers: 0,
 		enduro: 0,
-		'space-chaos': 0
+		'space-chaos': 0,
+		tetris: 0
 	});
 
 	let lastUp = false;
