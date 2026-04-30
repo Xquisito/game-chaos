@@ -58,7 +58,19 @@
 			firstBtn?.focus();
 		}, 100);
 
-		let animationId: number;
+		let gamepadPollId: number | null = null;
+
+		const stopGamepadPolling = () => {
+			if (gamepadPollId !== null) {
+				clearInterval(gamepadPollId);
+				gamepadPollId = null;
+			}
+
+			lastJoyUp = false;
+			lastJoyDown = false;
+			lastFireBtn = false;
+		};
+
 		const pollGamepad = () => {
 			const gamepads = navigator.getGamepads();
 			for (const gp of gamepads) {
@@ -93,13 +105,44 @@
 				lastJoyDown = joyDown;
 				lastFireBtn = fireBtn;
 			}
-			animationId = requestAnimationFrame(pollGamepad);
 		};
 
-		animationId = requestAnimationFrame(pollGamepad);
+		const startGamepadPolling = () => {
+			if (gamepadPollId !== null || document.visibilityState !== 'visible') return;
+
+			pollGamepad();
+			gamepadPollId = window.setInterval(pollGamepad, 80);
+		};
+
+		const syncGamepadPolling = () => {
+			if (document.visibilityState !== 'visible') {
+				stopGamepadPolling();
+				return;
+			}
+
+			const hasConnectedGamepad = (navigator.getGamepads?.() ?? []).some(Boolean);
+			if (hasConnectedGamepad) {
+				startGamepadPolling();
+				return;
+			}
+
+			stopGamepadPolling();
+		};
+
+		const handleVisibilityChange = () => {
+			syncGamepadPolling();
+		};
+
+		window.addEventListener('gamepadconnected', handleVisibilityChange);
+		window.addEventListener('gamepaddisconnected', handleVisibilityChange);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		syncGamepadPolling();
 
 		return () => {
-			cancelAnimationFrame(animationId);
+			stopGamepadPolling();
+			window.removeEventListener('gamepadconnected', handleVisibilityChange);
+			window.removeEventListener('gamepaddisconnected', handleVisibilityChange);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
 	});
 </script>

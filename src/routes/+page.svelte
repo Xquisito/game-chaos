@@ -272,23 +272,30 @@
 		}
 	}
 
-	function handleVisibilityChange() {
-		if (document.visibilityState === 'visible') {
-			loadScores();
-		}
-	}
-
 	function scoreText(card: GameCard) {
 		return `${card.scoreLabel}: ${scores[card.id].toLocaleString()}`;
 	}
 
 	$effect(() => {
 		loadScores();
-		requestAnimationFrame(() => {
+		let animationFrame = requestAnimationFrame(() => {
 			focusFirstActionable(true);
 		});
 
-		let animationFrame = 0;
+		let gamepadPollId: number | null = null;
+
+		const stopGamepadPolling = () => {
+			if (gamepadPollId !== null) {
+				clearInterval(gamepadPollId);
+				gamepadPollId = null;
+			}
+
+			lastUp = false;
+			lastDown = false;
+			lastLeft = false;
+			lastRight = false;
+			lastConfirm = false;
+		};
 
 		const pollGamepad = () => {
 			const gamepads = navigator.getGamepads?.() ?? [];
@@ -327,20 +334,55 @@
 			lastLeft = leftPressed;
 			lastRight = rightPressed;
 			lastConfirm = confirmPressed;
-
-			animationFrame = requestAnimationFrame(pollGamepad);
 		};
 
-		animationFrame = requestAnimationFrame(pollGamepad);
+		const startGamepadPolling = () => {
+			if (gamepadPollId !== null || document.visibilityState !== 'visible') return;
+
+			pollGamepad();
+			gamepadPollId = window.setInterval(pollGamepad, 80);
+		};
+
+		const syncGamepadPolling = () => {
+			if (document.visibilityState !== 'visible') {
+				stopGamepadPolling();
+				return;
+			}
+
+			const hasConnectedGamepad = (navigator.getGamepads?.() ?? []).some(Boolean);
+			if (hasConnectedGamepad) {
+				startGamepadPolling();
+				return;
+			}
+
+			stopGamepadPolling();
+		};
+
+		const handleGamepadChange = () => {
+			syncGamepadPolling();
+		};
+
+		const handleVisibilityChange = () => {
+			loadScores();
+			syncGamepadPolling();
+		};
+
+		window.addEventListener('gamepadconnected', handleGamepadChange);
+		window.addEventListener('gamepaddisconnected', handleGamepadChange);
+		document.addEventListener('visibilitychange', handleVisibilityChange);
+		syncGamepadPolling();
 
 		return () => {
 			cancelAnimationFrame(animationFrame);
+			stopGamepadPolling();
+			window.removeEventListener('gamepadconnected', handleGamepadChange);
+			window.removeEventListener('gamepaddisconnected', handleGamepadChange);
+			document.removeEventListener('visibilitychange', handleVisibilityChange);
 		};
 	});
 </script>
 
 <svelte:window onfocus={loadScores} onkeydown={handleDashboardKeydown} />
-<svelte:document onvisibilitychange={handleVisibilityChange} />
 
 <div class="min-h-screen bg-yellow-300 px-2 py-3 font-mono text-black sm:px-6 sm:py-6">
 	<div class="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
