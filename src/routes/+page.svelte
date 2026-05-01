@@ -424,55 +424,85 @@
 			</div>
 		</header>
 
-		<section class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
-			{#each dashboardCards as card (card.id)}
-				<a
-					href={card.href}
-					data-dashboard-action="true"
-					class="group block min-h-32 focus:outline-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black sm:min-h-44"
-				>
-					<article
-						class="flex h-full flex-col border-4 border-black bg-black shadow-[4px_4px_0_rgba(0,0,0,1)] transition-transform duration-100 group-hover:-translate-y-1 group-focus-visible:-translate-y-1 sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
+		<section class="grid grid-cols-2 gap-1.5 md:grid-cols-3 md:gap-4 xl:grid-cols-3">
+				{#each dashboardCards as card (card.id)}
+					<a
+						href={card.href}
+						data-dashboard-action="true"
+						class="dashboard-card group block aspect-[1.18] min-h-32 focus:outline-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black sm:aspect-auto sm:min-h-44"
 					>
-						<div class="{card.marquee} flex items-center justify-between border-b-4 border-black px-3 py-1 sm:px-4 sm:py-2">
-							<p class="text-[0.6rem] font-black tracking-[0.22em] uppercase sm:text-xs">
+						<article
+							class="dashboard-card-inner flex h-full flex-col border-4 border-black bg-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
+						>
+						<div class="{card.marquee} flex items-center justify-between border-b-4 border-black px-2 py-1 sm:px-4 sm:py-2">
+							<p class="text-[0.5rem] font-black tracking-[0.22em] uppercase sm:text-xs">
 								{card.kicker}
 							</p>
-							<p class="text-xs font-black uppercase sm:text-sm">▶</p>
+							<p class="text-[0.65rem] font-black uppercase sm:text-sm">▶</p>
 						</div>
 
-						<div class="{card.color} flex flex-1 flex-col justify-between p-3 sm:p-5">
-							<div class="flex items-start gap-3 sm:gap-4">
+						<div class="{card.color} flex flex-1 flex-col justify-between p-1.5 sm:p-5">
+							<div class="flex flex-1 flex-col items-center justify-center gap-1 text-center sm:hidden">
 								<div
-									class="flex h-12 w-12 shrink-0 items-center justify-center border-4 border-black bg-black text-2xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl"
+									class="flex h-10 w-10 items-center justify-center border-4 border-black bg-black text-xl"
 								>
 									{card.emoji}
 								</div>
 
-								<div class="min-w-0 flex-1">
-									<h2 class="text-xl font-black leading-none uppercase sm:text-[1.7rem]">
+								<div class="min-w-0">
+									<h2 class="truncate text-[0.62rem] font-black leading-none uppercase">
 										{card.name}
 									</h2>
-									<p class="mt-1 text-xs leading-tight font-bold uppercase sm:mt-2 sm:text-[0.95rem]">
-										{card.description}
-									</p>
+								</div>
+
+								<div class="flex items-center gap-1">
+									<div class="border-[3px] border-black bg-black px-1.5 py-0.5 text-[0.48rem] font-black uppercase leading-none text-yellow-300">
+										{#if isGameCard(card)}
+											{scoreText(card)}
+										{:else}
+											{card.meta}
+										{/if}
+									</div>
+
+									<span class="border-[3px] border-black bg-white px-1.5 py-0.5 text-center text-[0.48rem] font-black uppercase leading-none shadow-[2px_2px_0_rgba(0,0,0,1)] transition-colors group-hover:bg-black group-hover:text-white group-hover:shadow-none">
+										{card.cta}
+									</span>
 								</div>
 							</div>
 
-							<div class="mt-3 flex items-end justify-between gap-2 sm:mt-4 sm:gap-3">
-								<div class="border-[3px] border-black bg-black px-2 py-1.5 text-[0.65rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm">
-									{#if isGameCard(card)}
-										{scoreText(card)}
-									{:else}
-										{card.meta}
-									{/if}
+							<div class="hidden flex-1 flex-col justify-between sm:flex">
+								<div class="flex items-start gap-3 sm:gap-4">
+									<div
+										class="flex h-12 w-12 shrink-0 items-center justify-center border-4 border-black bg-black text-2xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl"
+									>
+										{card.emoji}
+									</div>
+
+									<div class="min-w-0 flex-1">
+										<h2 class="text-xl font-black leading-none uppercase sm:text-[1.7rem]">
+											{card.name}
+										</h2>
+										<p class="mt-1 text-xs leading-tight font-bold uppercase sm:mt-2 sm:text-[0.95rem]">
+											{card.description}
+										</p>
+									</div>
 								</div>
 
-								<span
-									class="min-w-28 border-[3px] border-black bg-white px-2 py-2 text-center text-xs font-black uppercase shadow-[3px_3px_0_rgba(0,0,0,1)] transition-all group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:shadow-none sm:min-w-36 sm:border-4 sm:px-3 sm:py-3 sm:text-base sm:shadow-[4px_4px_0_rgba(0,0,0,1)]"
-								>
-									{card.cta}
-								</span>
+								<div class="mt-3 flex items-end justify-between gap-2 sm:mt-4 sm:gap-3">
+									<div class="border-[3px] border-black bg-black px-2 py-1.5 text-[0.65rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm">
+										{#if isGameCard(card)}
+											{scoreText(card)}
+										{:else}
+											{card.meta}
+										{/if}
+									</div>
+
+									<span
+										class="min-w-28 border-[3px] border-black bg-white px-2 py-2 text-center text-xs font-black uppercase shadow-[3px_3px_0_rgba(0,0,0,1)] transition-colors group-hover:bg-black group-hover:text-white group-hover:shadow-none sm:min-w-36 sm:border-4 sm:px-3 sm:py-3 sm:text-base sm:shadow-[4px_4px_0_rgba(0,0,0,1)]"
+									>
+										{card.cta}
+									</span>
+								</div>
 							</div>
 						</div>
 					</article>
@@ -491,5 +521,22 @@
 	:global(body) {
 		margin: 0;
 		padding: 0;
+	}
+
+	.dashboard-card {
+		content-visibility: auto;
+		contain-intrinsic-size: 18rem;
+	}
+
+	@media (pointer: coarse) {
+		header,
+		footer {
+			box-shadow: 2px 2px 0 rgba(0, 0, 0, 1) !important;
+		}
+
+		.dashboard-card-inner {
+			box-shadow: 2px 2px 0 rgba(0, 0, 0, 1) !important;
+			transition: none !important;
+		}
 	}
 </style>

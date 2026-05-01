@@ -782,11 +782,11 @@ msgstr "Consegue limpar a grade 10x10 sem atingir uma mina? Experimente o Minesw
 
 #: src/routes/settings/+page.svelte
 msgid "System Settings | The Chaos Arcade"
-msgstr ""
+msgstr "Configurações do sistema | The Chaos Arcade"
 
 #: src/routes/settings/+page.svelte
 msgid "Manage your Chaos Arcade cabinet. Reset scores, tune performance, and configure system settings."
-msgstr ""
+msgstr "Gerencie seu gabinete Chaos Arcade. Reinicie pontuações, ajuste o desempenho e configure as definições do sistema."
 
 #: src/routes/+page.svelte
 msgid "🕹️ Chaos Arcade"
@@ -917,142 +917,142 @@ msgstr "Cair"
 
 #: src/routes/tetris/+page.svelte
 msgid "Shift"
-msgstr ""
+msgstr "Shift"
 
 #: src/routes/tetris/+page.svelte
 msgid "Control"
-msgstr ""
+msgstr "Control"
 
 #: src/routes/tetris/+page.svelte
 msgid "Tetris Chaos | Block Stacking Mayhem"
-msgstr ""
+msgstr "Tetris Caos | Mayhem de Empilhamento de Blocos"
 
 #: src/routes/tetris/+page.svelte
 msgid "Stack, clear, and survive! A chaotic twist on the classic block puzzle."
-msgstr ""
+msgstr "Empilhe, limpe e sobreviva! Uma reviravolta caótica no clássico quebra-cabeça de blocos."
 
 #: src/routes/tetris/+page.svelte
 msgid "Tetris Chaos - Block Stacking Mayhem"
-msgstr ""
+msgstr "Tetris Caos - Mayhem de Empilhamento de Blocos"
 
 #: src/routes/tetris/+page.svelte
 msgid "The blocks are falling! Can you survive the chaos?"
-msgstr ""
+msgstr "Os blocos estão caindo! Você consegue sobreviver ao caos?"
 
 #: src/routes/tetris/+page.svelte
 msgid "🧱 Tetris Chaos 🧱"
-msgstr ""
+msgstr "🧱 Tetris Caos 🧱"
 
 #: src/routes/tetris/+page.svelte
 msgid "Stack the blocks. Survive the chaos."
-msgstr ""
+msgstr "Empilhe os blocos. Sobreviva ao caos."
 
 #: src/routes/tetris/+page.svelte
 msgid "Touch controls available during gameplay."
-msgstr ""
+msgstr "Controles de toque disponíveis durante o jogo."
 
 #: src/routes/tetris/+page.svelte
 msgid "Arrow keys / WASD to move. Up / W to rotate. Space to hard drop. C to hold piece. Z for counter-clockwise. <0>A / Enter = select • B / Esc = return</0> <1/>"
-msgstr ""
+msgstr "Teclas de seta / WASD para mover. Cima / W para girar. Espaço para queda rápida. C para segurar a peça. Z para anti-horário. <0>A / Enter = selecionar • B / Esc = retornar</0> <1/>"
 
 #: src/routes/tetris/+page.svelte
 msgid "The blocks got you!"
-msgstr ""
+msgstr "Os blocos te pegaram!"
 
 #: src/routes/tetris/+page.svelte
 msgid "Incredible run!"
-msgstr ""
+msgstr "Corrida incrível!"
 
 #. 0: level; 1: lines
 #: src/routes/tetris/+page.svelte
 msgid "Level {0} • {1} Lines"
-msgstr ""
+msgstr "Nível {0} • {1} Linhas"
 
 #: src/routes/tetris/+page.svelte
 msgid "★ New Record! ★"
-msgstr ""
+msgstr "★ Novo Recorde! ★"
 
 #: src/routes/tetris/+page.svelte
 msgid "Splash Screen"
-msgstr ""
+msgstr "Tela Inicial"
 
 #: src/routes/tetris/+page.svelte
 msgid "⏸ PAUSED ⏸"
-msgstr ""
+msgstr "⏸ PAUSADO ⏸"
 
 #: src/routes/tetris/+page.svelte
 msgid "Press P to resume • B / Esc to return"
-msgstr ""
+msgstr "Pressione P para continuar • B / Esc para retornar"
 
 #: src/routes/tetris/+page.svelte
 msgid "Hold"
-msgstr ""
+msgstr "Segurar"
 
 #: src/routes/tetris/+page.svelte
 msgid "Score"
-msgstr ""
+msgstr "Pontuação"
 
 #: src/routes/tetris/+page.svelte
 msgid "Lines"
-msgstr ""
+msgstr "Linhas"
 
 #: src/routes/tetris/+page.svelte
 msgid "Level"
-msgstr ""
+msgstr "Nível"
 
 #: src/routes/tetris/+page.svelte
 msgid "Next"
-msgstr ""
+msgstr "Próximo"
 
 #: src/routes/tetris/+page.svelte
 msgid "←→ Move"
-msgstr ""
+msgstr "←→ Mover"
 
 #: src/routes/tetris/+page.svelte
 msgid "↑ Rotate"
-msgstr ""
+msgstr "↑ Girar"
 
 #: src/routes/tetris/+page.svelte
 msgid "↓ Soft Drop"
-msgstr ""
+msgstr "↓ Queda Suave"
 
 #: src/routes/tetris/+page.svelte
 msgid "Space Hard Drop"
-msgstr ""
+msgstr "Espaço Queda Rápida"
 
 #: src/routes/tetris/+page.svelte
 msgid "C Hold"
-msgstr ""
+msgstr "C Segurar"
 
 #: src/routes/tetris/+page.svelte
 msgid "Z Rot CCW"
-msgstr ""
+msgstr "Z Girar Anti-horário"
 
 #: src/routes/tetris/+page.svelte
 msgid "P Pause"
-msgstr ""
+msgstr "P Pausar"
 
 #: src/routes/tetris/+page.svelte
 msgid "Esc Return"
-msgstr ""
+msgstr "Esc Retornar"
 
 #: src/routes/tetris/+page.svelte
 msgid "HOLD"
-msgstr ""
+msgstr "SEGURAR"
 
 #: src/routes/tetris/+page.svelte
 msgid "DROP"
-msgstr ""
+msgstr "SOLTAR"
 
 #: src/routes/tetris/+page.svelte
 msgid "💀 GAME OVER 💀"
-msgstr ""
+msgstr "💀 FIM DE JOGO 💀"
 
 #. 0: score.toLocaleString(); 1: level
 #: src/routes/tetris/+page.svelte
 msgid "{0} pts • Level {1}"
-msgstr ""
+msgstr "{0} pts • Nível {1}"
 
 #: src/routes/tetris/+page.svelte
 msgid "Recorde"
-msgstr ""
+msgstr "Recorde"
