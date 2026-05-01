@@ -140,6 +140,7 @@
 	let lastConfirm = false;
 
 	const DEADZONE = 0.45;
+	const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator as any).maxTouchPoints > 0);
 
 	// @ts-ignore
 	const appVersion = __APP_VERSION__;
@@ -340,12 +341,25 @@
 			if (gamepadPollId !== null || document.visibilityState !== 'visible') return;
 
 			pollGamepad();
-			gamepadPollId = window.setInterval(pollGamepad, 80);
+			// Much slower polling on mobile to prevent freezing
+			const interval = isMobile ? 250 : 80;
+			gamepadPollId = window.setInterval(pollGamepad, interval);
 		};
 
 		const syncGamepadPolling = () => {
 			if (document.visibilityState !== 'visible') {
 				stopGamepadPolling();
+				return;
+			}
+
+			// Skip gamepad polling on mobile unless a gamepad is actually connected
+			if (isMobile) {
+				const hasConnectedGamepad = (navigator.getGamepads?.() ?? []).some(Boolean);
+				if (hasConnectedGamepad) {
+					startGamepadPolling();
+				} else {
+					stopGamepadPolling();
+				}
 				return;
 			}
 
@@ -537,6 +551,11 @@
 		.dashboard-card-inner {
 			box-shadow: 2px 2px 0 rgba(0, 0, 0, 1) !important;
 			transition: none !important;
+		}
+
+		/* Reduce layout thrashing on mobile */
+		.dashboard-card {
+			contain: strict;
 		}
 	}
 </style>
