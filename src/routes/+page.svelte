@@ -142,7 +142,6 @@
 	const DEADZONE = 0.45;
 	const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator as any).maxTouchPoints > 0);
 
-	// @ts-ignore
 	const appVersion = __APP_VERSION__;
 
 	function setLanguage(lang: string) {
