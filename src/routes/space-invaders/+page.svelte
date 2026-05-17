@@ -134,6 +134,7 @@
 	const GAME_HEIGHT = 600;
 	const PLAYER_WIDTH = 50;
 	const PLAYER_HEIGHT = 20;
+	const PLAYER_Y = GAME_HEIGHT - PLAYER_HEIGHT - 20;
 	const PLAYER_MOVE_SPEED = 360;
 	const PLAYER_BULLET_SPEED = 6.5;
 	const ALIEN_ROWS = 5;
@@ -191,8 +192,12 @@
 		width: number;
 		height: number;
 	};
+	type Alien = { x: number; y: number; alive: boolean; id: number; legFrame: number };
+	type Shield = { x: number; y: number; pixels: boolean[][] };
 
 	// State
+	let canvasEl = $state<HTMLCanvasElement | null>(null);
+	let ctx: CanvasRenderingContext2D | null = null;
 	let score = $state(0);
 	let highScore = $state(0);
 	let difficulty = $state<Difficulty>('easy');
@@ -213,7 +218,7 @@
 	let bullets = $state<Bullet[]>([]);
 	let nextBulletId = 0;
 	let nextExplosionId = 0;
-	let aliens = $state<{ x: number; y: number; alive: boolean; id: number; legFrame: number }[]>([]);
+	let aliens = $state<Alien[]>([]);
 	let alienDirection = $state(1); // 1 for right, -1 for left
 	let alienStep = $state(0);
 	let alienDescents = $state(0);
@@ -245,7 +250,7 @@
 	let gamepadBackWasPressed = $state(false);
 	let gamepadMenuPrevNegative = $state(false);
 	let gamepadMenuPrevPositive = $state(false);
-	let shields = $state<{ x: number; y: number; pixels: boolean[][] }[]>([]);
+	let shields = $state<Shield[]>([]);
 
 	let flow = $derived(
 		getBooleanCabinetFlow({
@@ -277,6 +282,89 @@
 		[1, 1, 0, 1, 1, 0, 1, 1],
 		[1, 1, 0, 1, 1, 0, 1, 1]
 	];
+	type PixelRect = readonly [number, number, number, number];
+
+	const SQUID_BASE_RECTS: PixelRect[] = [
+		[8, 0, 24, 4],
+		[4, 4, 32, 4],
+		[4, 8, 8, 4],
+		[12, 8, 16, 4],
+		[28, 8, 8, 4],
+		[4, 12, 4, 4],
+		[12, 12, 4, 4],
+		[24, 12, 4, 4],
+		[32, 12, 4, 4],
+		[16, 20, 8, 4]
+	];
+	const SQUID_LEG_RECTS: [PixelRect[], PixelRect[]] = [
+		[
+			[10, 24, 4, 4],
+			[26, 24, 4, 4]
+		],
+		[
+			[14, 24, 4, 4],
+			[22, 24, 4, 4]
+		]
+	];
+	const CRAB_BASE_RECTS: PixelRect[] = [
+		[12, 0, 16, 4],
+		[8, 4, 24, 4],
+		[4, 8, 32, 4],
+		[4, 12, 8, 4],
+		[12, 12, 4, 4],
+		[24, 12, 4, 4],
+		[28, 12, 8, 4],
+		[12, 16, 16, 4],
+		[8, 20, 4, 4],
+		[28, 20, 4, 4],
+		[8, 0, 4, 4],
+		[28, 0, 4, 4]
+	];
+	const CRAB_LEG_RECTS: [PixelRect[], PixelRect[]] = [
+		[
+			[8, 24, 4, 4],
+			[28, 24, 4, 4]
+		],
+		[
+			[12, 24, 4, 4],
+			[24, 24, 4, 4]
+		]
+	];
+	const OCTOPUS_BASE_RECTS: PixelRect[] = [
+		[12, 0, 16, 4],
+		[8, 4, 24, 4],
+		[4, 8, 32, 4],
+		[4, 12, 8, 4],
+		[16, 12, 8, 4],
+		[28, 12, 8, 4],
+		[12, 16, 16, 4]
+	];
+	const OCTOPUS_TENTACLE_RECTS: [PixelRect[], PixelRect[]] = [
+		[
+			[8, 20, 4, 4],
+			[16, 20, 4, 4],
+			[24, 20, 4, 4],
+			[12, 24, 4, 4],
+			[24, 24, 4, 4]
+		],
+		[
+			[4, 20, 4, 4],
+			[20, 20, 4, 4],
+			[28, 20, 4, 4],
+			[16, 24, 4, 4],
+			[20, 24, 4, 4]
+		]
+	];
+	const ALIEN_EYE_RECTS: PixelRect[] = [
+		[12, 16, 4, 4],
+		[24, 16, 4, 4]
+	];
+	const STAR_DOTS = Array.from({ length: 64 }, (_, index) => ({
+		x: (index * 113) % GAME_WIDTH,
+		y: 68 + ((index * 71) % (GAME_HEIGHT - 128)),
+		size: index % 7 === 0 ? 2 : 1,
+		alpha: 0.2 + ((index * 17) % 45) / 100
+	}));
 
 	function getDifficultyTuning(level: Difficulty) {
 		if (level === 'easy') {
@@ -587,7 +675,7 @@
 
 		bullets.push({
 			x: playerX + PLAYER_WIDTH / 2 - 1,
-			y: GAME_HEIGHT - PLAYER_HEIGHT - 36,
+			y: PLAYER_Y - 16,
 			type: 'player',
 			variant: 'player',
 			speedX: 0,
@@ -696,16 +784,207 @@
 		return '#ef4444';
 	}
 
-	function getBulletRotation() {
-		return 'none';
+	function drawRectPattern(
+		context: CanvasRenderingContext2D,
+		originX: number,
+		originY: number,
+		rects: PixelRect[],
+		color: string
+	) {
+		context.fillStyle = color;
+		for (const [x, y, width, height] of rects) {
+			context.fillRect(originX + x, originY + y, width, height);
+		}
 	}
 
-	function getBulletGlow(variant: BulletVariant) {
-		if (variant === 'player') return '0 0 10px rgba(253, 224, 71, 0.85)';
-		return '0 0 10px rgba(239, 68, 68, 0.8)';
+	function drawPlayfieldBackdrop(context: CanvasRenderingContext2D, now: number) {
+		context.fillStyle = '#000000';
+		context.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+		for (const dot of STAR_DOTS) {
+			const pulse = Math.sin(now / 500 + dot.x * 0.04) * 0.08;
+			context.globalAlpha = Math.max(0.12, Math.min(0.7, dot.alpha + pulse));
+			context.fillStyle = '#c4b5fd';
+			context.fillRect(dot.x, dot.y, dot.size, dot.size);
+		}
+
+		context.globalAlpha = 1;
+		context.fillStyle = 'rgba(74, 222, 128, 0.16)';
+		context.fillRect(0, PLAYER_Y + PLAYER_HEIGHT + 6, GAME_WIDTH, 2);
 	}
 
-	function damageShield(shield: { pixels: boolean[][] }, px: number, py: number) {
+	function drawAlien(context: CanvasRenderingContext2D, alien: Alien) {
+		const frame = alien.legFrame === 0 ? 0 : 1;
+		context.save();
+		context.shadowColor = '#4ade80';
+		context.shadowBlur = 6;
+
+		if (alien.id < ALIEN_COLS) {
+			drawRectPattern(context, alien.x, alien.y, SQUID_BASE_RECTS, '#4ade80');
+			drawRectPattern(context, alien.x, alien.y, SQUID_LEG_RECTS[frame], '#4ade80');
+		} else if (alien.id < ALIEN_COLS * 2) {
+			drawRectPattern(context, alien.x, alien.y, CRAB_BASE_RECTS, '#4ade80');
+			drawRectPattern(context, alien.x, alien.y, CRAB_LEG_RECTS[frame], '#4ade80');
+		} else {
+			drawRectPattern(context, alien.x, alien.y, OCTOPUS_BASE_RECTS, '#4ade80');
+			drawRectPattern(context, alien.x, alien.y, OCTOPUS_TENTACLE_RECTS[frame], '#4ade80');
+		}
+
+		context.shadowBlur = 0;
+		drawRectPattern(context, alien.x, alien.y, ALIEN_EYE_RECTS, '#000000');
+		context.restore();
+	}
+
+	function drawAliens(context: CanvasRenderingContext2D) {
+		for (const alien of aliens) {
+			if (alien.alive) {
+				drawAlien(context, alien);
+			}
+		}
+	}
+
+	function drawPlayer(context: CanvasRenderingContext2D, now: number) {
+		context.save();
+		if (playerInvulnerable && Math.floor(now / 120) % 2 === 1) {
+			context.globalAlpha = 0.35;
+		}
+
+		context.fillStyle = '#4ade80';
+		context.shadowColor = '#4ade80';
+		context.shadowBlur = 18;
+		context.fillRect(playerX, PLAYER_Y, PLAYER_WIDTH, PLAYER_HEIGHT);
+		context.fillRect(playerX + PLAYER_WIDTH / 2 - 4, PLAYER_Y - 16, 8, 16);
+		context.fillRect(playerX + PLAYER_WIDTH / 2 - 8, PLAYER_Y - 8, 16, 8);
+		context.restore();
+	}
+
+	function drawShields(context: CanvasRenderingContext2D) {
+		context.save();
+		context.fillStyle = '#4ade80';
+		context.shadowColor = '#4ade80';
+		context.shadowBlur = 4;
+
+		for (const shield of shields) {
+			for (let row = 0; row < shield.pixels.length; row += 1) {
+				for (let col = 0; col < shield.pixels[row].length; col += 1) {
+					if (!shield.pixels[row][col]) continue;
+
+					context.fillRect(
+						shield.x + col * SHIELD_CELL_WIDTH,
+						shield.y + row * SHIELD_CELL_HEIGHT,
+						SHIELD_CELL_WIDTH,
+						SHIELD_CELL_HEIGHT
+					);
+				}
+			}
+		}
+
+		context.restore();
+	}
+
+	function drawBullets(context: CanvasRenderingContext2D) {
+		for (const bullet of bullets) {
+			context.save();
+			context.fillStyle = getBulletColor(bullet.variant);
+			context.shadowColor = getBulletColor(bullet.variant);
+			context.shadowBlur = bullet.type === 'player' ? 10 : 8;
+			context.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+			context.restore();
+		}
+	}
+
+	function drawUfo(context: CanvasRenderingContext2D, now: number) {
+		if (!ufo.active) return;
+
+		const pulse = 0.75 + Math.sin(now / 140) * 0.25;
+		context.save();
+		context.shadowColor = '#f472b6';
+		context.shadowBlur = 10 + pulse * 8;
+
+		context.fillStyle = '#f472b6';
+		context.beginPath();
+		context.ellipse(ufo.x + 24, UFO_Y + 14, 22, 5, 0, 0, Math.PI * 2);
+		context.fill();
+
+		context.fillStyle = '#fb7185';
+		context.beginPath();
+		context.ellipse(ufo.x + 24, UFO_Y + 10, 10, 6, 0, 0, Math.PI * 2);
+		context.fill();
+
+		context.shadowBlur = 0;
+		context.fillStyle = '#fde047';
+		for (const [x, y] of [
+			[18, 10],
+			[24, 8],
+			[30, 10]
+		]) {
+			context.beginPath();
+			context.arc(ufo.x + x, UFO_Y + y, 2, 0, Math.PI * 2);
+			context.fill();
+		}
+
+		context.restore();
+	}
+
+	function drawPlayerExplosion(context: CanvasRenderingContext2D, now: number) {
+		if (!playerExplosion) return;
+
+		const remaining = Math.max(0, playerExplosion.expiresAt - now);
+		const progress = 1 - remaining / PLAYER_HIT_ANIMATION_MS;
+		const centerX = playerExplosion.x + PLAYER_WIDTH / 2;
+		const centerY = playerExplosion.y + 18;
+
+		context.save();
+		context.globalAlpha = Math.max(0, 1 - progress);
+		context.fillStyle = '#facc15';
+		context.shadowColor = '#f87171';
+		context.shadowBlur = 20;
+		context.beginPath();
+		context.arc(centerX, centerY, 10 + progress * 28, 0, Math.PI * 2);
+		context.fill();
+
+		context.lineWidth = 4;
+		context.strokeStyle = '#facc15';
+		context.beginPath();
+		context.arc(centerX, centerY, 8 + progress * 42, 0, Math.PI * 2);
+		context.stroke();
+		context.restore();
+	}
+
+	function drawUfoScorePopup(context: CanvasRenderingContext2D, now: number) {
+		if (!ufoScorePopup) return;
+
+		const remaining = Math.max(0, ufoScorePopup.expiresAt - now);
+		const progress = 1 - remaining / 800;
+
+		context.save();
+		context.globalAlpha = Math.max(0, 1 - progress);
+		context.font = '900 18px "Courier New", monospace';
+		context.textAlign = 'center';
+		context.textBaseline = 'middle';
+		context.fillStyle = '#f472b6';
+		context.shadowColor = '#f472b6';
+		context.shadowBlur = 8;
+		context.fillText(String(ufoScorePopup.score), ufoScorePopup.x, ufoScorePopup.y - progress * 30);
+		context.restore();
+	}
+
+	function drawSpace(now = performance.now()) {
+		if (!ctx || !canvasEl) return;
+
+		ctx.imageSmoothingEnabled = false;
+		ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+		drawPlayfieldBackdrop(ctx, now);
+		drawUfo(ctx, now);
+		drawAliens(ctx);
+		drawShields(ctx);
+		drawPlayer(ctx, now);
+		drawBullets(ctx);
+		drawPlayerExplosion(ctx, now);
+		drawUfoScorePopup(ctx, now);
+	}
+
+	function damageShield(shield: Shield, px: number, py: number) {
 		if (px < 0 || px >= SHIELD_COLS || py < 0 || py >= SHIELD_ROWS || !shield.pixels[py][px]) {
 			return false;
 		}
@@ -894,7 +1173,7 @@
 				aliens.forEach((a) => {
 					if (a.alive) {
 						a.y += 20;
-						if (a.y + ALIEN_HEIGHT > GAME_HEIGHT - PLAYER_HEIGHT - 20) {
+						if (a.y + ALIEN_HEIGHT > PLAYER_Y) {
 							gameOver = true;
 						}
 					}
@@ -995,12 +1274,12 @@
 				if (
 					bulletCenterX > playerX &&
 					bulletCenterX < playerX + PLAYER_WIDTH &&
-					bulletBottom > GAME_HEIGHT - PLAYER_HEIGHT - 20 &&
-					bulletTop < GAME_HEIGHT - 20
+					bulletBottom > PLAYER_Y &&
+					bulletTop < PLAYER_Y + PLAYER_HEIGHT
 				) {
 					playerExplosion = {
 						x: playerX,
-						y: GAME_HEIGHT - PLAYER_HEIGHT - 28,
+						y: PLAYER_Y - 8,
 						id: nextExplosionId++,
 						expiresAt: time + PLAYER_HIT_ANIMATION_MS
 					};
@@ -1035,6 +1314,7 @@
 		}
 
 		if (gameOver || gameWon) {
+			drawSpace(time);
 			if (score > highScore) {
 				highScore = recordCabinetHighScore(localStorage, cabinet, score);
 			}
@@ -1047,8 +1327,17 @@
 			return;
 		}
 
+		drawSpace(time);
 		requestAnimationFrame(update);
 	}
+
+	$effect(() => {
+		const canvas = canvasEl;
+		ctx = canvas?.getContext('2d') ?? null;
+		if (ctx) {
+			queueMicrotask(() => drawSpace(performance.now()));
+		}
+	});
 
 	$effect(() => {
 		if (!menuScreen) return;
@@ -1237,7 +1526,7 @@
 			style:height={`${scaledGameHeight}px`}
 		>
 			<div
-				class="absolute top-0 left-0 origin-top-left overflow-hidden border-0 bg-black shadow-none sm:border-8 sm:border-black sm:shadow-[20px_20px_0_rgba(0,0,0,1)]"
+				class="absolute top-0 left-0 origin-top-left overflow-hidden border-0 bg-black shadow-none sm:border-8 sm:border-black"
 				style:width={`${GAME_WIDTH}px`}
 				style:height={`${GAME_HEIGHT}px`}
 				style:transform={`scale(${gameScale})`}
@@ -1264,178 +1553,13 @@
 					{/if}
 				</div>
 
-				<!-- Player -->
-				<div
-					class={`absolute bg-green-400 transition-all duration-75 ${playerInvulnerable ? 'player-respawn-flicker' : ''}`}
-					style:left="{playerX}px"
-					style:bottom="20px"
-					style:width="{PLAYER_WIDTH}px"
-					style:height="{PLAYER_HEIGHT}px"
-					style:box-shadow="0 0 20px #4ade80"
-				>
-					<div class="absolute -top-4 left-1/2 h-4 w-4 -translate-x-1/2 bg-green-400"></div>
-				</div>
-
-				{#if playerExplosion}
-					{#key playerExplosion.id}
-						<div
-							class="player-hit-burst absolute"
-							style:left="{playerExplosion.x - 8}px"
-							style:top="{playerExplosion.y - 8}px"
-						>
-							<div class="player-hit-core"></div>
-							<div class="player-hit-ring"></div>
-						</div>
-					{/key}
-				{/if}
-
-				{#if ufo.active}
-					<div
-						class="ufo-saucer absolute"
-						style:left="{ufo.x}px"
-						style:top="{UFO_Y}px"
-						style:width="{UFO_WIDTH}px"
-						style:height="{UFO_HEIGHT}px"
-					>
-						<svg width={UFO_WIDTH} height={UFO_HEIGHT} viewBox="0 0 48 20">
-							<ellipse cx="24" cy="14" rx="22" ry="5" fill="#f472b6" />
-							<ellipse cx="24" cy="10" rx="10" ry="6" fill="#fb7185" />
-							<circle cx="18" cy="10" r="2" fill="#fde047" />
-							<circle cx="24" cy="8" r="2" fill="#fde047" />
-							<circle cx="30" cy="10" r="2" fill="#fde047" />
-						</svg>
-					</div>
-				{/if}
-
-				{#if ufoScorePopup}
-					{#key ufoScorePopup.score}
-						<div
-							class="ufo-score-popup absolute"
-							style:left="{ufoScorePopup.x}px"
-							style:top="{ufoScorePopup.y}px"
-						>
-							{ufoScorePopup.score}
-						</div>
-					{/key}
-				{/if}
-
-				<!-- Aliens -->
-				{#each aliens as alien (alien.id)}
-					{#if alien.alive}
-						<div
-							class="absolute"
-							style:left="{alien.x}px"
-							style:top="{alien.y}px"
-							style:width="{ALIEN_WIDTH}px"
-							style:height="{ALIEN_HEIGHT}px"
-						>
-							{#if alien.id < ALIEN_COLS}
-								<!-- Type 0: squid - top row -->
-								<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
-									<g
-										class="text-green-400"
-										fill="currentColor"
-										style="filter: drop-shadow(0 0 4px #4ade80);"
-									>
-										<!-- Body -->
-										<rect x="8" y="0" width="24" height="4" />
-										<rect x="4" y="4" width="32" height="4" />
-										<rect x="4" y="8" width="8" height="4" />
-										<rect x="12" y="8" width="16" height="4" />
-										<rect x="28" y="8" width="8" height="4" />
-										<rect x="4" y="12" width="4" height="4" />
-										<rect x="12" y="12" width="4" height="4" />
-										<rect x="24" y="12" width="4" height="4" />
-										<rect x="32" y="12" width="4" height="4" />
-										<!-- Eyes -->
-										<rect x="12" y="16" width="4" height="4" fill="black" />
-										<rect x="24" y="16" width="4" height="4" fill="black" />
-										<!-- Mouth -->
-										<rect x="16" y="20" width="8" height="4" />
-										<!-- Legs animation -->
-										{#if alien.legFrame === 0}
-											<rect x="10" y="24" width="4" height="4" />
-											<rect x="26" y="24" width="4" height="4" />
-										{:else}
-											<rect x="14" y="24" width="4" height="4" />
-											<rect x="22" y="24" width="4" height="4" />
-										{/if}
-									</g>
-								</svg>
-							{:else if alien.id < ALIEN_COLS * 2}
-								<!-- Type 1: crab - second/third row -->
-								<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
-									<g
-										class="text-green-400"
-										fill="currentColor"
-										style="filter: drop-shadow(0 0 4px #4ade80);"
-									>
-										<!-- Body -->
-										<rect x="12" y="0" width="16" height="4" />
-										<rect x="8" y="4" width="24" height="4" />
-										<rect x="4" y="8" width="32" height="4" />
-										<rect x="4" y="12" width="8" height="4" />
-										<rect x="12" y="12" width="4" height="4" />
-										<rect x="24" y="12" width="4" height="4" />
-										<rect x="28" y="12" width="8" height="4" />
-										<rect x="12" y="16" width="16" height="4" />
-										<rect x="8" y="20" width="4" height="4" />
-										<rect x="28" y="20" width="4" height="4" />
-										<!-- Eyes -->
-										<rect x="12" y="16" width="4" height="4" fill="black" />
-										<rect x="24" y="16" width="4" height="4" fill="black" />
-										<!-- Antennae -->
-										<rect x="8" y="0" width="4" height="4" />
-										<rect x="28" y="0" width="4" height="4" />
-										<!-- Legs animation -->
-										{#if alien.legFrame === 0}
-											<rect x="8" y="24" width="4" height="4" />
-											<rect x="28" y="24" width="4" height="4" />
-										{:else}
-											<rect x="12" y="24" width="4" height="4" />
-											<rect x="24" y="24" width="4" height="4" />
-										{/if}
-									</g>
-								</svg>
-							{:else}
-								<!-- Type 2: octopus - bottom rows -->
-								<svg width={ALIEN_WIDTH} height={ALIEN_HEIGHT} viewBox="0 0 40 30">
-									<g
-										class="text-green-400"
-										fill="currentColor"
-										style="filter: drop-shadow(0 0 4px #4ade80);"
-									>
-										<!-- Dome -->
-										<rect x="12" y="0" width="16" height="4" />
-										<rect x="8" y="4" width="24" height="4" />
-										<rect x="4" y="8" width="32" height="4" />
-										<rect x="4" y="12" width="8" height="4" />
-										<rect x="16" y="12" width="8" height="4" />
-										<rect x="28" y="12" width="8" height="4" />
-										<rect x="12" y="16" width="16" height="4" />
-										<!-- Eyes -->
-										<rect x="12" y="16" width="4" height="4" fill="black" />
-										<rect x="24" y="16" width="4" height="4" fill="black" />
-										<!-- Tentacles animation -->
-										{#if alien.legFrame === 0}
-											<rect x="8" y="20" width="4" height="4" />
-											<rect x="16" y="20" width="4" height="4" />
-											<rect x="24" y="20" width="4" height="4" />
-											<rect x="12" y="24" width="4" height="4" />
-											<rect x="24" y="24" width="4" height="4" />
-										{:else}
-											<rect x="4" y="20" width="4" height="4" />
-											<rect x="20" y="20" width="4" height="4" />
-											<rect x="28" y="20" width="4" height="4" />
-											<rect x="16" y="24" width="4" height="4" />
-											<rect x="20" y="24" width="4" height="4" />
-										{/if}
-									</g>
-								</svg>
-							{/if}
-						</div>
-					{/if}
-				{/each}
+				<canvas
+					bind:this={canvasEl}
+					width={GAME_WIDTH}
+					height={GAME_HEIGHT}
+					class="absolute inset-0 z-0 h-full w-full"
+					aria-hidden="true"
+				></canvas>
 
 				<!-- Lives -->
 				<div class="lives-bar absolute bottom-2 left-4 z-20 flex items-center gap-3">
@@ -1446,45 +1570,6 @@
 						</svg>
 					{/each}
 				</div>
-
-				<!-- Shields -->
-				{#each shields as shield (shield.x)}
-					<div
-						class="absolute"
-						style:left="{shield.x}px"
-						style:top="{shield.y}px"
-						style:width="{SHIELD_WIDTH}px"
-						style:height="{SHIELD_HEIGHT}px"
-					>
-						{#each shield.pixels as pixelRow, rowIndex (rowIndex)}
-							{#each pixelRow as pixel, colIndex (colIndex)}
-								{#if pixel}
-									<div
-										class="absolute bg-green-400"
-										style:left="{colIndex * SHIELD_CELL_WIDTH}px"
-										style:top="{rowIndex * SHIELD_CELL_HEIGHT}px"
-										style:width="{SHIELD_CELL_WIDTH}px"
-										style:height="{SHIELD_CELL_HEIGHT}px"
-									></div>
-								{/if}
-							{/each}
-						{/each}
-					</div>
-				{/each}
-
-				<!-- Bullets -->
-				{#each bullets as bullet (bullet.id)}
-					<div
-						class="absolute"
-						style:left="{bullet.x}px"
-						style:top="{bullet.y}px"
-						style:width="{bullet.width}px"
-						style:height="{bullet.height}px"
-						style:background={getBulletColor(bullet.variant)}
-						style:transform={getBulletRotation()}
-						style:box-shadow={getBulletGlow(bullet.variant)}
-					></div>
-				{/each}
 
 				<!-- Game Over Overlays -->
 				{#if splashScreen}
@@ -1835,111 +1920,5 @@
 
 	.life-cannon {
 		opacity: 0.9;
-	}
-
-	.player-hit-burst {
-		width: 66px;
-		height: 66px;
-		pointer-events: none;
-	}
-
-	.player-respawn-flicker {
-		animation: player-respawn-flicker 120ms steps(1) infinite;
-	}
-
-	.player-hit-core,
-	.player-hit-ring {
-		position: absolute;
-		inset: 0;
-		border-radius: 9999px;
-	}
-
-	.player-hit-core {
-		background: radial-gradient(
-			circle,
-			rgb(250 204 21 / 0.95) 0 24%,
-			rgb(248 113 113 / 0.8) 25% 52%,
-			transparent 53%
-		);
-		animation: player-hit-core 350ms ease-out forwards;
-	}
-
-	.player-hit-ring {
-		border: 4px solid rgb(250 204 21 / 0.95);
-		box-shadow: 0 0 20px rgb(248 113 113 / 0.7);
-		animation: player-hit-ring 350ms ease-out forwards;
-	}
-
-	@keyframes player-hit-core {
-		from {
-			transform: scale(0.35);
-			opacity: 1;
-		}
-
-		to {
-			transform: scale(1.15);
-			opacity: 0;
-		}
-	}
-
-	@keyframes player-hit-ring {
-		from {
-			transform: scale(0.2);
-			opacity: 0.95;
-		}
-
-		to {
-			transform: scale(1.3);
-			opacity: 0;
-		}
-	}
-
-	@keyframes player-respawn-flicker {
-		0%,
-		100% {
-			opacity: 1;
-			filter: drop-shadow(0 0 14px #4ade80);
-		}
-
-		50% {
-			opacity: 0.35;
-			filter: drop-shadow(0 0 4px #4ade80);
-		}
-	}
-
-	.ufo-saucer {
-		filter: drop-shadow(0 0 8px #f472b6);
-		animation: ufo-pulse 600ms ease-in-out infinite alternate;
-	}
-
-	@keyframes ufo-pulse {
-		from {
-			filter: drop-shadow(0 0 6px #f472b6);
-		}
-
-		to {
-			filter: drop-shadow(0 0 16px #fb7185);
-		}
-	}
-
-	.ufo-score-popup {
-		font-size: 18px;
-		font-weight: 900;
-		color: #f472b6;
-		text-shadow: 0 0 8px #f472b6;
-		pointer-events: none;
-		animation: ufo-score-float 800ms ease-out forwards;
-	}
-
-	@keyframes ufo-score-float {
-		from {
-			transform: translateY(0);
-			opacity: 1;
-		}
-
-		to {
-			transform: translateY(-30px);
-			opacity: 0;
-		}
 	}
 </style>
