@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import * as THREE from 'three';
 	import { getBooleanCabinetFlow, returnFromCabinet } from '$lib/cabinet-flow';
 	import { gameCabinetById, readCabinetScore, recordCabinetHighScore } from '$lib/cabinets';
@@ -45,7 +45,8 @@
 	let lastJoyUp = false;
 	let lastJoyDown = false;
 
-	let canvasElement: HTMLCanvasElement;
+	let stageElement = $state<HTMLDivElement | null>(null);
+	let canvasElement = $state<HTMLCanvasElement | null>(null);
 
 	let flow = $derived(
 		getBooleanCabinetFlow({
@@ -54,9 +55,10 @@
 		})
 	);
 	let splashScreen = $derived(flow.splashScreen);
+	let gameScreen = $derived(flow.gameScreen);
 	let endScreen = $derived(flow.endScreen);
 	let menuScreen = $derived(flow.menuScreen);
-	let showTouchControls = $derived(touchCapable && viewportWidth < 960 && gameStarted && !gameOver);
+	let showTouchControls = $derived(touchCapable && viewportWidth < 960 && gameScreen);
 
 	let keyUp = $state(false);
 	let keyDown = $state(false);
@@ -77,6 +79,18 @@
 		gamepadSteer = 0;
 	}
 
+	function clearWeatherTimer() {
+		if (!weatherTimer) return;
+		clearTimeout(weatherTimer);
+		weatherTimer = null;
+	}
+
+	function clearStartTimer() {
+		if (!startTimer) return;
+		clearTimeout(startTimer);
+		startTimer = null;
+	}
+
 	function backToDashboard() {
 		window.location.href = '/';
 	}
@@ -89,11 +103,16 @@
 		gameStarted = true;
 		gameOver = false;
 		paused = false;
-		isStarting = false;
+		if (isStarting && enemyCars.length === 0 && !startTimer) {
+			queueStartSequence();
+		}
 	}
 
 	function resetRunState() {
+		clearStartTimer();
+		clearWeatherTimer();
 		hasActiveRun = false;
+		isStarting = false;
 		speed = 0;
 		score = 0;
 		carsPassed = 0;
@@ -126,7 +145,6 @@
 		gameStarted = false;
 		gameOver = false;
 		paused = false;
-		isStarting = false;
 
 		if (preserveRun) {
 			hasActiveRun = true;
@@ -144,11 +162,30 @@
 		});
 	}
 
-	function handleResize() {
+	function readStageSize(): StageSize {
+		const rect = stageElement?.getBoundingClientRect();
+		const fallbackWidth =
+			typeof window === 'undefined' ? FALLBACK_STAGE_SIZE.width : window.innerWidth;
+		const fallbackHeight =
+			typeof window === 'undefined' ? FALLBACK_STAGE_SIZE.height : window.innerHeight;
+
+		return {
+			width: Math.max(1, Math.floor(rect?.width || fallbackWidth || FALLBACK_STAGE_SIZE.width)),
+			height: Math.max(1, Math.floor(rect?.height || fallbackHeight || FALLBACK_STAGE_SIZE.height))
+		};
+	}
+
+	function resizeRendererToStage() {
 		if (!camera || !renderer) return;
-		camera.aspect = window.innerWidth / window.innerHeight;
+
+		const size = readStageSize();
+		camera.aspect = size.width / size.height;
 		camera.updateProjectionMatrix();
-		renderer.setSize(window.innerWidth, window.innerHeight);
+		renderer.setSize(size.width, size.height, false);
+	}
+
+	function handleResize() {
+		resizeRendererToStage();
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
@@ -254,15 +291,46 @@
 	let renderer: THREE.WebGLRenderer;
 	let roadGroup: THREE.Group;
 	let playerCar: THREE.Group;
-	let enemyCars: { mesh: THREE.Group; z: number; x: number; passed: boolean }[] = [];
+	type StageSize = {
+		width: number;
+		height: number;
+	};
+
+	type EnemyCar = {
+		mesh: THREE.Group;
+		z: number;
+		x: number;
+		passed: boolean;
+	};
+
+	type GamepadInput = {
+		throttle: boolean;
+		brake: boolean;
+		steer: number;
+	};
+
+	let enemyCars: EnemyCar[] = [];
 	let horizon: THREE.Mesh;
 	let fogPlane: THREE.Mesh;
-	let animationId: number;
+	let animationId = 0;
+	let lastFrameNow = 0;
+	let resizeObserver: ResizeObserver | null = null;
+	let weatherTimer: ReturnType<typeof setTimeout> | null = null;
+	let startTimer: ReturnType<typeof setTimeout> | null = null;
 
 	const ROAD_WIDTH = 34;
 	const STEER_SPEED = 0.65;
 	const MAX_X = ROAD_WIDTH / 2 - 4.5;
 	const GAMEPAD_DEADZONE = 0.2;
+	const TARGET_FRAME_MS = 1000 / 60;
+	const MAX_FRAME_SCALE = 2.5;
+	const FALLBACK_STAGE_SIZE: StageSize = { width: 960, height: 540 };
+	// Coarse arcade hit box tuned to the visible car bodies.
+	const CAR_COLLISION = {
+		halfWidth: 4.2,
+		halfDepth: 7.5,
+		playerZBase: 4
+	} as const;
 	const cabinet = gameCabinetById.enduro;
 
 	let gamepadSteer = $state(0);
@@ -334,10 +402,14 @@
 	}
 
 	function initThree() {
+		if (!canvasElement) return;
+
+		const stageSize = readStageSize();
+
 		scene = new THREE.Scene();
 		scene.background = new THREE.Color(0x112233);
 
-		camera = new THREE.PerspectiveCamera(64, window.innerWidth / window.innerHeight, 1, 400);
+		camera = new THREE.PerspectiveCamera(64, stageSize.width / stageSize.height, 1, 400);
 		camera.position.set(0, 18, 30);
 		camera.lookAt(0, 0, -60);
 
@@ -346,8 +418,8 @@
 			antialias: false,
 			alpha: false
 		});
-		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+		renderer.setSize(stageSize.width, stageSize.height, false);
 
 		const skyGeo = new THREE.PlaneGeometry(800, 240);
 		const skyMat = new THREE.MeshBasicMaterial({
@@ -387,7 +459,7 @@
 		spawnEnemy(-240);
 		spawnEnemy(-310);
 
-		animate();
+		startRenderLoop();
 	}
 
 	function spawnEnemy(startZ = -140) {
@@ -409,7 +481,30 @@
 		});
 	}
 
-	function updateRoadAndWeather() {
+	function frameLerp(baseAmount: number, frameScale: number) {
+		return 1 - (1 - baseAmount) ** frameScale;
+	}
+
+	function getFrameScale(now: number) {
+		if (!lastFrameNow) {
+			lastFrameNow = now;
+			return 1;
+		}
+
+		const elapsed = Math.max(0, Math.min(100, now - lastFrameNow));
+		lastFrameNow = now;
+		return Math.min(MAX_FRAME_SCALE, Math.max(0.25, elapsed / TARGET_FRAME_MS));
+	}
+
+	function enemyCollidesWithPlayer(enemy: EnemyCar) {
+		if (!playerCar) return false;
+
+		const dx = enemy.mesh.position.x - playerCar.position.x;
+		const dz = enemy.z - (CAR_COLLISION.playerZBase + playerZOffset);
+		return Math.abs(dx) < CAR_COLLISION.halfWidth && Math.abs(dz) < CAR_COLLISION.halfDepth;
+	}
+
+	function updateRoadAndWeather(frameScale: number) {
 		const cycle = Math.floor(distance / 6500);
 		isNight = cycle % 2 === 1;
 
@@ -424,19 +519,20 @@
 		}
 
 		// Weather
-		if (Math.random() < 0.004 && weather === 'clear') {
+		if (Math.random() < 0.004 * frameScale && weather === 'clear' && !weatherTimer) {
 			weather = Math.random() > 0.5 ? 'fog' : 'ice';
-			setTimeout(() => {
+			weatherTimer = setTimeout(() => {
 				if (!gameOver) weather = 'clear';
+				weatherTimer = null;
 			}, 7200);
 		}
 
 		// Smooth transition for ice visuals
 		const targetIce = weather === 'ice' ? 1 : 0;
-		iceFactor = THREE.MathUtils.lerp(iceFactor, targetIce, 0.015);
+		iceFactor = THREE.MathUtils.lerp(iceFactor, targetIce, frameLerp(0.015, frameScale));
 
 		const targetFog = weather === 'fog' ? 1 : 0;
-		fogFactor = THREE.MathUtils.lerp(fogFactor, targetFog, 0.02);
+		fogFactor = THREE.MathUtils.lerp(fogFactor, targetFog, frameLerp(0.02, frameScale));
 
 		if (fogPlane.material instanceof THREE.MeshBasicMaterial) {
 			fogPlane.material.opacity = fogFactor * 0.85;
@@ -460,7 +556,7 @@
 
 		roadGroup.children.forEach((child, i) => {
 			if (child instanceof THREE.Group) {
-				child.position.z += speed * 3.5;
+				child.position.z += speed * 3.5 * frameScale;
 
 				// Update colors for ice transition
 				const roadMesh = child.children[0] as THREE.Mesh;
@@ -497,7 +593,7 @@
 		for (let i = enemyCars.length - 1; i >= 0; i--) {
 			const c = enemyCars[i];
 			// Enemy speed is fixed, so relative movement depends on player speed
-			c.z += (speed - 0.45) * 3.2;
+			c.z += (speed - 0.45) * 3.2 * frameScale;
 			c.mesh.position.z = c.z;
 
 			// Enemy cars also follow the same subtle curve
@@ -512,9 +608,7 @@
 				playPassSound();
 			}
 
-			// Adjusted collision detection for playerZOffset
-			const dx = c.mesh.position.x - playerCar.position.x;
-			if (Math.abs(dx) < 4.2 && Math.abs(c.z - (4 + playerZOffset)) < 7.5) {
+			if (enemyCollidesWithPlayer(c)) {
 				handleCrash();
 				return;
 			}
@@ -633,12 +727,8 @@
 		noise.start();
 	}
 
-	function animate() {
-		animationId = requestAnimationFrame(animate);
-		if (!renderer || !scene || !camera) return;
-
-		// Gamepad handling (following Space Invaders pattern)
-		const gamepads = navigator.getGamepads();
+	function pollGamepadInput(): GamepadInput {
+		const gamepads = navigator.getGamepads?.() ?? [];
 		let gpThrottle = false;
 		let gpBrake = false;
 		let gpSteer = 0;
@@ -721,52 +811,98 @@
 		gamepadThrottle = gpThrottle;
 		gamepadBrake = gpBrake;
 
+		return {
+			throttle: gpThrottle,
+			brake: gpBrake,
+			steer: gpSteer
+		};
+	}
+
+	function updateDrivingFrame(input: GamepadInput, frameScale: number, now: number) {
+		if (!playerCar || !camera) return;
+
 		if (gameStarted && !gameOver && !paused) {
 			// Throttle and Brake (Combined Keyboard + Gamepad)
-			const isAccelerating = keyUp || gamepadThrottle || touchThrottle;
-			const isBraking = keyDown || gamepadBrake || touchBrake;
+			const isAccelerating = keyUp || input.throttle || touchThrottle;
+			const isBraking = keyDown || input.brake || touchBrake;
 
 			if (isAccelerating) {
-				speed = Math.min(maxSpeed, speed + 0.012);
+				speed = Math.min(maxSpeed, speed + 0.012 * frameScale);
 			} else if (isBraking) {
-				speed = Math.max(0, speed - 0.025);
+				speed = Math.max(0, speed - 0.025 * frameScale);
 			}
 
-			distance += speed * 12;
+			distance += speed * 12 * frameScale;
 
 			let steer = 0;
 			if (keyLeft) steer -= 1;
 			if (keyRight) steer += 1;
-			steer += gamepadSteer;
+			steer += input.steer;
 			steer += touchSteer;
 
-			playerX = Math.max(-MAX_X, Math.min(MAX_X, playerX + steer * STEER_SPEED));
+			playerX = Math.max(-MAX_X, Math.min(MAX_X, playerX + steer * STEER_SPEED * frameScale));
 
-			playerCar.position.x = THREE.MathUtils.lerp(playerCar.position.x, playerX, 0.26);
+			playerCar.position.x = THREE.MathUtils.lerp(
+				playerCar.position.x,
+				playerX,
+				frameLerp(0.26, frameScale)
+			);
 
 			// Forward-nudging effect based on speed
-			playerZOffset = THREE.MathUtils.lerp(playerZOffset, speed * 8, 0.05);
+			playerZOffset = THREE.MathUtils.lerp(playerZOffset, speed * 8, frameLerp(0.05, frameScale));
 			playerCar.position.z = -2 + playerZOffset;
 
 			camera.position.x = playerCar.position.x * 0.4;
 			camera.lookAt(playerCar.position.x * 0.6, -4, -70);
 
-			updateRoadAndWeather();
+			updateRoadAndWeather(frameScale);
 
-			if (Math.random() < 0.15) playEngineSound();
+			if (Math.random() < 0.15 * frameScale) playEngineSound();
 		}
 
 		if (!paused) {
-			playerCar.position.y = 1.2 + Math.sin(Date.now() * 0.009) * 0.06;
+			playerCar.position.y = 1.2 + Math.sin(now * 0.009) * 0.06;
 		}
+	}
+
+	function renderFrame(now: number) {
+		if (!renderer || !scene || !camera) return;
+
+		const frameScale = getFrameScale(now);
+		const gamepadInput = pollGamepadInput();
+		updateDrivingFrame(gamepadInput, frameScale, now);
 
 		renderer.render(scene, camera);
+	}
+
+	function animate(now: number) {
+		animationId = requestAnimationFrame(animate);
+		renderFrame(now);
+	}
+
+	function startRenderLoop() {
+		if (animationId) cancelAnimationFrame(animationId);
+		lastFrameNow = 0;
+		animationId = requestAnimationFrame(animate);
+	}
+
+	function queueStartSequence() {
+		clearStartTimer();
+		startTimer = setTimeout(() => {
+			startTimer = null;
+			if (gameStarted && !gameOver) {
+				isStarting = false;
+				for (let i = 0; i < 8; i++) spawnEnemy(-180 - i * 45);
+			}
+		}, 2500);
 	}
 
 	function startGame() {
 		initAudio();
 		if (audioCtx?.state === 'suspended') audioCtx.resume();
 
+		clearWeatherTimer();
+		clearStartTimer();
 		hasActiveRun = true;
 		gameStarted = true;
 		gameOver = false;
@@ -785,12 +921,7 @@
 		enemyCars.forEach((c) => scene?.remove(c.mesh));
 		enemyCars = [];
 
-		setTimeout(() => {
-			if (gameStarted && !gameOver) {
-				isStarting = false;
-				for (let i = 0; i < 8; i++) spawnEnemy(-180 - i * 45);
-			}
-		}, 2500);
+		queueStartSequence();
 	}
 
 	function restartGame() {
@@ -802,13 +933,29 @@
 	}
 
 	onMount(() => {
-		highScore = readCabinetScore(localStorage, cabinet);
-		touchCapable = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+		let destroyed = false;
 
-		initThree();
+		async function setupStage() {
+			highScore = readCabinetScore(localStorage, cabinet);
+			touchCapable = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+
+			await tick();
+			if (destroyed) return;
+
+			initThree();
+			resizeObserver = new ResizeObserver(resizeRendererToStage);
+			if (stageElement) resizeObserver.observe(stageElement);
+			resizeRendererToStage();
+		}
+
+		setupStage();
 
 		return () => {
+			destroyed = true;
 			if (animationId) cancelAnimationFrame(animationId);
+			resizeObserver?.disconnect();
+			clearStartTimer();
+			clearWeatherTimer();
 			if (renderer) {
 				renderer.dispose();
 			}
@@ -838,7 +985,9 @@
 />
 
 <div class="relative h-screen w-screen overflow-hidden bg-black font-mono">
-	<canvas bind:this={canvasElement} class="absolute inset-0 h-full w-full"></canvas>
+	<div bind:this={stageElement} class="absolute inset-0 z-0 overflow-hidden bg-black">
+		<canvas bind:this={canvasElement} class="block h-full w-full"></canvas>
+	</div>
 
 	<!-- SPLASH -->
 	{#if splashScreen}
@@ -920,7 +1069,7 @@
 	{/if}
 
 	<!-- IN-GAME HUD -->
-	{#if gameStarted}
+	{#if gameScreen}
 		<div class="pointer-events-none absolute inset-0 z-30 flex flex-col p-6 text-white">
 			<div class="flex justify-between text-2xl font-black">
 				<div>DAY <span class="text-[#ffcc00]">{day}</span></div>
