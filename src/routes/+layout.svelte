@@ -1,34 +1,26 @@
 <script lang="ts">
 	import './layout.css';
+	import { arcadeStructuredData } from '$lib/cabinets';
 	import favicon from '$lib/assets/favicon.svg';
 
 	let { children } = $props();
 
-	// Structured Data for Google (JSON-LD)
-	const structuredData = {
-		'@context': 'https://schema.org',
-		'@type': 'GameServer',
-		name: 'The Chaos Arcade',
-		description: 'Uma coleção de jogos vintages e caóticos feitos com SvelteKit.',
-		url: 'https://chaos-arcade.pages.dev/',
-		genre: ['Arcade', 'Retro', 'Strategy'],
-		gameItem: [
-			{ '@type': 'VideoGame', name: 'Minesweeper Chaos' },
-			{ '@type': 'VideoGame', name: 'Checkers Chaos' },
-			{ '@type': 'VideoGame', name: 'Enduro 3D Chaos' }
-		]
-	};
+	const structuredDataJson = JSON.stringify(arcadeStructuredData).replace(/</g, '\\u003c');
+	const structuredDataScript = [
+		'<script type="application/ld+json">',
+		structuredDataJson,
+		'</' + 'script>'
+	].join('');
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	
+
 	<!-- Canonical URL -->
 	<link rel="canonical" href="https://chaos-arcade.pages.dev/" />
 
-	<script type="application/ld+json">
-		{@html JSON.stringify(structuredData)}
-	</script>
+	<!-- eslint-disable-next-line svelte/no-at-html-tags -->
+	{@html structuredDataScript}
 </svelte:head>
 
 {@render children()}

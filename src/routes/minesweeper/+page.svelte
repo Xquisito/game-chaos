@@ -1,18 +1,22 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { onMount, tick } from 'svelte';
-	import { KEY_ESCAPE, KEY_ENTER, KEY_SPACE, isArrowKey, normalizeKey } from '$lib/keys';
+	import { getCabinetFlow, returnFromCabinet, type CabinetScreen } from '$lib/cabinet-flow';
+	import { gameCabinetById, readCabinetScore, recordCabinetWin } from '$lib/cabinets';
+	import {
+		focusFirstControlItem,
+		handleLinearMenuKeydown,
+		MENU_BUTTON_SELECTOR
+	} from '$lib/unified-controls';
 
 	const ROWS = 10;
 	const COLS = 10;
 	const MINES_COUNT = 15;
-	const WINS_STORAGE_KEY = 'minesweeper-wins';
 	const LONG_PRESS_MS = 360;
-	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
+	const cabinet = gameCabinetById.minesweeper;
 
 	type CellValue = 'mine' | 'empty' | number;
 	type CellState = 'hidden' | 'revealed' | 'flagged';
-	type Screen = 'splash' | 'game' | 'end';
 	type EndMode = 'won' | 'lost' | null;
 
 	interface Cell {
@@ -21,7 +25,7 @@
 	}
 
 	let grid = $state<Cell[][]>([]);
-	let screen = $state<Screen>('splash');
+	let screen = $state<CabinetScreen>('splash');
 	let endMode = $state<EndMode>(null);
 	let hasActiveRun = $state(false);
 	let wins = $state(0);
@@ -30,10 +34,11 @@
 	let longPressCellKey = '';
 	let suppressedRevealKeys: string[] = [];
 
-	let splashScreen = $derived(screen === 'splash');
-	let gameScreen = $derived(screen === 'game');
-	let endScreen = $derived(screen === 'end');
-	let menuScreen = $derived(splashScreen || endScreen);
+	let flow = $derived(getCabinetFlow(screen));
+	let splashScreen = $derived(flow.splashScreen);
+	let gameScreen = $derived(flow.gameScreen);
+	let endScreen = $derived(flow.endScreen);
+	let menuScreen = $derived(flow.menuScreen);
 	let gameWon = $derived(endMode === 'won');
 	let gameOver = $derived(endMode === 'lost');
 	let minesLeft = $derived.by(() => {
@@ -97,14 +102,6 @@
 		}
 	}
 
-	function persistWins() {
-		try {
-			localStorage.setItem(WINS_STORAGE_KEY, String(wins));
-		} catch {
-			// Ignore storage failures in private/restricted contexts
-		}
-	}
-
 	function startGame() {
 		initGame();
 		hasActiveRun = true;
@@ -141,17 +138,10 @@
 	}
 
 	function handleReturnAction() {
-		if (gameScreen) {
-			returnToSplash(true);
-			return;
-		}
-
-		if (endScreen) {
-			returnToSplash(false);
-			return;
-		}
-
-		backToDashboard();
+		returnFromCabinet(flow, {
+			toDashboard: backToDashboard,
+			toSplash: returnToSplash
+		});
 	}
 
 	function revealCell(r: number, c: number) {
@@ -185,8 +175,7 @@
 	function finishWin() {
 		if (endMode === 'won') return;
 
-		wins += 1;
-		persistWins();
+		wins = recordCabinetWin(localStorage, cabinet, wins);
 		hasActiveRun = false;
 		endMode = 'won';
 		screen = 'end';
@@ -310,72 +299,17 @@
 		handleFlag(r, c);
 	}
 
-	function getMenuButtons() {
-		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
-	}
-
-	function moveFocus(direction: number) {
-		const buttons = getMenuButtons();
-		if (buttons.length === 0) return;
-
-		let index = buttons.indexOf(document.activeElement as HTMLElement);
-		if (index === -1) {
-			buttons[0].focus();
-			return;
-		}
-
-		index = (index + direction + buttons.length) % buttons.length;
-		buttons[index].focus();
-	}
-
-	function activateFocusedMenuItem() {
-		const buttons = getMenuButtons();
-		if (buttons.length === 0) return;
-
-		const active = document.activeElement as HTMLElement | null;
-		if (active && buttons.includes(active)) {
-			active.click();
-			return;
-		}
-
-		buttons[0].focus();
-	}
-
 	async function focusMenuSoon() {
 		await tick();
-		const firstButton = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement | null;
-		firstButton?.focus();
+		focusFirstControlItem(MENU_BUTTON_SELECTOR, true);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === KEY_ESCAPE || event.key === 'b' || event.key === 'B') {
-			event.preventDefault();
-			handleReturnAction();
-			return;
-		}
-
-		const key = normalizeKey(event.key);
-		const arrow = isArrowKey(event.key);
-
-		if (menuScreen && (key === 'w' || key === 'W' || (arrow && key === 'a'))) {
-			event.preventDefault();
-			moveFocus(-1);
-			return;
-		}
-
-		if (menuScreen && (key === 's' || key === 'S' || (arrow && key === 'd'))) {
-			event.preventDefault();
-			moveFocus(1);
-			return;
-		}
-
-		if (
-			menuScreen &&
-			(event.key === KEY_ENTER || event.key === KEY_SPACE || event.key === 'a' || event.key === 'A')
-		) {
-			event.preventDefault();
-			activateFocusedMenuItem();
-		}
+		handleLinearMenuKeydown(event, {
+			enabled: menuScreen,
+			onBack: handleReturnAction,
+			selector: MENU_BUTTON_SELECTOR
+		});
 	}
 
 	function getCellLabel(cell: Cell, r: number, c: number) {
@@ -389,13 +323,7 @@
 	}
 
 	onMount(() => {
-		try {
-			const savedWins = localStorage.getItem(WINS_STORAGE_KEY);
-			const parsedWins = savedWins ? Number.parseInt(savedWins, 10) : 0;
-			wins = Number.isFinite(parsedWins) ? parsedWins : 0;
-		} catch {
-			wins = 0;
-		}
+		wins = readCabinetScore(localStorage, cabinet);
 
 		focusMenuSoon();
 	});
@@ -403,9 +331,15 @@
 
 <svelte:head>
 	<title>Minesweeper Chaos | Vintage Puzzle Game</title>
-	<meta name="description" content="Test your logic with Minesweeper Chaos. A vintage-style minefield puzzle game. Avoid the bombs and clear the grid!" />
+	<meta
+		name="description"
+		content="Test your logic with Minesweeper Chaos. A vintage-style minefield puzzle game. Avoid the bombs and clear the grid!"
+	/>
 	<meta property="og:title" content="Minesweeper Chaos - The Classic Game" />
-	<meta property="og:description" content="Can you clear the 10x10 grid without hitting a mine? Try the most chaotic Minesweeper yet." />
+	<meta
+		property="og:description"
+		content="Can you clear the 10x10 grid without hitting a mine? Try the most chaotic Minesweeper yet."
+	/>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -419,7 +353,9 @@
 				class="w-full max-w-4xl border-4 border-black bg-white p-4 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
 			>
 				<div class="mb-5 text-center sm:mb-8">
-					<div class="mb-2 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm">
+					<div
+						class="mb-2 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm"
+					>
 						Game Chaos
 					</div>
 					<h1
@@ -444,7 +380,9 @@
 					</div>
 
 					<div class="border-4 border-black bg-black p-3 text-yellow-300 sm:p-5">
-						<div class="text-[0.6rem] font-black tracking-[0.35em] text-yellow-300/70 uppercase sm:text-xs">
+						<div
+							class="text-[0.6rem] font-black tracking-[0.35em] text-yellow-300/70 uppercase sm:text-xs"
+						>
 							Score Board
 						</div>
 						<div class="mt-2 text-3xl font-black sm:mt-4 sm:text-5xl">{wins}</div>
@@ -510,14 +448,18 @@
 					{/if}
 				</div>
 
-			<div class="mb-3 text-center sm:mb-5">
-				<h2 class="hidden text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:block sm:text-5xl">
-					{gameWon ? 'Victory!' : gameOver ? 'Kaboom!' : 'Minefield Live'}
-				</h2>
-				<p class="mt-1 hidden text-xs font-bold leading-relaxed text-black/70 uppercase sm:mt-2 sm:block sm:text-sm">
-					Click / tap reveal • Right click / long-press flag • Esc / B returns to splash
-				</p>
-			</div>
+				<div class="mb-3 text-center sm:mb-5">
+					<h2
+						class="hidden text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:block sm:text-5xl"
+					>
+						{gameWon ? 'Victory!' : gameOver ? 'Kaboom!' : 'Minefield Live'}
+					</h2>
+					<p
+						class="mt-1 hidden text-xs leading-relaxed font-bold text-black/70 uppercase sm:mt-2 sm:block sm:text-sm"
+					>
+						Click / tap reveal • Right click / long-press flag • Esc / B returns to splash
+					</p>
+				</div>
 
 				<div
 					class="mx-auto w-fit gap-1 border-2 border-black bg-black p-1 sm:border-4 sm:p-1"
@@ -620,8 +562,6 @@
 			</div>
 		</div>
 	{/if}
-
-
 </div>
 
 <style>

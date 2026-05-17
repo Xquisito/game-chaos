@@ -1,7 +1,16 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
-	import { KEY_ESCAPE, KEY_ENTER, KEY_SPACE, isArrowKey, normalizeKey } from '$lib/keys';
+	import { getBooleanCabinetFlow, returnFromCabinet } from '$lib/cabinet-flow';
+	import { gameCabinetById, readCabinetScore, recordCabinetHighScore } from '$lib/cabinets';
+	import { KEY_SPACE, isArrowKey, normalizeKey } from '$lib/keys';
+	import {
+		activateFocusedControlItem,
+		focusFirstControlItem,
+		handleLinearMenuKeydown,
+		MENU_BUTTON_SELECTOR,
+		moveLinearFocus
+	} from '$lib/unified-controls';
 
 	// Audio
 	let audioCtx: AudioContext | null = null;
@@ -11,7 +20,12 @@
 		return audioCtx;
 	}
 
-	function playTone(freq: number, duration: number, type: OscillatorType = 'square', volume = 0.06) {
+	function playTone(
+		freq: number,
+		duration: number,
+		type: OscillatorType = 'square',
+		volume = 0.06
+	) {
 		const ctx = ensureAudioCtx();
 		const osc = ctx.createOscillator();
 		const gain = ctx.createGain();
@@ -31,10 +45,6 @@
 
 	function playRotateSound() {
 		playTone(300, 0.06);
-	}
-
-	function playDropSound() {
-		playTone(120, 0.08, 'square', 0.08);
 	}
 
 	function playLineClearSound(lines: number) {
@@ -68,9 +78,11 @@
 	const GAME_WIDTH = COLS * CELL_SIZE;
 	const GAME_HEIGHT = ROWS * CELL_SIZE;
 	const GAMEPAD_DEADZONE = 0.2;
-	const GAMEPAD_ACTION_COOLDOWN = 100;
 	const LOCK_DELAY_MS = 500;
 	const MAX_LOCK_RESETS = 15;
+	const cabinet = gameCabinetById.tetris;
+	const BOARD_ROWS = Array.from({ length: ROWS }, (_, index) => index);
+	const BOARD_COLS = Array.from({ length: COLS }, (_, index) => index);
 
 	const DIFFICULTY_OPTIONS = ['easy', 'normal', 'hard'] as const;
 	type Difficulty = 'easy' | 'normal' | 'hard';
@@ -244,16 +256,6 @@
 		L: '#f97316'
 	};
 
-	const PIECE_COLORS_CLASS: Record<PieceType, string> = {
-		I: 'bg-cyan-500',
-		O: 'bg-yellow-400',
-		T: 'bg-purple-500',
-		S: 'bg-green-500',
-		Z: 'bg-red-500',
-		J: 'bg-blue-500',
-		L: 'bg-orange-500'
-	};
-
 	type Piece = {
 		type: PieceType;
 		x: number;
@@ -344,11 +346,16 @@
 	let lockTimer = $state(0);
 	let isLocking = $state(false);
 
-	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
-	let splashScreen = $derived(!gameStarted && !gameOver && !gameWon && !showingGameOver);
-	let endScreen = $derived((gameOver || gameWon) && !showingGameOver);
-	let menuScreen = $derived(splashScreen || endScreen);
-	let playingScreen = $derived(!splashScreen && !endScreen && !showingGameOver);
+	let flow = $derived(
+		getBooleanCabinetFlow({
+			gameStarted,
+			ended: gameOver || gameWon,
+			transitionActive: showingGameOver
+		})
+	);
+	let splashScreen = $derived(flow.splashScreen);
+	let endScreen = $derived(flow.endScreen);
+	let menuScreen = $derived(flow.menuScreen);
 	let gameAreaWidth = $derived(GAME_WIDTH + 184);
 	let gameScale = $derived(
 		viewportWidth > 0 ? Math.min(1, Math.max(0.45, (viewportWidth - 24) / gameAreaWidth)) : 1
@@ -443,7 +450,7 @@
 	}
 
 	function tryRotate(piece: Piece, direction: 1 | -1): Piece | null {
-		const newRotation = ((piece.rotation + direction) % 4 + 4) % 4;
+		const newRotation = (((piece.rotation + direction) % 4) + 4) % 4;
 		const kicks = [
 			{ dx: 0, dy: 0 },
 			{ dx: -1, dy: 0 },
@@ -515,8 +522,7 @@
 		lockResetCount = 0;
 		lockTimer = 0;
 		isLocking = false;
-		const saved = localStorage.getItem('tetris-chaos-high-score');
-		if (saved) highScore = parseInt(saved, 10);
+		highScore = readCabinetScore(localStorage, cabinet);
 	}
 
 	function startGame(nextDifficulty: Difficulty = selectedDifficulty) {
@@ -549,8 +555,7 @@
 
 	function onGameEnd() {
 		if (score > highScore) {
-			highScore = score;
-			localStorage.setItem('tetris-chaos-high-score', String(highScore));
+			highScore = recordCabinetHighScore(localStorage, cabinet, score);
 		}
 		hasActiveRun = false;
 		running = false;
@@ -592,15 +597,10 @@
 	}
 
 	function handleReturnAction() {
-		if (gameOver || gameWon) {
-			returnToSplash(false);
-			return;
-		}
-		if (gameStarted) {
-			returnToSplash(true);
-			return;
-		}
-		backToDashboard();
+		returnFromCabinet(flow, {
+			toDashboard: backToDashboard,
+			toSplash: returnToSplash
+		});
 	}
 
 	function selectDifficulty(level: Difficulty) {
@@ -718,9 +718,7 @@
 	}
 
 	// Touch controls
-	let touchAction: 'left' | 'right' | 'down' | 'rotateCW' | 'rotateCCW' | 'drop' | 'hold' | null = null;
 	let touchRepeatTimer: ReturnType<typeof setInterval> | null = null;
-	let softDropping = $state(false);
 
 	function handleTouchAction(action: string) {
 		if (menuScreen) return;
@@ -744,37 +742,21 @@
 			clearInterval(touchRepeatTimer);
 			touchRepeatTimer = null;
 		}
-		touchAction = null;
 	}
 
 	// Keyboard
 	function handleKeydown(e: KeyboardEvent) {
-		if (e.key === KEY_ESCAPE || e.key === 'b' || e.key === 'B') {
-			e.preventDefault();
-			handleReturnAction();
+		if (
+			handleLinearMenuKeydown(e, {
+				enabled: menuScreen,
+				onBack: handleReturnAction,
+				selector: MENU_BUTTON_SELECTOR
+			})
+		)
 			return;
-		}
 
 		const key = normalizeKey(e.key);
 		const arrow = isArrowKey(e.key);
-
-		if (menuScreen) {
-			if (key === 'w' || key === 'W' || (arrow && key === 'a')) {
-				e.preventDefault();
-				moveFocus(-1);
-				return;
-			}
-			if (key === 's' || key === 'S' || (arrow && key === 'd')) {
-				e.preventDefault();
-				moveFocus(1);
-				return;
-			}
-			if (e.key === KEY_ENTER || e.key === KEY_SPACE || key === 'a' || key === 'A') {
-				e.preventDefault();
-				activateFocusedMenuItem();
-				return;
-			}
-		}
 
 		if (!gameStarted) return;
 
@@ -815,7 +797,7 @@
 		}
 	}
 
-	function handleKeyup(_e: KeyboardEvent) {}
+	function handleKeyup() {}
 
 	// Gamepad
 	function pollGamepad() {
@@ -833,11 +815,12 @@
 			const holdPressed = Boolean(gp.buttons[1]?.pressed || gp.buttons[4]?.pressed);
 
 			if (menuScreen) {
-				if (leftPressed && !gamepadLeftWasPressed) moveFocus(-1);
-				if (rightPressed && !gamepadRightWasPressed) moveFocus(1);
-				if (downPressed && !gamepadDownWasPressed) moveFocus(1);
-				if (rotateCWPressed && !gamepadRotateCWWasPressed) activateFocusedMenuItem();
-				if (dropPressed && !gamepadDropWasPressed) activateFocusedMenuItem();
+				if (leftPressed && !gamepadLeftWasPressed) moveLinearFocus(-1, MENU_BUTTON_SELECTOR);
+				if (rightPressed && !gamepadRightWasPressed) moveLinearFocus(1, MENU_BUTTON_SELECTOR);
+				if (downPressed && !gamepadDownWasPressed) moveLinearFocus(1, MENU_BUTTON_SELECTOR);
+				if (rotateCWPressed && !gamepadRotateCWWasPressed)
+					activateFocusedControlItem(MENU_BUTTON_SELECTOR);
+				if (dropPressed && !gamepadDropWasPressed) activateFocusedControlItem(MENU_BUTTON_SELECTOR);
 			} else if (!paused && !gameOver) {
 				if (leftPressed && !gamepadLeftWasPressed) moveLeft();
 				if (rightPressed && !gamepadRightWasPressed) moveRight();
@@ -856,34 +839,6 @@
 			gamepadDropWasPressed = dropPressed;
 			gamepadHoldWasPressed = holdPressed;
 		}
-	}
-
-	// Menu focus
-	function getMenuButtons() {
-		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
-	}
-
-	function moveFocus(direction: number) {
-		const buttons = getMenuButtons();
-		if (buttons.length === 0) return;
-		let index = buttons.indexOf(document.activeElement as HTMLElement);
-		if (index === -1) {
-			buttons[0].focus();
-			return;
-		}
-		index = (index + direction + buttons.length) % buttons.length;
-		buttons[index].focus();
-	}
-
-	function activateFocusedMenuItem() {
-		const buttons = getMenuButtons();
-		if (buttons.length === 0) return;
-		const active = document.activeElement as HTMLElement | null;
-		if (active && buttons.includes(active)) {
-			active.click();
-			return;
-		}
-		buttons[0].focus();
 	}
 
 	// Game loop
@@ -953,10 +908,7 @@
 		if (!menuScreen) return;
 
 		const focusFirst = () => {
-			const firstButton = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement | null;
-			if (!firstButton) return false;
-			firstButton.focus();
-			return true;
+			return focusFirstControlItem(MENU_BUTTON_SELECTOR, true);
 		};
 
 		if (focusFirst()) return;
@@ -991,17 +943,14 @@
 		const shape = getPaddedShape(type, 0);
 		return shape;
 	}
-
-	function getCellColor(cell: PieceType | null, isGhost: boolean = false): string {
-		if (cell === null) return 'transparent';
-		if (isGhost) return PIECE_COLORS[cell] + '40';
-		return PIECE_COLORS[cell];
-	}
 </script>
 
 <svelte:head>
 	<title>Tetris Chaos | Block Stacking Mayhem</title>
-	<meta name="description" content="Stack, clear, and survive! A chaotic twist on the classic block puzzle." />
+	<meta
+		name="description"
+		content="Stack, clear, and survive! A chaotic twist on the classic block puzzle."
+	/>
 	<meta property="og:title" content="Tetris Chaos - Block Stacking Mayhem" />
 	<meta property="og:description" content="The blocks are falling! Can you survive the chaos?" />
 </svelte:head>
@@ -1013,22 +962,36 @@
 	onblur={stopTouchRepeat}
 />
 
-<div class="relative flex min-h-screen flex-col items-center justify-center gap-2 overflow-hidden bg-cyan-900 px-1 py-1 font-mono text-white sm:gap-4 sm:px-6 sm:py-8">
+<div
+	class="relative flex min-h-screen flex-col items-center justify-center gap-2 overflow-hidden bg-cyan-900 px-1 py-1 font-mono text-white sm:gap-4 sm:px-6 sm:py-8"
+>
 	{#if splashScreen}
 		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
-			<div class="w-full max-w-5xl border-4 border-black bg-white p-3 text-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]">
+			<div
+				class="w-full max-w-5xl border-4 border-black bg-white p-3 text-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
+			>
 				<div class="mb-3 text-center sm:mb-8">
-					<div class="mb-1 text-[0.6rem] font-black tracking-[0.45em] uppercase text-black/60 sm:mb-3 sm:text-sm">Game Chaos</div>
-					<h1 class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
+					<div
+						class="mb-1 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm"
+					>
+						Game Chaos
+					</div>
+					<h1
+						class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
+					>
 						🧱 Tetris Chaos 🧱
 					</h1>
-					<p class="mt-1 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">Stack the blocks. Survive the chaos.</p>
+					<p class="mt-1 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">
+						Stack the blocks. Survive the chaos.
+					</p>
 				</div>
 
-				<div class="grid gap-3 sm:gap-4 sm:grid-cols-[1.1fr_0.9fr]">
-					<div class="border-4 border-black bg-cyan-200 p-2 text-[0.65rem] font-bold leading-relaxed uppercase sm:p-5 sm:text-base">
-						Arrow keys / WASD to move. Up / W to rotate. Space to hard drop.
-						C to hold piece. Z for counter-clockwise.
+				<div class="grid gap-3 sm:grid-cols-[1.1fr_0.9fr] sm:gap-4">
+					<div
+						class="border-4 border-black bg-cyan-200 p-2 text-[0.65rem] leading-relaxed font-bold uppercase sm:p-5 sm:text-base"
+					>
+						Arrow keys / WASD to move. Up / W to rotate. Space to hard drop. C to hold piece. Z for
+						counter-clockwise.
 						<span class="mt-1 block text-black/70 sm:mt-4">
 							A / Enter = select • B / Esc = return
 						</span>
@@ -1041,7 +1004,11 @@
 
 					<div class="border-4 border-black bg-black p-2 text-cyan-400 sm:p-5">
 						<div class="flex items-center justify-between sm:block">
-							<div class="text-[0.6rem] font-black tracking-[0.35em] uppercase text-cyan-400/70 sm:text-xs">Score Board</div>
+							<div
+								class="text-[0.6rem] font-black tracking-[0.35em] text-cyan-400/70 uppercase sm:text-xs"
+							>
+								Score Board
+							</div>
 							<div class="flex items-baseline gap-2 sm:mt-4 sm:block">
 								<div class="text-xl font-black sm:text-5xl">{highScore.toLocaleString()}</div>
 								<div class="text-xs font-bold uppercase sm:mt-2 sm:text-lg">Hi-Score</div>
@@ -1051,7 +1018,11 @@
 				</div>
 
 				<div class="mt-2 border-4 border-black bg-white p-2 sm:mt-8 sm:p-5">
-					<div class="mb-2 text-[0.6rem] font-black tracking-[0.3em] uppercase text-black/60 sm:mb-3 sm:text-sm">Difficulty</div>
+					<div
+						class="mb-2 text-[0.6rem] font-black tracking-[0.3em] text-black/60 uppercase sm:mb-3 sm:text-sm"
+					>
+						Difficulty
+					</div>
 					<div class="grid grid-cols-3 gap-2 sm:gap-3">
 						{#each DIFFICULTY_OPTIONS as level (level)}
 							<button
@@ -1110,9 +1081,13 @@
 		</div>
 	{:else if endScreen}
 		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
-			<div class="w-full max-w-5xl border-4 border-black bg-white p-3 text-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]">
+			<div
+				class="w-full max-w-5xl border-4 border-black bg-white p-3 text-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
+			>
 				<div class="mb-3 text-center sm:mb-8">
-					<h1 class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
+					<h1
+						class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
+					>
 						{gameOver ? '💀 GAME OVER 💀' : '🏆 YOU WIN! 🏆'}
 					</h1>
 					<p class="mt-1 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">
@@ -1120,17 +1095,31 @@
 					</p>
 				</div>
 
-				<div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
+				<div class="grid gap-3 sm:grid-cols-2 sm:gap-4">
 					<div class="border-4 border-black bg-black p-3 text-cyan-400 sm:p-5">
-						<div class="text-[0.6rem] font-black tracking-[0.35em] uppercase text-cyan-400/70 sm:text-xs">Final Score</div>
+						<div
+							class="text-[0.6rem] font-black tracking-[0.35em] text-cyan-400/70 uppercase sm:text-xs"
+						>
+							Final Score
+						</div>
 						<div class="text-3xl font-black sm:text-5xl">{score.toLocaleString()}</div>
-						<div class="mt-2 text-xs font-bold uppercase text-cyan-400/70 sm:text-sm">Level {level} • {lines} Lines</div>
+						<div class="mt-2 text-xs font-bold text-cyan-400/70 uppercase sm:text-sm">
+							Level {level} • {lines} Lines
+						</div>
 					</div>
 					<div class="border-4 border-black bg-black p-3 text-cyan-400 sm:p-5">
-						<div class="text-[0.6rem] font-black tracking-[0.35em] uppercase text-cyan-400/70 sm:text-xs">Hi-Score</div>
+						<div
+							class="text-[0.6rem] font-black tracking-[0.35em] text-cyan-400/70 uppercase sm:text-xs"
+						>
+							Hi-Score
+						</div>
 						<div class="text-3xl font-black sm:text-5xl">{highScore.toLocaleString()}</div>
 						{#if score >= highScore && score > 0}
-							<div class="mt-1 animate-pulse text-xs font-black uppercase text-yellow-400 sm:text-sm">★ New Record! ★</div>
+							<div
+								class="mt-1 animate-pulse text-xs font-black text-yellow-400 uppercase sm:text-sm"
+							>
+								★ New Record! ★
+							</div>
 						{/if}
 					</div>
 				</div>
@@ -1165,58 +1154,96 @@
 		<div class="relative mx-auto w-fit">
 			<!-- Game Over Transition Overlay -->
 			{#if showingGameOver}
-				<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-[2px]">
-					<h2 class="animate-pulse text-3xl font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-6xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
+				<div
+					class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-[2px]"
+				>
+					<h2
+						class="animate-pulse text-3xl font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-6xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
+					>
 						💀 GAME OVER 💀
 					</h2>
-					<p class="mt-2 text-xs font-bold uppercase text-white/70 sm:text-lg">
+					<p class="mt-2 text-xs font-bold text-white/70 uppercase sm:text-lg">
 						{score.toLocaleString()} pts • Level {level}
 					</p>
 				</div>
 			{/if}
 			<!-- Pause Overlay -->
 			{#if paused}
-				<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-[2px]">
-					<h2 class="text-3xl font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-5xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
+				<div
+					class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-[2px]"
+				>
+					<h2
+						class="text-3xl font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-5xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
+					>
 						⏸ PAUSED ⏸
 					</h2>
-					<p class="mt-2 text-xs font-bold uppercase text-white/70 sm:text-base">
+					<p class="mt-2 text-xs font-bold text-white/70 uppercase sm:text-base">
 						Press P to resume • B / Esc to return
 					</p>
 				</div>
 			{/if}
 
-			<div class="flex flex-col items-center gap-2 sm:gap-4" style:transform={`scale(${gameScale})`} style:transform-origin="top center">
-				<div class="grid w-full gap-2 sm:gap-3 sm:grid-cols-4">
-					<div class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black uppercase tracking-[0.2em] text-cyan-400 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]">
-						<span class="text-cyan-400/70">Score</span> <span class="text-cyan-400">{score.toLocaleString()}</span>
+			<div
+				class="flex flex-col items-center gap-2 sm:gap-4"
+				style:transform={`scale(${gameScale})`}
+				style:transform-origin="top center"
+			>
+				<div class="grid w-full gap-2 sm:grid-cols-4 sm:gap-3">
+					<div
+						class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black tracking-[0.2em] text-cyan-400 uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]"
+					>
+						<span class="text-cyan-400/70">Score</span>
+						<span class="text-cyan-400">{score.toLocaleString()}</span>
 					</div>
-					<div class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black uppercase tracking-[0.2em] text-cyan-400 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]">
+					<div
+						class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black tracking-[0.2em] text-cyan-400 uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]"
+					>
 						<span class="text-cyan-400/70">Lines</span> <span class="text-cyan-400">{lines}</span>
 					</div>
-					<div class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black uppercase tracking-[0.2em] text-cyan-400 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]">
+					<div
+						class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black tracking-[0.2em] text-cyan-400 uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]"
+					>
 						<span class="text-cyan-400/70">Level</span> <span class="text-cyan-400">{level}</span>
 					</div>
-					<div class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black uppercase tracking-[0.2em] text-yellow-400 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]">
-						<span class="text-yellow-400/70">Recorde</span> <span class="text-yellow-400">{highScore.toLocaleString()}</span>
+					<div
+						class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black tracking-[0.2em] text-yellow-400 uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]"
+					>
+						<span class="text-yellow-400/70">Recorde</span>
+						<span class="text-yellow-400">{highScore.toLocaleString()}</span>
 					</div>
 				</div>
 
-				<div class="grid items-start gap-2 sm:gap-4 grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] sm:grid-cols-[5.75rem_minmax(0,1fr)_5.75rem]">
+				<div
+					class="grid grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] items-start gap-2 sm:grid-cols-[5.75rem_minmax(0,1fr)_5.75rem] sm:gap-4"
+				>
 					<div class="grid gap-2 sm:gap-4">
 						<div class="border-4 border-black bg-black p-1 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-2">
-							<div class="text-[0.55rem] font-black tracking-[0.2em] uppercase text-cyan-400/70 sm:text-[0.65rem]">Hold</div>
-							<div class="box-content mt-1 flex h-12 w-12 items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900 sm:h-24 sm:w-24">
+							<div
+								class="text-[0.55rem] font-black tracking-[0.2em] text-cyan-400/70 uppercase sm:text-[0.65rem]"
+							>
+								Hold
+							</div>
+							<div
+								class="mt-1 box-content flex h-12 w-12 items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900 sm:h-24 sm:w-24"
+							>
 								{#if holdPieceType}
 									{@const preview = getPreviewCells(holdPieceType)}
-									<div class="grid" style:grid-template-columns={`repeat(${preview[0].length}, 1fr)`} style:gap="0px">
-										{#each preview as row}
-											{#each row as cell}
+									<div
+										class="grid"
+										style:grid-template-columns={`repeat(${preview[0].length}, 1fr)`}
+										style:gap="0px"
+									>
+										{#each preview as row, rowIndex (rowIndex)}
+											{#each row as cell, cellIndex (cellIndex)}
 												<div
 													class="border border-black/30"
 													style:width={`${canHold ? CELL_SIZE * 0.45 : CELL_SIZE * 0.45}px`}
 													style:height={`${canHold ? CELL_SIZE * 0.45 : CELL_SIZE * 0.45}px`}
-													style:background={cell ? (canHold ? PIECE_COLORS[holdPieceType] : PIECE_COLORS[holdPieceType] + '40') : 'transparent'}
+													style:background={cell
+														? canHold
+															? PIECE_COLORS[holdPieceType]
+															: PIECE_COLORS[holdPieceType] + '40'
+														: 'transparent'}
 												></div>
 											{/each}
 										{/each}
@@ -1227,89 +1254,106 @@
 					</div>
 
 					<!-- Main Board -->
-					<div class="relative border-4 border-black bg-zinc-900 shadow-[8px_8px_0_rgba(0,0,0,1)]" style:width={`${GAME_WIDTH}px`} style:height={`${GAME_HEIGHT}px`}>
-					<div class="absolute inset-0 overflow-hidden">
-					<!-- Grid lines -->
-					{#each Array.from({ length: ROWS }) as _, row}
-						{#each Array.from({ length: COLS }) as _, col}
-							<div
-								class="absolute border border-zinc-800/40"
-								style:left={`${col * CELL_SIZE}px`}
-								style:top={`${row * CELL_SIZE}px`}
-								style:width={`${CELL_SIZE}px`}
-								style:height={`${CELL_SIZE}px`}
-							></div>
-						{/each}
-					{/each}
+					<div
+						class="relative border-4 border-black bg-zinc-900 shadow-[8px_8px_0_rgba(0,0,0,1)]"
+						style:width={`${GAME_WIDTH}px`}
+						style:height={`${GAME_HEIGHT}px`}
+					>
+						<div class="absolute inset-0 overflow-hidden">
+							<!-- Grid lines -->
+							{#each BOARD_ROWS as row (row)}
+								{#each BOARD_COLS as col (col)}
+									<div
+										class="absolute border border-zinc-800/40"
+										style:left={`${col * CELL_SIZE}px`}
+										style:top={`${row * CELL_SIZE}px`}
+										style:width={`${CELL_SIZE}px`}
+										style:height={`${CELL_SIZE}px`}
+									></div>
+								{/each}
+							{/each}
 
-					<!-- Board cells -->
-					{#each board as row, rowIndex}
-						{#each row as cell, colIndex}
-							{#if cell !== null}
-								{@const isClearing = clearingRows.includes(rowIndex)}
-								<div
-									class={['absolute border border-black/30', isClearing ? 'animate-pulse' : ''].join(' ')}
-									style:left={`${colIndex * CELL_SIZE}px`}
-									style:top={`${rowIndex * CELL_SIZE}px`}
-									style:width={`${CELL_SIZE}px`}
-									style:height={`${CELL_SIZE}px`}
-									style:background={isClearing ? '#fff' : PIECE_COLORS[cell]}
-								></div>
-							{/if}
-						{/each}
-					{/each}
+							<!-- Board cells -->
+							{#each board as row, rowIndex (rowIndex)}
+								{#each row as cell, colIndex (colIndex)}
+									{#if cell !== null}
+										{@const isClearing = clearingRows.includes(rowIndex)}
+										<div
+											class={[
+												'absolute border border-black/30',
+												isClearing ? 'animate-pulse' : ''
+											].join(' ')}
+											style:left={`${colIndex * CELL_SIZE}px`}
+											style:top={`${rowIndex * CELL_SIZE}px`}
+											style:width={`${CELL_SIZE}px`}
+											style:height={`${CELL_SIZE}px`}
+											style:background={isClearing ? '#fff' : PIECE_COLORS[cell]}
+										></div>
+									{/if}
+								{/each}
+							{/each}
 
-					<!-- Ghost piece -->
-					{#if currentPiece}
-						{@const ghostY = getGhostY(currentPiece)}
-						{@const ghostCells = getShapeCells(currentPiece.type, currentPiece.rotation)}
-						{#each ghostCells as cell}
-							{@const r = ghostY + cell.row}
-							{@const c = currentPiece.x + cell.col}
-							{#if r >= 0 && r < ROWS && c >= 0 && c < COLS}
-								<div
-									class="absolute border-2 border-dashed"
-									style:left={`${c * CELL_SIZE}px`}
-									style:top={`${r * CELL_SIZE}px`}
-									style:width={`${CELL_SIZE}px`}
-									style:height={`${CELL_SIZE}px`}
-									style:border-color={PIECE_COLORS[currentPiece.type]}
-									style:background={PIECE_COLORS[currentPiece.type] + '15'}
-								></div>
+							<!-- Ghost piece -->
+							{#if currentPiece}
+								{@const ghostY = getGhostY(currentPiece)}
+								{@const ghostCells = getShapeCells(currentPiece.type, currentPiece.rotation)}
+								{#each ghostCells as cell (`${cell.row}:${cell.col}`)}
+									{@const r = ghostY + cell.row}
+									{@const c = currentPiece.x + cell.col}
+									{#if r >= 0 && r < ROWS && c >= 0 && c < COLS}
+										<div
+											class="absolute border-2 border-dashed"
+											style:left={`${c * CELL_SIZE}px`}
+											style:top={`${r * CELL_SIZE}px`}
+											style:width={`${CELL_SIZE}px`}
+											style:height={`${CELL_SIZE}px`}
+											style:border-color={PIECE_COLORS[currentPiece.type]}
+											style:background={PIECE_COLORS[currentPiece.type] + '15'}
+										></div>
+									{/if}
+								{/each}
 							{/if}
-						{/each}
-					{/if}
 
-					<!-- Current piece -->
-					{#if currentPiece}
-						{@const cells = getShapeCells(currentPiece.type, currentPiece.rotation)}
-						{#each cells as cell}
-							{@const r = currentPiece.y + cell.row}
-							{@const c = currentPiece.x + cell.col}
-							{#if r >= 0 && r < ROWS && c >= 0 && c < COLS}
-								<div
-									class="absolute border border-white/30"
-									style:left={`${c * CELL_SIZE}px`}
-									style:top={`${r * CELL_SIZE}px`}
-									style:width={`${CELL_SIZE}px`}
-									style:height={`${CELL_SIZE}px`}
-									style:background={PIECE_COLORS[currentPiece.type]}
-								></div>
+							<!-- Current piece -->
+							{#if currentPiece}
+								{@const cells = getShapeCells(currentPiece.type, currentPiece.rotation)}
+								{#each cells as cell (`${cell.row}:${cell.col}`)}
+									{@const r = currentPiece.y + cell.row}
+									{@const c = currentPiece.x + cell.col}
+									{#if r >= 0 && r < ROWS && c >= 0 && c < COLS}
+										<div
+											class="absolute border border-white/30"
+											style:left={`${c * CELL_SIZE}px`}
+											style:top={`${r * CELL_SIZE}px`}
+											style:width={`${CELL_SIZE}px`}
+											style:height={`${CELL_SIZE}px`}
+											style:background={PIECE_COLORS[currentPiece.type]}
+										></div>
+									{/if}
+								{/each}
 							{/if}
-						{/each}
-					{/if}
-					</div>
+						</div>
 					</div>
 
 					<div class="grid gap-2 sm:gap-4">
 						<div class="border-4 border-black bg-black p-1 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-2">
-							<div class="text-[0.55rem] font-black tracking-[0.2em] uppercase text-cyan-400/70 sm:text-[0.65rem]">Next</div>
-							<div class="box-content mt-1 flex h-12 w-12 items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900 sm:h-24 sm:w-24">
+							<div
+								class="text-[0.55rem] font-black tracking-[0.2em] text-cyan-400/70 uppercase sm:text-[0.65rem]"
+							>
+								Next
+							</div>
+							<div
+								class="mt-1 box-content flex h-12 w-12 items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900 sm:h-24 sm:w-24"
+							>
 								{#if nextPieceType}
 									{@const nextPreview = getPreviewCells(nextPieceType)}
-									<div class="grid" style:grid-template-columns={`repeat(${nextPreview[0].length}, 1fr)`} style:gap="0px">
-										{#each nextPreview as row}
-											{#each row as cell}
+									<div
+										class="grid"
+										style:grid-template-columns={`repeat(${nextPreview[0].length}, 1fr)`}
+										style:gap="0px"
+									>
+										{#each nextPreview as row, rowIndex (rowIndex)}
+											{#each row as cell, cellIndex (cellIndex)}
 												<div
 													class="border border-black/30"
 													style:width={`${CELL_SIZE * 0.45}px`}
@@ -1323,7 +1367,9 @@
 							</div>
 						</div>
 
-						<div class="border-4 border-black bg-zinc-900 p-1 text-[0.45rem] font-bold uppercase leading-tight text-cyan-400/60 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-2 sm:text-[0.65rem]">
+						<div
+							class="border-4 border-black bg-zinc-900 p-1 text-[0.45rem] leading-tight font-bold text-cyan-400/60 uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-2 sm:text-[0.65rem]"
+						>
 							<div>←→ Move</div>
 							<div>↑ Rotate</div>
 							<div>↓ Soft Drop</div>
@@ -1339,25 +1385,35 @@
 
 			<!-- Mobile Touch Controls -->
 			{#if touchCapable && !gameOver && !gameWon}
-				<div class="mt-3 flex w-full flex-col items-center gap-2 sm:mt-4" style:transform={`scale(${gameScale > 0.7 ? 1 : gameScale > 0.55 ? 1.15 : 1.3})`} style:transform-origin="top center">
+				<div
+					class="mt-3 flex w-full flex-col items-center gap-2 sm:mt-4"
+					style:transform={`scale(${gameScale > 0.7 ? 1 : gameScale > 0.55 ? 1.15 : 1.3})`}
+					style:transform-origin="top center"
+				>
 					<div class="flex items-center gap-2">
 						<button
 							type="button"
-							onpointerdown={() => { handleTouchAction('rotateCCW'); }}
+							onpointerdown={() => {
+								handleTouchAction('rotateCCW');
+							}}
 							class="flex h-11 w-11 items-center justify-center border-2 border-cyan-400 bg-black text-lg font-black text-cyan-400 active:scale-90 sm:h-14 sm:w-14 sm:text-xl"
 						>
 							↺
 						</button>
 						<button
 							type="button"
-							onpointerdown={() => { handleTouchAction('hold'); }}
+							onpointerdown={() => {
+								handleTouchAction('hold');
+							}}
 							class="flex h-11 w-11 items-center justify-center border-2 border-yellow-400 bg-black text-[0.6rem] font-black text-yellow-400 active:scale-90 sm:h-14 sm:w-14 sm:text-xs"
 						>
 							HOLD
 						</button>
 						<button
 							type="button"
-							onpointerdown={() => { handleTouchAction('rotateCW'); }}
+							onpointerdown={() => {
+								handleTouchAction('rotateCW');
+							}}
 							class="flex h-11 w-11 items-center justify-center border-2 border-cyan-400 bg-black text-lg font-black text-cyan-400 active:scale-90 sm:h-14 sm:w-14 sm:text-xl"
 						>
 							↻
@@ -1375,7 +1431,9 @@
 						</button>
 						<button
 							type="button"
-							onpointerdown={() => { handleTouchAction('drop'); }}
+							onpointerdown={() => {
+								handleTouchAction('drop');
+							}}
 							class="flex h-13 w-16 items-center justify-center border-2 border-red-500 bg-black text-[0.65rem] font-black text-red-400 active:scale-90 sm:h-16 sm:w-20 sm:text-xs"
 						>
 							DROP

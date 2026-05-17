@@ -1,18 +1,22 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { onMount, tick } from 'svelte';
-	import { KEY_ESCAPE, KEY_ENTER, KEY_SPACE, isArrowKey, normalizeKey } from '$lib/keys';
+	import { getCabinetFlow, returnFromCabinet, type CabinetScreen } from '$lib/cabinet-flow';
+	import { gameCabinetById, readCabinetScore, recordCabinetWin } from '$lib/cabinets';
+	import {
+		focusSelectedOrFirstControlItem,
+		handleLinearMenuKeydown,
+		MENU_BUTTON_SELECTOR
+	} from '$lib/unified-controls';
 
 	type PieceType = 'black' | 'white';
 	type Piece = { type: PieceType; isKing: boolean } | null;
 	type Cell = Piece;
 	type Difficulty = 'easy' | 'medium' | 'hard' | 'human';
-	type Screen = 'splash' | 'game' | 'end';
 
 	const SIZE = 8;
-	const WINS_STORAGE_KEY = 'checkers-wins';
-	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
 	const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'human'];
+	const cabinet = gameCabinetById.checkers;
 
 	let board = $state<Cell[][]>([]);
 	let selectedCell = $state<{ r: number; c: number } | null>(null);
@@ -22,17 +26,17 @@
 	let difficulty = $state<Difficulty>('easy');
 	let selectedDifficulty = $state<Difficulty>('easy');
 	let isAiThinking = $state(false);
-	let screen = $state<Screen>('splash');
+	let screen = $state<CabinetScreen>('splash');
 	let hasActiveRun = $state(false);
 	let wins = $state(0);
 	let aiTurnToken = 0;
 
-	let splashScreen = $derived(screen === 'splash');
-	let gameScreen = $derived(screen === 'game');
-	let endScreen = $derived(screen === 'end');
-	let menuScreen = $derived(splashScreen || endScreen);
+	let flow = $derived(getCabinetFlow(screen));
+	let splashScreen = $derived(flow.splashScreen);
+	let gameScreen = $derived(flow.gameScreen);
+	let endScreen = $derived(flow.endScreen);
+	let menuScreen = $derived(flow.menuScreen);
 	let activeDifficultyLabel = $derived(formatDifficulty(difficulty));
-	let queuedDifficultyLabel = $derived(formatDifficulty(selectedDifficulty));
 
 	function formatDifficulty(value: Difficulty) {
 		return value === 'human' ? '2 Players' : `${value.toUpperCase()} AI`;
@@ -64,14 +68,6 @@
 		winner = null;
 		selectedCell = null;
 		isAiThinking = false;
-	}
-
-	function persistWins() {
-		try {
-			localStorage.setItem(WINS_STORAGE_KEY, String(wins));
-		} catch {
-			// Ignore storage failures
-		}
 	}
 
 	function startGame() {
@@ -117,17 +113,10 @@
 	}
 
 	function handleReturnAction() {
-		if (gameScreen) {
-			returnToSplash(true);
-			return;
-		}
-
-		if (endScreen) {
-			returnToSplash(false);
-			return;
-		}
-
-		backToDashboard();
+		returnFromCabinet(flow, {
+			toDashboard: backToDashboard,
+			toSplash: returnToSplash
+		});
 	}
 
 	function finishGame(nextWinner: PieceType) {
@@ -141,8 +130,7 @@
 		aiTurnToken += 1;
 
 		if (nextWinner === 'white') {
-			wins += 1;
-			persistWins();
+			wins = recordCabinetWin(localStorage, cabinet, wins);
 		}
 
 		screen = 'end';
@@ -346,75 +334,17 @@
 		}
 	}
 
-	function getMenuButtons() {
-		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
-	}
-
-	function moveFocus(direction: number) {
-		const buttons = getMenuButtons();
-		if (buttons.length === 0) return;
-
-		let index = buttons.indexOf(document.activeElement as HTMLElement);
-		if (index === -1) {
-			buttons[0].focus();
-			return;
-		}
-
-		index = (index + direction + buttons.length) % buttons.length;
-		buttons[index].focus();
-	}
-
-	function activateFocusedMenuItem() {
-		const buttons = getMenuButtons();
-		if (buttons.length === 0) return;
-
-		const active = document.activeElement as HTMLElement | null;
-		if (active && buttons.includes(active)) {
-			active.click();
-			return;
-		}
-
-		buttons[0].focus();
-	}
-
 	async function focusMenuSoon() {
 		await tick();
-		// On splash screen, focus the currently selected difficulty button
-		const selectedButton = document.querySelector('[data-selected="true"]') as HTMLElement | null;
-		if (selectedButton) {
-			selectedButton.focus();
-			return;
-		}
-		const firstButton = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement | null;
-		firstButton?.focus();
+		focusSelectedOrFirstControlItem('[data-selected="true"]', MENU_BUTTON_SELECTOR);
 	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === KEY_ESCAPE || event.key === 'b' || event.key === 'B') {
-			event.preventDefault();
-			handleReturnAction();
-			return;
-		}
-
-		const key = normalizeKey(event.key);
-		const arrow = isArrowKey(event.key);
-
-		if (menuScreen && (key === 'w' || key === 'W' || (arrow && key === 'a'))) {
-			event.preventDefault();
-			moveFocus(-1);
-			return;
-		}
-
-		if (menuScreen && (key === 's' || key === 'S' || (arrow && key === 'd'))) {
-			event.preventDefault();
-			moveFocus(1);
-			return;
-		}
-
-		if (menuScreen && (event.key === KEY_ENTER || event.key === KEY_SPACE || event.key === 'a' || event.key === 'A')) {
-			event.preventDefault();
-			activateFocusedMenuItem();
-		}
+		handleLinearMenuKeydown(event, {
+			enabled: menuScreen,
+			onBack: handleReturnAction,
+			selector: MENU_BUTTON_SELECTOR
+		});
 	}
 
 	function getCellLabel(r: number, c: number, cell: Cell) {
@@ -424,13 +354,7 @@
 	}
 
 	onMount(() => {
-		try {
-			const savedWins = localStorage.getItem(WINS_STORAGE_KEY);
-			const parsedWins = savedWins ? Number.parseInt(savedWins, 10) : 0;
-			wins = Number.isFinite(parsedWins) ? parsedWins : 0;
-		} catch {
-			wins = 0;
-		}
+		wins = readCabinetScore(localStorage, cabinet);
 
 		focusMenuSoon();
 	});
@@ -438,27 +362,47 @@
 
 <svelte:head>
 	<title>Checkers Chaos | Classic Board Game</title>
-	<meta name="description" content="Play Checkers Chaos, a fast-paced version of the classic board game. Challenge the AI or play with a friend in this vintage-style arcade cabinet." />
+	<meta
+		name="description"
+		content="Play Checkers Chaos, a fast-paced version of the classic board game. Challenge the AI or play with a friend in this vintage-style arcade cabinet."
+	/>
 	<meta property="og:title" content="Checkers Chaos - Strategic Board Battle" />
-	<meta property="og:description" content="Master the board in Checkers Chaos. Play against easy, medium, or hard AI and claim your victory!" />
+	<meta
+		property="og:description"
+		content="Master the board in Checkers Chaos. Play against easy, medium, or hard AI and claim your victory!"
+	/>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="relative min-h-screen overflow-hidden bg-orange-400 px-1 py-1 font-mono text-black sm:px-6 sm:py-8">
+<div
+	class="relative min-h-screen overflow-hidden bg-orange-400 px-1 py-1 font-mono text-black sm:px-6 sm:py-8"
+>
 	{#if splashScreen}
 		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
-			<div class="w-full max-w-5xl border-4 border-black bg-white p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]">
+			<div
+				class="w-full max-w-5xl border-4 border-black bg-white p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
+			>
 				<div class="mb-3 text-center sm:mb-8">
-					<div class="mb-1 text-[0.6rem] font-black tracking-[0.45em] uppercase text-black/60 sm:mb-3 sm:text-sm">Game Chaos</div>
-					<h1 class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]">
+					<div
+						class="mb-1 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm"
+					>
+						Game Chaos
+					</div>
+					<h1
+						class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
+					>
 						🏁 Checkers Chaos 🏁
 					</h1>
-					<p class="mt-1 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">Pick white. Pick fights.</p>
+					<p class="mt-1 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">
+						Pick white. Pick fights.
+					</p>
 				</div>
 
-				<div class="grid gap-3 sm:gap-4 sm:grid-cols-[1.1fr_0.9fr]">
-					<div class="border-4 border-black bg-orange-200 p-2 text-[0.65rem] font-bold leading-relaxed uppercase sm:p-5 sm:text-base">
+				<div class="grid gap-3 sm:grid-cols-[1.1fr_0.9fr] sm:gap-4">
+					<div
+						class="border-4 border-black bg-orange-200 p-2 text-[0.65rem] leading-relaxed font-bold uppercase sm:p-5 sm:text-base"
+					>
 						You play white. Tap/click piece then destination.
 						<span class="mt-1 block text-black/70 sm:mt-4">
 							A / Enter = select • B / Esc = return.
@@ -467,7 +411,11 @@
 
 					<div class="border-4 border-black bg-black p-2 text-orange-400 sm:p-5">
 						<div class="flex items-center justify-between sm:block">
-							<div class="text-[0.6rem] font-black tracking-[0.35em] uppercase text-orange-400/70 sm:text-xs">Score Board</div>
+							<div
+								class="text-[0.6rem] font-black tracking-[0.35em] text-orange-400/70 uppercase sm:text-xs"
+							>
+								Score Board
+							</div>
 							<div class="flex items-baseline gap-2 sm:mt-4 sm:block">
 								<div class="text-xl font-black sm:text-5xl">{wins}</div>
 								<div class="text-xs font-bold uppercase sm:mt-2 sm:text-lg">Player Wins</div>
@@ -477,7 +425,11 @@
 				</div>
 
 				<div class="mt-2 border-4 border-black bg-white p-2 sm:mt-8 sm:p-5">
-					<div class="mb-2 text-[0.6rem] font-black tracking-[0.3em] uppercase text-black/60 sm:mb-3 sm:text-sm">Difficulty</div>
+					<div
+						class="mb-2 text-[0.6rem] font-black tracking-[0.3em] text-black/60 uppercase sm:mb-3 sm:text-sm"
+					>
+						Difficulty
+					</div>
 					<div class="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
 						{#each DIFFICULTIES as diff (diff)}
 							<button
@@ -488,7 +440,7 @@
 								class={[
 									'border-2 px-1 py-1 text-[0.7rem] font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-4 sm:py-4 sm:text-lg sm:focus-visible:ring-offset-4',
 									selectedDifficulty === diff
-										? 'border-4 border-orange-500 bg-black text-orange-400 scale-105 hover:scale-110 focus-visible:ring-white focus-visible:ring-offset-white'
+										? 'scale-105 border-4 border-orange-500 bg-black text-orange-400 hover:scale-110 focus-visible:ring-white focus-visible:ring-offset-white'
 										: 'border-black bg-orange-100 text-black hover:scale-[1.02] hover:bg-orange-200 focus:bg-orange-200 focus-visible:ring-2 focus-visible:ring-orange-300 focus-visible:ring-offset-white'
 								]}
 							>
@@ -540,8 +492,12 @@
 		</div>
 	{:else}
 		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
-			<div class="relative w-full max-w-5xl border-4 border-black bg-white p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-6">
-				<div class="mb-5 flex flex-col gap-3 border-4 border-black bg-black p-3 text-sm font-black uppercase text-orange-400 sm:flex-row sm:items-center sm:justify-between sm:text-lg">
+			<div
+				class="relative w-full max-w-5xl border-4 border-black bg-white p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-6"
+			>
+				<div
+					class="mb-5 flex flex-col gap-3 border-4 border-black bg-black p-3 text-sm font-black text-orange-400 uppercase sm:flex-row sm:items-center sm:justify-between sm:text-lg"
+				>
 					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
 						<span>{isAiThinking ? 'AI Thinking…' : `Turn ${turn}`}</span>
 						<span>{activeDifficultyLabel}</span>
@@ -558,7 +514,7 @@
 					{/if}
 				</div>
 
-				<div class="mx-auto aspect-square border-0 bg-black p-1 sm:border-8 sm:p-2 w-full max-w-lg">
+				<div class="mx-auto aspect-square w-full max-w-lg border-0 bg-black p-1 sm:border-8 sm:p-2">
 					<div class="grid h-full grid-cols-8 grid-rows-8">
 						{#each board as row, r (r)}
 							{#each row as cell, c (`${r}-${c}`)}
@@ -568,7 +524,7 @@
 									aria-label={getCellLabel(r, c, cell)}
 									onclick={() => handleCellClick(r, c)}
 									class={[
-										'flex items-center justify-center text-[min(9vw,3.5rem)] transition-all select-none overflow-hidden',
+										'flex items-center justify-center overflow-hidden text-[min(9vw,3.5rem)] transition-all select-none',
 										(r + c) % 2 === 0 ? 'bg-orange-200' : 'bg-orange-800',
 										selectedCell?.r === r && selectedCell?.c === c
 											? 'z-20 scale-110 ring-4 ring-yellow-400'
@@ -595,19 +551,27 @@
 				</div>
 
 				{#if gameScreen}
-					<div class="mt-5 text-center text-xs font-bold leading-relaxed uppercase text-black/65 sm:text-sm">
+					<div
+						class="mt-5 text-center text-xs leading-relaxed font-bold text-black/65 uppercase sm:text-sm"
+					>
 						Need a breather? Esc / B returns to splash and Continue resumes this exact match.
 					</div>
 				{/if}
 
 				{#if endScreen}
-					<div class="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]">
-						<div class="w-full max-w-md border-4 border-black bg-white p-6 text-center shadow-[12px_12px_0_rgba(0,0,0,1)] sm:p-8">
+					<div
+						class="absolute inset-0 z-20 flex items-center justify-center bg-black/70 p-4 backdrop-blur-[2px]"
+					>
+						<div
+							class="w-full max-w-md border-4 border-black bg-white p-6 text-center shadow-[12px_12px_0_rgba(0,0,0,1)] sm:p-8"
+						>
 							<div class="text-6xl sm:text-7xl">{winner === 'white' ? '🏆' : '💀'}</div>
 							<h3 class="mt-4 text-4xl font-black uppercase sm:text-5xl">
 								{winner === 'white' ? 'Victory' : 'Defeat'}
 							</h3>
-							<p class="mt-4 text-sm font-bold leading-relaxed uppercase text-black/70 sm:text-base">
+							<p
+								class="mt-4 text-sm leading-relaxed font-bold text-black/70 uppercase sm:text-base"
+							>
 								{winner === 'white'
 									? `White takes it. Total wins: ${wins}.`
 									: 'Black cleaned the board. Retry or head back to splash.'}
@@ -632,7 +596,7 @@
 								</button>
 							</div>
 
-							<div class="mt-6 text-xs font-bold uppercase text-black/60">
+							<div class="mt-6 text-xs font-bold text-black/60 uppercase">
 								Enter / A to select • Esc / B to return
 							</div>
 						</div>
@@ -641,8 +605,6 @@
 			</div>
 		</div>
 	{/if}
-
-
 </div>
 
 <style>

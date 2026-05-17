@@ -1,7 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import * as THREE from 'three';
-	import { KEY_ESCAPE, KEY_ENTER, KEY_SPACE, ARROW_TO_WASD, isArrowKey, normalizeKey } from '$lib/keys';
+	import { getBooleanCabinetFlow, returnFromCabinet } from '$lib/cabinet-flow';
+	import { gameCabinetById, readCabinetScore, recordCabinetHighScore } from '$lib/cabinets';
+	import { normalizeKey } from '$lib/keys';
+	import {
+		activateFocusedControlItem,
+		focusFirstControlItem,
+		handleLinearMenuKeydown,
+		MENU_BUTTON_SELECTOR,
+		moveLinearFocus
+	} from '$lib/unified-controls';
 
 	let score = $state(0);
 	let carsPassed = $state(0);
@@ -38,40 +47,16 @@
 
 	let canvasElement: HTMLCanvasElement;
 
-	const MENU_BUTTON_SELECTOR = '[data-menu-button]:not([disabled])';
-	let menuScreen = $derived(!gameStarted || gameOver);
+	let flow = $derived(
+		getBooleanCabinetFlow({
+			gameStarted,
+			ended: gameOver
+		})
+	);
+	let splashScreen = $derived(flow.splashScreen);
+	let endScreen = $derived(flow.endScreen);
+	let menuScreen = $derived(flow.menuScreen);
 	let showTouchControls = $derived(touchCapable && viewportWidth < 960 && gameStarted && !gameOver);
-
-	function getMenuButtons() {
-		return Array.from(document.querySelectorAll(MENU_BUTTON_SELECTOR)) as HTMLElement[];
-	}
-
-	function moveFocus(direction: number) {
-		const focusable = getMenuButtons();
-		if (focusable.length === 0) return;
-
-		let index = focusable.indexOf(document.activeElement as HTMLElement);
-		if (index === -1) {
-			focusable[0].focus();
-			return;
-		}
-
-		index = (index + direction + focusable.length) % focusable.length;
-		focusable[index].focus();
-	}
-
-	function activateFocusedMenuItem() {
-		const focusable = getMenuButtons();
-		if (focusable.length === 0) return;
-
-		const active = document.activeElement as HTMLElement | null;
-		if (active && focusable.includes(active)) {
-			active.click();
-			return;
-		}
-
-		focusable[0].focus();
-	}
 
 	let keyUp = $state(false);
 	let keyDown = $state(false);
@@ -153,17 +138,10 @@
 	}
 
 	function handleReturnAction() {
-		if (gameOver) {
-			returnToSplash(false);
-			return;
-		}
-
-		if (gameStarted) {
-			returnToSplash(true);
-			return;
-		}
-
-		backToDashboard();
+		returnFromCabinet(flow, {
+			toDashboard: backToDashboard,
+			toSplash: returnToSplash
+		});
 	}
 
 	function handleResize() {
@@ -173,13 +151,15 @@
 		renderer.setSize(window.innerWidth, window.innerHeight);
 	}
 
-
 	function handleKeyDown(e: KeyboardEvent) {
-		if (e.key === KEY_ESCAPE || e.key === 'b' || e.key === 'B') {
-			e.preventDefault();
-			handleReturnAction();
+		if (
+			handleLinearMenuKeydown(e, {
+				enabled: menuScreen,
+				onBack: handleReturnAction,
+				selector: MENU_BUTTON_SELECTOR
+			})
+		)
 			return;
-		}
 
 		const key = normalizeKey(e.key);
 
@@ -188,26 +168,6 @@
 		if (key === 's' || key === 'S') keyDown = true;
 		if (key === 'a' || key === 'A') keyLeft = true;
 		if (key === 'd' || key === 'D') keyRight = true;
-
-		// Menu navigation (only when on menu screen)
-		if (menuScreen) {
-			const arrow = isArrowKey(e.key);
-			if (key === 'w' || key === 'W' || (arrow && key === 'a')) {
-				e.preventDefault();
-				moveFocus(-1);
-				return;
-			}
-			if (key === 's' || key === 'S' || (arrow && key === 'd')) {
-				e.preventDefault();
-				moveFocus(1);
-				return;
-			}
-			if (e.key === KEY_ENTER || e.key === KEY_SPACE || e.key === 'a' || e.key === 'A') {
-				e.preventDefault();
-				activateFocusedMenuItem();
-				return;
-			}
-		}
 
 		// In-game controls
 		if (gameStarted && !gameOver) {
@@ -264,14 +224,9 @@
 		// Auto-focus first button on menu screens
 		if (menuScreen) {
 			const focusFirst = () => {
-				const firstBtn = document.querySelector(MENU_BUTTON_SELECTOR) as HTMLElement;
-				if (firstBtn) {
-					firstBtn.focus();
-					return true;
-				}
-				return false;
+				return focusFirstControlItem(MENU_BUTTON_SELECTOR, true);
 			};
-			
+
 			if (!focusFirst()) {
 				// Try again after a short delay if DOM isn't ready
 				const retryTimer = setTimeout(focusFirst, 50);
@@ -305,10 +260,10 @@
 	let animationId: number;
 
 	const ROAD_WIDTH = 34;
-	const CAR_SPEED = 0.85;
 	const STEER_SPEED = 0.65;
 	const MAX_X = ROAD_WIDTH / 2 - 4.5;
 	const GAMEPAD_DEADZONE = 0.2;
+	const cabinet = gameCabinetById.enduro;
 
 	let gamepadSteer = $state(0);
 	let audioCtx: AudioContext | null = null;
@@ -588,14 +543,20 @@
 		playCrashSound();
 
 		if (score > highScore) {
-			highScore = score;
-			localStorage.setItem('enduro-high-score', highScore.toString());
+			highScore = recordCabinetHighScore(localStorage, cabinet, score);
 		}
 	}
 
 	function initAudio() {
 		if (!audioCtx) {
-			audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+			type AudioWindow = Window &
+				typeof globalThis & {
+					webkitAudioContext?: typeof AudioContext;
+				};
+			const AudioContextConstructor =
+				window.AudioContext ?? (window as AudioWindow).webkitAudioContext;
+			if (!AudioContextConstructor) return;
+			audioCtx = new AudioContextConstructor();
 		}
 	}
 
@@ -703,10 +664,10 @@
 			const joyDown = gp.buttons[13]?.pressed || axisY > 0.5;
 
 			if (joyUp && !lastJoyUp) {
-				if (!gameStarted || gameOver) moveFocus(-1);
+				if (menuScreen) moveLinearFocus(-1, MENU_BUTTON_SELECTOR);
 			}
 			if (joyDown && !lastJoyDown) {
-				if (!gameStarted || gameOver) moveFocus(1);
+				if (menuScreen) moveLinearFocus(1, MENU_BUTTON_SELECTOR);
 			}
 			lastJoyUp = joyUp;
 			lastJoyDown = joyDown;
@@ -723,14 +684,11 @@
 				gp.buttons[7]?.pressed;
 
 			if (fireBtn && !lastFireBtn) {
-				if (!gameStarted || gameOver) {
-					const active = document.activeElement;
-					if (active instanceof HTMLElement && active.tagName !== 'BODY') {
-						active.click();
-					} else {
+				if (menuScreen) {
+					if (!activateFocusedControlItem(MENU_BUTTON_SELECTOR)) {
 						// Fallback if focus is lost
-						if (gameOver) restartGame();
-						else if (!gameStarted) startGame();
+						if (endScreen) restartGame();
+						else if (splashScreen) startGame();
 					}
 				}
 			}
@@ -765,10 +723,8 @@
 
 		if (gameStarted && !gameOver && !paused) {
 			// Throttle and Brake (Combined Keyboard + Gamepad)
-			const isAccelerating =
-				keyUp || gamepadThrottle || touchThrottle;
-			const isBraking =
-				keyDown || gamepadBrake || touchBrake;
+			const isAccelerating = keyUp || gamepadThrottle || touchThrottle;
+			const isBraking = keyDown || gamepadBrake || touchBrake;
 
 			if (isAccelerating) {
 				speed = Math.min(maxSpeed, speed + 0.012);
@@ -846,8 +802,7 @@
 	}
 
 	onMount(() => {
-		const saved = localStorage.getItem('enduro-high-score');
-		if (saved) highScore = parseInt(saved, 10);
+		highScore = readCabinetScore(localStorage, cabinet);
 		touchCapable = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
 		initThree();
@@ -863,18 +818,30 @@
 
 <svelte:head>
 	<title>Enduro Chaos | Retro 3D Racing Game</title>
-	<meta name="description" content="Race against the clock and other cars in Enduro Chaos. A 3D retro racing game inspired by classic 1983 arcade hits. Experience fog, ice, and night racing!" />
+	<meta
+		name="description"
+		content="Race against the clock and other cars in Enduro Chaos. A 3D retro racing game inspired by classic 1983 arcade hits. Experience fog, ice, and night racing!"
+	/>
 	<meta property="og:title" content="Enduro Chaos - 3D Retro Racing" />
-	<meta property="og:description" content="Can you pass 200 cars on Day 1? Speed through changing weather conditions in this intense vintage racer." />
+	<meta
+		property="og:description"
+		content="Can you pass 200 cars on Day 1? Speed through changing weather conditions in this intense vintage racer."
+	/>
 </svelte:head>
 
-<svelte:window bind:innerWidth={viewportWidth} onkeydown={handleKeyDown} onkeyup={handleKeyUp} onresize={handleResize} onblur={clearTransientControls} />
+<svelte:window
+	bind:innerWidth={viewportWidth}
+	onkeydown={handleKeyDown}
+	onkeyup={handleKeyUp}
+	onresize={handleResize}
+	onblur={clearTransientControls}
+/>
 
 <div class="relative h-screen w-screen overflow-hidden bg-black font-mono">
 	<canvas bind:this={canvasElement} class="absolute inset-0 h-full w-full"></canvas>
 
 	<!-- SPLASH -->
-	{#if !gameStarted && !gameOver}
+	{#if splashScreen}
 		<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black">
 			<div class="mb-3 flex gap-4 sm:mb-8 sm:gap-6">
 				<div class="text-4xl sm:text-7xl">🏎️</div>
@@ -886,14 +853,19 @@
 			>
 				ENDURO
 			</h1>
-			<div class="mb-3 text-xl font-bold tracking-[4px] text-white sm:mb-10 sm:text-4xl sm:tracking-[6px]">ACTIVISION</div>
+			<div
+				class="mb-3 text-xl font-bold tracking-[4px] text-white sm:mb-10 sm:text-4xl sm:tracking-[6px]"
+			>
+				ACTIVISION
+			</div>
 
 			<div
 				class="mb-4 max-w-xs border-4 border-white bg-black p-3 text-center text-sm leading-tight text-white shadow-[4px_4px_0_rgba(255,255,255,1)] sm:mb-12 sm:p-6 sm:text-lg"
 			>
 				PASS <span class="text-yellow-300">200 CARS</span> ON DAY 1<br />
 				THEN 300+ EVERY DAY AFTER<br />
-				<span class="mt-2 block text-[0.6rem] opacity-70 sm:mt-4 sm:text-xs">FOG • ICE • NIGHT</span>
+				<span class="mt-2 block text-[0.6rem] opacity-70 sm:mt-4 sm:text-xs">FOG • ICE • NIGHT</span
+				>
 				<span class="mt-1 block text-[0.6rem] leading-relaxed opacity-70 sm:mt-3 sm:text-xs">
 					KEYBOARD • GAMEPAD • TOUCH<br />
 					A / ENTER = SELECT • B / ESC = RETURN
@@ -993,7 +965,7 @@
 			</div>
 
 			{#if paused}
-				<div class="absolute top-32 left-0 right-0 flex justify-center bg-transparent">
+				<div class="absolute top-32 right-0 left-0 flex justify-center bg-transparent">
 					<div class="border-4 border-yellow-400 bg-black/80 px-16 py-6">
 						<div class="text-5xl font-black tracking-widest text-yellow-400">PAUSED</div>
 						<div class="mt-2 text-center text-lg font-bold text-white/70">PRESS 'P' TO RESUME</div>
@@ -1003,11 +975,13 @@
 		</div>
 
 		{#if showTouchControls}
-			<div class="absolute inset-x-0 bottom-0 z-40 flex items-end justify-between gap-4 p-4 text-white sm:p-6">
+			<div
+				class="absolute inset-x-0 bottom-0 z-40 flex items-end justify-between gap-4 p-4 text-white sm:p-6"
+			>
 				<div class="pointer-events-auto w-[58%] max-w-sm">
 					<div class="mb-2 text-xs font-black tracking-[0.35em] text-white/60">STEER</div>
 					<div
-						class="relative h-24 rounded-none border-4 border-white bg-black/70 px-4 py-3 touch-none select-none"
+						class="relative h-24 touch-none rounded-none border-4 border-white bg-black/70 px-4 py-3 select-none"
 						role="slider"
 						tabindex="0"
 						aria-label="Touch steering"
@@ -1035,8 +1009,10 @@
 				<div class="pointer-events-auto flex shrink-0 flex-col gap-3">
 					<button
 						class={[
-							'min-w-28 border-4 px-5 py-4 text-lg font-black text-white transition-all touch-none select-none',
-							touchThrottle ? 'border-yellow-400 bg-yellow-400 text-black scale-95' : 'border-white bg-black/75'
+							'min-w-28 touch-none border-4 px-5 py-4 text-lg font-black text-white transition-all select-none',
+							touchThrottle
+								? 'scale-95 border-yellow-400 bg-yellow-400 text-black'
+								: 'border-white bg-black/75'
 						]}
 						onpointerdown={() => (touchThrottle = true)}
 						onpointerup={() => (touchThrottle = false)}
@@ -1047,8 +1023,10 @@
 					</button>
 					<button
 						class={[
-							'min-w-28 border-4 px-5 py-4 text-lg font-black text-white transition-all touch-none select-none',
-							touchBrake ? 'border-red-500 bg-red-500 text-black scale-95' : 'border-white bg-black/75'
+							'min-w-28 touch-none border-4 px-5 py-4 text-lg font-black text-white transition-all select-none',
+							touchBrake
+								? 'scale-95 border-red-500 bg-red-500 text-black'
+								: 'border-white bg-black/75'
 						]}
 						onpointerdown={() => (touchBrake = true)}
 						onpointerup={() => (touchBrake = false)}
@@ -1063,18 +1041,26 @@
 	{/if}
 
 	<!-- GAME OVER -->
-	{#if gameOver}
+	{#if endScreen}
 		<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95">
-			<div class="mb-2 text-5xl font-black text-red-500 drop-shadow-[4px_4px_0_#000] sm:mb-6 sm:text-8xl">CRASHED</div>
+			<div
+				class="mb-2 text-5xl font-black text-red-500 drop-shadow-[4px_4px_0_#000] sm:mb-6 sm:text-8xl"
+			>
+				CRASHED
+			</div>
 
-			<div class="mb-3 text-xl font-bold text-white sm:mb-8 sm:text-5xl">DAY {day} • {carsPassed} CARS</div>
+			<div class="mb-3 text-xl font-bold text-white sm:mb-8 sm:text-5xl">
+				DAY {day} • {carsPassed} CARS
+			</div>
 
 			<div class="mb-6 text-3xl font-black text-yellow-400 sm:mb-12 sm:text-6xl">
 				{score}
 			</div>
 
 			{#if score >= highScore && score > 0}
-				<div class="mb-4 text-lg font-bold tracking-widest text-lime-400 sm:mb-8 sm:text-3xl">NEW HIGH SCORE</div>
+				<div class="mb-4 text-lg font-bold tracking-widest text-lime-400 sm:mb-8 sm:text-3xl">
+					NEW HIGH SCORE
+				</div>
 			{/if}
 
 			<div class="flex flex-col gap-2 sm:gap-4">
@@ -1094,7 +1080,9 @@
 				</button>
 			</div>
 
-			<div class="mt-6 text-xs text-white/50 sm:mt-12 sm:text-sm">ENTER / A TO SELECT • ESC / B TO RETURN</div>
+			<div class="mt-6 text-xs text-white/50 sm:mt-12 sm:text-sm">
+				ENTER / A TO SELECT • ESC / B TO RETURN
+			</div>
 		</div>
 	{/if}
 </div>

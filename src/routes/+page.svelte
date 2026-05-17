@@ -1,146 +1,105 @@
-<svelte:head>
-	<title>The Chaos Arcade | Ultimate Vintage Retro Games</title>
-	<meta name="description" content="Play the best vintage arcade games online. Minesweeper, Checkers, and 3D Racing. 100% Free and Caotic." />
-	<meta property="og:title" content="The Chaos Arcade | Retro Gaming Hub" />
-	<meta property="og:description" content="Experience the thrill of classic arcade games with a modern twist. Play Minesweeper, Checkers, and more!" />
-</svelte:head>
-
 <script lang="ts">
-	import { KEY_ENTER, KEY_SPACE, ARROW_TO_DIR } from '$lib/keys';
+	import { resolve } from '$app/paths';
+	import {
+		createScoreRecord,
+		gameCabinets,
+		readCabinetScore,
+		utilityCabinets,
+		type GameCabinet,
+		type GameCabinetId,
+		type UtilityCabinet,
+		type UtilityCabinetId
+	} from '$lib/cabinets';
+	import {
+		activateFocusedControlItem,
+		createUnifiedGamepadPoller,
+		DASHBOARD_ACTION_SELECTOR,
+		focusFirstControlItem,
+		handleGridMenuKeydown,
+		moveGridFocus
+	} from '$lib/unified-controls';
 
-	type ScoreId = 'minesweeper' | 'checkers' | 'enduro' | 'space-chaos' | 'tetris';
-	type Direction = 'up' | 'down' | 'left' | 'right';
-
-	type GameCard = {
-		id: ScoreId;
+	type DashboardGameCabinet = GameCabinet & {
 		name: string;
 		description: string;
-		href: string;
-		emoji: string;
 		kicker: string;
-		color: string;
-		marquee: string;
-		storageKey: string;
-		scoreLabel: string;
 		cta: string;
 	};
-
-	type UtilityCard = {
-		id: 'settings';
+	type DashboardUtilityCabinet = UtilityCabinet & {
 		name: string;
 		description: string;
-		href: string;
-		emoji: string;
 		kicker: string;
-		color: string;
-		marquee: string;
 		meta: string;
 		cta: string;
 	};
+	type DashboardCabinet = DashboardGameCabinet | DashboardUtilityCabinet;
 
-	type DashboardCard = GameCard | UtilityCard;
-
-	const gameCards: GameCard[] = [
-		{
-			id: 'minesweeper',
+	const gameCopy: Record<
+		GameCabinetId,
+		Pick<DashboardGameCabinet, 'name' | 'description' | 'kicker' | 'cta'>
+	> = {
+		minesweeper: {
 			name: 'Minesweeper',
 			description: 'Avoid the boom with quick reads and cooler nerves.',
-			href: '/minesweeper',
-			emoji: '💣',
 			kicker: 'Puzzle Bay',
-			color: 'bg-red-500',
-			marquee: 'bg-red-200',
-			storageKey: 'minesweeper-wins',
-			scoreLabel: 'Wins',
 			cta: 'Insert Coin'
 		},
-		{
-			id: 'checkers',
+		checkers: {
 			name: 'Checkers Chaos',
 			description: 'Fast board control in a chunky neon showdown.',
-			href: '/checkers',
-			emoji: '🎲',
 			kicker: 'Battle Table',
-			color: 'bg-orange-400',
-			marquee: 'bg-orange-200',
-			storageKey: 'checkers-wins',
-			scoreLabel: 'Wins',
 			cta: 'Start Match'
 		},
-		{
-			id: 'enduro',
+		enduro: {
 			name: 'Enduro Chaos',
 			description: 'Race the night through storms, ice, and blind corners.',
-			href: '/enduro',
-			emoji: '🏎️',
 			kicker: 'Road Fury',
-			color: 'bg-green-500',
-			marquee: 'bg-green-200',
-			storageKey: 'enduro-high-score',
-			scoreLabel: 'Hi-Score',
 			cta: 'Burn Rubber'
 		},
-		{
-			id: 'space-chaos',
+		'space-chaos': {
 			name: 'Space Chaos',
 			description: 'Scramble the fleet and climb the cosmic score board.',
-			href: '/space-invaders',
-			emoji: '🛸',
 			kicker: 'Galaxy Sector',
-			color: 'bg-purple-600',
-			marquee: 'bg-fuchsia-200',
-			storageKey: 'space-chaos-high-score',
-			scoreLabel: 'Hi-Score',
 			cta: 'Launch Run'
 		},
-		{
-			id: 'tetris',
+		tetris: {
 			name: 'Tetris Chaos',
 			description: 'Stack the blocks and survive the falling chaos!',
-			href: '/tetris',
-			emoji: '🧱',
 			kicker: 'Block Zone',
-			color: 'bg-cyan-500',
-			marquee: 'bg-cyan-200',
-			storageKey: 'tetris-chaos-high-score',
-			scoreLabel: 'Hi-Score',
 			cta: 'Drop In'
 		}
-	];
+	};
 
-	const utilityCards: UtilityCard[] = [
-		{
-			id: 'settings',
+	const utilityCopy: Record<
+		UtilityCabinetId,
+		Pick<DashboardUtilityCabinet, 'name' | 'description' | 'kicker' | 'meta' | 'cta'>
+	> = {
+		settings: {
 			name: 'Settings',
 			description: 'Tune the cabinet, inspect scores, and wipe save data.',
-			href: '/settings',
-			emoji: '⚙️',
 			kicker: 'System Deck',
-			color: 'bg-sky-400',
-			marquee: 'bg-sky-200',
 			meta: 'Scores • Reset • System',
 			cta: 'Open Panel'
 		}
+	};
+
+	const dashboardGameCabinets: DashboardGameCabinet[] = gameCabinets.map((cabinet) => ({
+		...cabinet,
+		...gameCopy[cabinet.id]
+	}));
+	const dashboardUtilityCabinets: DashboardUtilityCabinet[] = utilityCabinets.map((cabinet) => ({
+		...cabinet,
+		...utilityCopy[cabinet.id]
+	}));
+	const dashboardCabinets: DashboardCabinet[] = [
+		...dashboardGameCabinets,
+		...dashboardUtilityCabinets
 	];
 
-	const dashboardCards: DashboardCard[] = [...gameCards, ...utilityCards];
+	let scores = $state<Record<GameCabinetId, number>>(createScoreRecord());
 
-	let scores = $state<Record<ScoreId, number>>({
-		minesweeper: 0,
-		checkers: 0,
-		enduro: 0,
-		'space-chaos': 0,
-		tetris: 0
-	});
-
-	let lastUp = false;
-	let lastDown = false;
-	let lastLeft = false;
-	let lastRight = false;
-	let lastConfirm = false;
-
-	const DEADZONE = 0.45;
-	const isMobile = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator as any).maxTouchPoints > 0);
+	const isMobile =
+		typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
 	const appVersion = __APP_VERSION__;
 
@@ -149,245 +108,60 @@
 		window.location.reload();
 	}
 
-	function isGameCard(card: DashboardCard): card is GameCard {
-		return 'storageKey' in card;
-	}
-
-	function readStoredNumber(key: string) {
-		const stored = localStorage.getItem(key);
-		return stored ? Number.parseInt(stored, 10) || 0 : 0;
+	function isGameCard(card: DashboardCabinet): card is DashboardGameCabinet {
+		return card.kind === 'game';
 	}
 
 	function loadScores() {
-		for (const card of gameCards) {
-			scores[card.id] = readStoredNumber(card.storageKey);
-		}
-	}
-
-	function getActionables() {
-		return Array.from(document.querySelectorAll<HTMLElement>('[data-dashboard-action="true"]'));
-	}
-
-	function getFocusedActionable() {
-		const active = document.activeElement;
-		return active instanceof HTMLElement
-			? active.closest<HTMLElement>('[data-dashboard-action="true"]')
-			: null;
-	}
-
-	function focusFirstActionable(force = false) {
-		const items = getActionables();
-		if (!items.length) return;
-
-		const active = document.activeElement;
-		if (!force && active instanceof HTMLElement && items.includes(active)) return;
-
-		items[0]?.focus();
-	}
-
-	function moveFocus(direction: Direction) {
-		const items = getActionables();
-		if (!items.length) return;
-
-		const active = document.activeElement;
-		if (!(active instanceof HTMLElement) || !items.includes(active)) {
-			items[0]?.focus();
-			return;
-		}
-
-		const currentRect = active.getBoundingClientRect();
-		const originX = currentRect.left + currentRect.width / 2;
-		const originY = currentRect.top + currentRect.height / 2;
-
-		let bestMatch: { element: HTMLElement; score: number } | null = null;
-
-		for (const element of items) {
-			if (element === active) continue;
-
-			const rect = element.getBoundingClientRect();
-			const targetX = rect.left + rect.width / 2;
-			const targetY = rect.top + rect.height / 2;
-			const dx = targetX - originX;
-			const dy = targetY - originY;
-
-			let mainAxis = 0;
-			let crossAxis = 0;
-
-			if (direction === 'up') {
-				mainAxis = -dy;
-				crossAxis = Math.abs(dx);
-			}
-
-			if (direction === 'down') {
-				mainAxis = dy;
-				crossAxis = Math.abs(dx);
-			}
-
-			if (direction === 'left') {
-				mainAxis = -dx;
-				crossAxis = Math.abs(dy);
-			}
-
-			if (direction === 'right') {
-				mainAxis = dx;
-				crossAxis = Math.abs(dy);
-			}
-
-			if (mainAxis <= 12) continue;
-
-			const score = Math.hypot(mainAxis, crossAxis) + crossAxis * 0.65;
-
-			if (!bestMatch || score < bestMatch.score) {
-				bestMatch = { element, score };
-			}
-		}
-
-		bestMatch?.element.focus();
-	}
-
-	function activateFocusedAction() {
-		if (document.activeElement instanceof HTMLElement) {
-			document.activeElement.click();
+		for (const cabinet of gameCabinets) {
+			scores[cabinet.id] = readCabinetScore(localStorage, cabinet);
 		}
 	}
 
 	function handleDashboardKeydown(event: KeyboardEvent) {
-		if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
-
-		const activeActionable = getFocusedActionable();
-		const canNavigate = !!activeActionable || document.activeElement === document.body;
-
-		const dir = ARROW_TO_DIR[event.key];
-
-		if (dir) {
-			if (!canNavigate) return;
-			event.preventDefault();
-			moveFocus(dir);
-			return;
-		}
-
-		if ((event.key === KEY_ENTER || event.key === KEY_SPACE) && activeActionable && !event.repeat) {
-			event.preventDefault();
-			activateFocusedAction();
-		}
+		handleGridMenuKeydown(event, { selector: DASHBOARD_ACTION_SELECTOR });
 	}
 
-	function scoreText(card: GameCard) {
-		return `${card.scoreLabel}: ${scores[card.id].toLocaleString()}`;
+	function scoreLabel(card: GameCabinet) {
+		return card.score.mode === 'wins' ? 'Wins' : 'Hi-Score';
+	}
+
+	function scoreText(card: DashboardGameCabinet) {
+		return `${scoreLabel(card)}: ${scores[card.id].toLocaleString()}`;
 	}
 
 	$effect(() => {
 		loadScores();
 		let animationFrame = requestAnimationFrame(() => {
-			focusFirstActionable(true);
+			focusFirstControlItem(DASHBOARD_ACTION_SELECTOR, true);
+		});
+		const gamepad = createUnifiedGamepadPoller({
+			intervalMs: () => (isMobile ? 250 : 80),
+			shouldStart: () => document.visibilityState === 'visible',
+			onUp: () => moveGridFocus('up', DASHBOARD_ACTION_SELECTOR),
+			onDown: () => moveGridFocus('down', DASHBOARD_ACTION_SELECTOR),
+			onLeft: () => moveGridFocus('left', DASHBOARD_ACTION_SELECTOR),
+			onRight: () => moveGridFocus('right', DASHBOARD_ACTION_SELECTOR),
+			onSelect: () => activateFocusedControlItem(DASHBOARD_ACTION_SELECTOR)
 		});
 
-		let gamepadPollId: number | null = null;
-
-		const stopGamepadPolling = () => {
-			if (gamepadPollId !== null) {
-				clearInterval(gamepadPollId);
-				gamepadPollId = null;
-			}
-
-			lastUp = false;
-			lastDown = false;
-			lastLeft = false;
-			lastRight = false;
-			lastConfirm = false;
-		};
-
-		const pollGamepad = () => {
-			const gamepads = navigator.getGamepads?.() ?? [];
-			let upPressed = false;
-			let downPressed = false;
-			let leftPressed = false;
-			let rightPressed = false;
-			let confirmPressed = false;
-
-			for (const gamepad of gamepads) {
-				if (!gamepad) continue;
-
-				const axisX = gamepad.axes[0] ?? 0;
-				const axisY = gamepad.axes[1] ?? 0;
-
-				upPressed ||= gamepad.buttons[12]?.pressed || axisY < -DEADZONE;
-				downPressed ||= gamepad.buttons[13]?.pressed || axisY > DEADZONE;
-				leftPressed ||= gamepad.buttons[14]?.pressed || axisX < -DEADZONE;
-				rightPressed ||= gamepad.buttons[15]?.pressed || axisX > DEADZONE;
-				confirmPressed ||= !!(
-					gamepad.buttons[0]?.pressed ||
-					gamepad.buttons[2]?.pressed ||
-					gamepad.buttons[3]?.pressed ||
-					gamepad.buttons[7]?.pressed
-				);
-			}
-
-			if (upPressed && !lastUp) moveFocus('up');
-			if (downPressed && !lastDown) moveFocus('down');
-			if (leftPressed && !lastLeft) moveFocus('left');
-			if (rightPressed && !lastRight) moveFocus('right');
-			if (confirmPressed && !lastConfirm) activateFocusedAction();
-
-			lastUp = upPressed;
-			lastDown = downPressed;
-			lastLeft = leftPressed;
-			lastRight = rightPressed;
-			lastConfirm = confirmPressed;
-		};
-
-		const startGamepadPolling = () => {
-			if (gamepadPollId !== null || document.visibilityState !== 'visible') return;
-
-			pollGamepad();
-			// Much slower polling on mobile to prevent freezing
-			const interval = isMobile ? 250 : 80;
-			gamepadPollId = window.setInterval(pollGamepad, interval);
-		};
-
-		const syncGamepadPolling = () => {
-			if (document.visibilityState !== 'visible') {
-				stopGamepadPolling();
-				return;
-			}
-
-			// Skip gamepad polling on mobile unless a gamepad is actually connected
-			if (isMobile) {
-				const hasConnectedGamepad = (navigator.getGamepads?.() ?? []).some(Boolean);
-				if (hasConnectedGamepad) {
-					startGamepadPolling();
-				} else {
-					stopGamepadPolling();
-				}
-				return;
-			}
-
-			const hasConnectedGamepad = (navigator.getGamepads?.() ?? []).some(Boolean);
-			if (hasConnectedGamepad) {
-				startGamepadPolling();
-				return;
-			}
-
-			stopGamepadPolling();
-		};
-
 		const handleGamepadChange = () => {
-			syncGamepadPolling();
+			gamepad.sync();
 		};
 
 		const handleVisibilityChange = () => {
 			loadScores();
-			syncGamepadPolling();
+			gamepad.sync();
 		};
 
 		window.addEventListener('gamepadconnected', handleGamepadChange);
 		window.addEventListener('gamepaddisconnected', handleGamepadChange);
 		document.addEventListener('visibilitychange', handleVisibilityChange);
-		syncGamepadPolling();
+		gamepad.sync();
 
 		return () => {
 			cancelAnimationFrame(animationFrame);
-			stopGamepadPolling();
+			gamepad.destroy();
 			window.removeEventListener('gamepadconnected', handleGamepadChange);
 			window.removeEventListener('gamepaddisconnected', handleGamepadChange);
 			document.removeEventListener('visibilitychange', handleVisibilityChange);
@@ -395,14 +169,31 @@
 	});
 </script>
 
+<svelte:head>
+	<title>The Chaos Arcade | Ultimate Vintage Retro Games</title>
+	<meta
+		name="description"
+		content="Play the best vintage arcade games online. Minesweeper, Checkers, and 3D Racing. 100% Free and Caotic."
+	/>
+	<meta property="og:title" content="The Chaos Arcade | Retro Gaming Hub" />
+	<meta
+		property="og:description"
+		content="Experience the thrill of classic arcade games with a modern twist. Play Minesweeper, Checkers, and more!"
+	/>
+</svelte:head>
+
 <svelte:window onfocus={loadScores} onkeydown={handleDashboardKeydown} />
 
 <div class="min-h-screen bg-yellow-300 px-2 py-3 font-mono text-black sm:px-6 sm:py-6">
 	<div class="mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-6">
-		<header class="border-4 border-black bg-yellow-200 p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-5 sm:shadow-[8px_8px_0_rgba(0,0,0,1)]">
+		<header
+			class="border-4 border-black bg-yellow-200 p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-5 sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
+		>
 			<div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
 				<div>
-					<p class="text-[0.6rem] font-black tracking-[0.3em] uppercase sm:text-sm">Arcade Hub // Ready</p>
+					<p class="text-[0.6rem] font-black tracking-[0.3em] uppercase sm:text-sm">
+						Arcade Hub // Ready
+					</p>
 					<h1
 						class="mt-1 text-3xl font-black tracking-tight uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:mt-2 sm:text-5xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
 					>
@@ -414,11 +205,17 @@
 				</div>
 
 				<div class="flex flex-wrap gap-2 text-[0.65rem] font-black uppercase sm:text-sm">
-					<div class="border-[3px] border-black bg-black px-2 py-1 text-yellow-300 sm:border-4 sm:px-3 sm:py-2">
-						{dashboardCards.length} Hotspots
+					<div
+						class="border-[3px] border-black bg-black px-2 py-1 text-yellow-300 sm:border-4 sm:px-3 sm:py-2"
+					>
+						{dashboardCabinets.length} Hotspots
 					</div>
-					<div class="border-[3px] border-black bg-white px-2 py-1 sm:border-4 sm:px-3 sm:py-2">Launch = Enter</div>
-					<div class="border-[3px] border-black bg-white px-2 py-1 sm:border-4 sm:px-3 sm:py-2">v{appVersion}</div>
+					<div class="border-[3px] border-black bg-white px-2 py-1 sm:border-4 sm:px-3 sm:py-2">
+						Launch = Enter
+					</div>
+					<div class="border-[3px] border-black bg-white px-2 py-1 sm:border-4 sm:px-3 sm:py-2">
+						v{appVersion}
+					</div>
 					<button
 						type="button"
 						onclick={() => setLanguage('en')}
@@ -438,16 +235,18 @@
 		</header>
 
 		<section class="grid grid-cols-2 gap-1.5 md:grid-cols-3 md:gap-4 xl:grid-cols-3">
-				{#each dashboardCards as card (card.id)}
-					<a
-						href={card.href}
-						data-dashboard-action="true"
-						class="dashboard-card group block aspect-[1.18] min-h-32 focus:outline-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black sm:aspect-auto sm:min-h-44"
+			{#each dashboardCabinets as card (card.id)}
+				<a
+					href={resolve(card.href)}
+					data-dashboard-action="true"
+					class="dashboard-card group block aspect-[1.18] min-h-32 focus:outline-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-black sm:aspect-auto sm:min-h-44"
+				>
+					<article
+						class="dashboard-card-inner flex h-full flex-col border-4 border-black bg-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
 					>
-						<article
-							class="dashboard-card-inner flex h-full flex-col border-4 border-black bg-black shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
+						<div
+							class="{card.marquee} flex items-center justify-between border-b-4 border-black px-2 py-1 sm:px-4 sm:py-2"
 						>
-						<div class="{card.marquee} flex items-center justify-between border-b-4 border-black px-2 py-1 sm:px-4 sm:py-2">
 							<p class="text-[0.5rem] font-black tracking-[0.22em] uppercase sm:text-xs">
 								{card.kicker}
 							</p>
@@ -455,7 +254,9 @@
 						</div>
 
 						<div class="{card.color} flex flex-1 flex-col justify-between p-1.5 sm:p-5">
-							<div class="flex flex-1 flex-col items-center justify-center gap-1 text-center sm:hidden">
+							<div
+								class="flex flex-1 flex-col items-center justify-center gap-1 text-center sm:hidden"
+							>
 								<div
 									class="flex h-10 w-10 items-center justify-center border-4 border-black bg-black text-xl"
 								>
@@ -463,13 +264,15 @@
 								</div>
 
 								<div class="min-w-0">
-									<h2 class="truncate text-[0.62rem] font-black leading-none uppercase">
+									<h2 class="truncate text-[0.62rem] leading-none font-black uppercase">
 										{card.name}
 									</h2>
 								</div>
 
 								<div class="flex items-center gap-1">
-									<div class="border-[3px] border-black bg-black px-1.5 py-0.5 text-[0.48rem] font-black uppercase leading-none text-yellow-300">
+									<div
+										class="border-[3px] border-black bg-black px-1.5 py-0.5 text-[0.48rem] leading-none font-black text-yellow-300 uppercase"
+									>
 										{#if isGameCard(card)}
 											{scoreText(card)}
 										{:else}
@@ -477,7 +280,9 @@
 										{/if}
 									</div>
 
-									<span class="border-[3px] border-black bg-white px-1.5 py-0.5 text-center text-[0.48rem] font-black uppercase leading-none shadow-[2px_2px_0_rgba(0,0,0,1)] transition-colors group-hover:bg-black group-hover:text-white group-hover:shadow-none">
+									<span
+										class="border-[3px] border-black bg-white px-1.5 py-0.5 text-center text-[0.48rem] leading-none font-black uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] transition-colors group-hover:bg-black group-hover:text-white group-hover:shadow-none"
+									>
 										{card.cta}
 									</span>
 								</div>
@@ -492,17 +297,21 @@
 									</div>
 
 									<div class="min-w-0 flex-1">
-										<h2 class="text-xl font-black leading-none uppercase sm:text-[1.7rem]">
+										<h2 class="text-xl leading-none font-black uppercase sm:text-[1.7rem]">
 											{card.name}
 										</h2>
-										<p class="mt-1 text-xs leading-tight font-bold uppercase sm:mt-2 sm:text-[0.95rem]">
+										<p
+											class="mt-1 text-xs leading-tight font-bold uppercase sm:mt-2 sm:text-[0.95rem]"
+										>
 											{card.description}
 										</p>
 									</div>
 								</div>
 
 								<div class="mt-3 flex items-end justify-between gap-2 sm:mt-4 sm:gap-3">
-									<div class="border-[3px] border-black bg-black px-2 py-1.5 text-[0.65rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm">
+									<div
+										class="border-[3px] border-black bg-black px-2 py-1.5 text-[0.65rem] font-black text-yellow-300 uppercase sm:border-4 sm:px-3 sm:py-2 sm:text-sm"
+									>
 										{#if isGameCard(card)}
 											{scoreText(card)}
 										{:else}
@@ -523,7 +332,9 @@
 			{/each}
 		</section>
 
-		<footer class="flex flex-wrap items-center justify-between gap-2 border-4 border-black bg-black px-3 py-2 text-[0.65rem] font-black uppercase text-yellow-300 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:px-4 sm:py-3 sm:text-sm sm:shadow-[8px_8px_0_rgba(0,0,0,1)]">
+		<footer
+			class="flex flex-wrap items-center justify-between gap-2 border-4 border-black bg-black px-3 py-2 text-[0.65rem] font-black text-yellow-300 uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] sm:px-4 sm:py-3 sm:text-sm sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
+		>
 			<p>Built with ⚡ SvelteKit</p>
 			<p>Cabinet memory: Online</p>
 		</footer>
