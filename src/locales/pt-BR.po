@@ -7,10 +7,37 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#~ msgid "GameServer"
+#~ msgstr "Servidor de Jogo"
+
+#~ msgid "The Chaos Arcade"
+#~ msgstr "O Fliperama do Caos"
+
+#~ msgid "Uma coleção de jogos vintages e caóticos feitos com SvelteKit."
+#~ msgstr "Uma coleção de jogos vintages e caóticos feitos com SvelteKit."
+
+#~ msgid "Arcade"
+#~ msgstr "Fliperama"
+
+#~ msgid "Retro"
+#~ msgstr "Retrô"
+
+#~ msgid "Strategy"
+#~ msgstr "Estratégia"
+
+#~ msgid "VideoGame"
+#~ msgstr "Videogame"
+
+#~ msgid "Minesweeper Chaos"
+#~ msgstr "Caça Mina Caótico"
+
 #: src/routes/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "Checkers Chaos"
 msgstr "Dama Caótica"
+
+#~ msgid "Enduro 3D Chaos"
+#~ msgstr "Enduro 3D Caótico"
 
 #: src/routes/+page.svelte
 #: src/routes/settings/+page.svelte
@@ -60,6 +87,8 @@ msgid "Road Fury"
 msgstr "Estrada Furiosa"
 
 #: src/routes/+page.svelte
+#: src/routes/frog/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/settings/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -116,19 +145,61 @@ msgstr "ArrowUp"
 msgid "ArrowDown"
 msgstr "ArrowDown"
 
+#~ msgid "ArrowLeft"
+#~ msgstr "ArrowLeft"
+
+#~ msgid "ArrowRight"
+#~ msgstr "ArrowRight"
+
+#~ msgid "Enter"
+#~ msgstr "Enter"
+
+#~ msgid "The Chaos Arcade | Dashboard"
+#~ msgstr "O Fliperama do Caos | Painel"
+
 #: src/routes/+page.svelte
 msgid "Arcade Hub // Ready"
 msgstr "Central de Fliperama // Pronto"
+
+#~ msgid "🕹️ The Chaos Arcade"
+#~ msgstr "🕹️ O Fliperama do Caos"
+
+#~ msgid "Tap, tab, or hit the D-pad to jump cabinet-to-cabinet."
+#~ msgstr "Toque, tab, ou use o D-pad para pular de fliperama em fliperama."
 
 #. 0: dashboardCabinets.length
 #: src/routes/+page.svelte
 msgid "{0} Hotspots"
 msgstr "{0} Pontos de interação"
 
+#~ msgid "A / Enter = Launch"
+#~ msgstr "A / Enter = Lançar"
+
 #. 0: appVersion
 #: src/routes/+page.svelte
 msgid "v{0}"
 msgstr "v{0}"
+
+#~ msgid "Built with ⚡ SvelteKit & pure chaos"
+#~ msgstr "Construído com ⚡ SvelteKit & puro caos"
+
+#~ msgid "Local scores loaded from cabinet memory"
+#~ msgstr "Pontuações locais carregadas da memória do fliperama"
+
+#~ msgid "SYSTEM ERROR: Too much strategy detected! ⚠️"
+#~ msgstr "ERRO DE SISTEMA: Muita estratégia detectada! ⚠️"
+
+#~ msgid "Are you trying to win?! 🤨"
+#~ msgstr "Você está tentando ganhar?! 🤨"
+
+#~ msgid "Your pieces are feeling threatened. 🕵️‍♂️"
+#~ msgstr ""
+
+#~ msgid "ERROR 404: Victory Not Found. 🧠💨"
+#~ msgstr "ERRO 404: Vitória não encontrada. 🧠💨"
+
+#~ msgid "Escape"
+#~ msgstr "Escape"
 
 #. 0: r + 1; 1: c + 1
 #. 0: r + 1; 1: c + 1
@@ -137,7 +208,11 @@ msgstr "v{0}"
 msgid "Row {0}, column {1}"
 msgstr "Linha {0}, coluna {1}"
 
+#~ msgid "Checkers | Game Chaos"
+#~ msgstr "Dama | Caos no Jogo"
+
 #: src/routes/checkers/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
@@ -148,6 +223,12 @@ msgstr "Caos no Jogo"
 #: src/routes/checkers/+page.svelte
 msgid "🏁 Checkers Chaos 🏁"
 msgstr "🏁 Dama Caótica 🏁"
+
+#~ msgid "Pick white. Pick fights. Pick again."
+#~ msgstr "Escolha branco. Escolha lutas. Escolha novamente."
+
+#~ msgid "You play white.<0/> Tap or click a piece, then tap its destination.<1/> Arrow keys / Tab move menu focus.<2/> A / Enter = select • B / Esc = return.<3/> <4>During a live match, Esc / B jumps back here and Continue resumes the exact board.</4>"
+#~ msgstr "Você joga de branco.<0/> Toque ou clique em uma peça, depois toque em seu destino.<1/> Setas / Tab movem o foco do menu.<2/> A / Enter = selecionar • B / Esc = retornar.<3/> <4>Durante uma partida ao vivo, Esc / B voltam para cá e Continuar retoma exatamente o tabuleiro.</4>"
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
@@ -160,12 +241,18 @@ msgstr "Placar de Pontuação"
 msgid "Player Wins"
 msgstr "Vitórias do Jogador"
 
+#~ msgid "Live match: {0}<0/> New game: {1}"
+#~ msgstr "Partida ao vivo: {0}<0/> Novo jogo: {1}"
+
 #: src/routes/checkers/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Difficulty"
 msgstr "Dificuldade"
+
+#~ msgid "Continue keeps the current {0} board. New Game uses the selected mode."
+#~ msgstr "Continue mantém o tabuleiro {0} atual. O Novo Jogo usa o modo selecionado."
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
@@ -217,6 +304,18 @@ msgstr "Vitórias {0}"
 msgid "Return"
 msgstr "Voltar"
 
+#~ msgid "White Wins!"
+#~ msgstr "Branca Vence!"
+
+#~ msgid "Black Wins!"
+#~ msgstr "Preta Vence!"
+
+#~ msgid "Board Live"
+#~ msgstr "Tabuleiro Ao Vivo"
+
+#~ msgid "Select a white piece, then choose its landing square."
+#~ msgstr "Selecione uma peça branca, depois escolha seu quadrado de destino."
+
 #: src/routes/checkers/+page.svelte
 msgid "Need a breather? Esc / B returns to splash and Continue resumes this exact match."
 msgstr "Precisa de uma pausa? Esc / B retorna para o splash e Continuar retoma esta partida exata."
@@ -256,9 +355,21 @@ msgstr "Voltar para o Splash"
 msgid "Enter / A to select • Esc / B to return"
 msgstr "Enter / A para selecionar • Esc / B para retornar"
 
+#~ msgid "Don't Click Me 🚫"
+#~ msgstr "Não me clique 🚫"
+
+#~ msgid "Wait, what?!"
+#~ msgstr "Espere, o quê?!"
+
+#~ msgid "Fine, I'm sorry 😔"
+#~ msgstr "Tudo bem, me desculpe 😔"
+
 #: src/routes/demo/+page.svelte
 msgid "playwright"
 msgstr "playwright"
+
+#~ msgid "Enduro | Game Chaos"
+#~ msgstr "Enduro | Caos no Jogo"
 
 #: src/routes/enduro/+page.svelte
 msgid "ENDURO"
@@ -273,6 +384,7 @@ msgid "PASS <0>200 CARS</0> ON DAY 1<1/> THEN 300+ EVERY DAY AFTER<2/> <3>FOG �
 msgstr "PASE 200 CARROS NO PRIMEIRO DIA <0>200 CARS</0> UN DIA 1<1/> ENTÃO 300+ A CADA DIA DEPOIS<2/> <3>NEBLINA • GELO • NOITE</3> <4>TECLADO • GAMEPAD • TOQUE<0/> A / ENTER = SELECT • B / ESC = RETURN</4>"
 
 #: src/routes/enduro/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "CONTINUE"
 msgstr "CONTINUAR"
@@ -331,6 +443,7 @@ msgid "ESC / B TO SPLASH<0/> P TO PAUSE"
 msgstr "ESC / B para o splash<0/> P para pausar"
 
 #: src/routes/enduro/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "PAUSED"
 msgstr "PAUSADO"
@@ -389,9 +502,15 @@ msgstr "⚙️ CONFIGURAÇÕES DO SISTEMA ⚙️"
 msgid "MEMORY MANAGEMENT UNIT"
 msgstr "Unidade de Gerenciamento de Memória"
 
+#~ msgid "WINS: {0}"
+#~ msgstr "Vitórias: {0}"
+
 #: src/routes/settings/+page.svelte
 msgid "RESET"
 msgstr "Resetar"
+
+#~ msgid "HI-SCORE: {0}"
+#~ msgstr "RECORDE: {0}"
 
 #: src/routes/settings/+page.svelte
 msgid "RETURN TO DASHBOARD"
@@ -401,13 +520,37 @@ msgstr "Voltar para o painel"
 msgid "Joystick: A to Select · B to Return"
 msgstr "Joystick: A para selecionar · B para retornar"
 
+#~ msgid "SYSTEM ERROR: Too much chaos detected! ⚠️"
+#~ msgstr "Erro do sistema: muito caos detectado! ⚠️"
+
+#~ msgid "Are you even listening?! 🤨"
+#~ msgstr "Você está me escutando?! 🤨"
+
+#~ msgid "Your finger is too curious for its own good. 🕵️‍♂️"
+#~ msgstr ""
+
+#~ msgid "ERROR 404: Sanity Not Found. 🧠💨"
+#~ msgstr "Erro 404: Sanidade Não Encontrada. 🧠💨"
+
+#~ msgid "Minesweeper | Game Chaos"
+#~ msgstr "Campo Minado | Caos no Jogo"
+
 #: src/routes/minesweeper/+page.svelte
 msgid "💣 Boom Box 💣"
 msgstr "Campo Minado 💣"
 
+#~ msgid "Vintage little minefield. No mercy."
+#~ msgstr "Campo minado vintage. Sem piedade."
+
+#~ msgid "Reveal every safe tile to win.<0/> Click or tap to reveal.<1/> Right click or long-press to flag.<2/> <3>Arrow keys / Tab move menu focus.<0/> A / Enter = select • B / Esc = return.</3>"
+#~ msgstr "Descubra cada tile seguro para vencer.<0/> Clique ou toque para revelar.<1/> Clique direito ou pressione longo para marcar.<2/> <3>Setas / Tab movem o foco do menu.<0/> A / Enter = selecionar • B / Esc = retornar.</3>"
+
 #: src/routes/minesweeper/+page.svelte
 msgid "Total Wins"
 msgstr "Total de vitórias"
+
+#~ msgid "10 × 10 grid<0/>15 mines<1/>Simple. Mean. Loud."
+#~ msgstr "Grade 10 x 10<0/>15 minas<1/>Simples. Cruel. Barulhento."
 
 #. 0: minesLeft
 #: src/routes/minesweeper/+page.svelte
@@ -466,10 +609,16 @@ msgstr "Normal"
 msgid "Hard"
 msgstr "Difícil"
 
+#~ msgid "Space Chaos | Game Chaos"
+#~ msgstr "Space Chaos | Caos no Jogo"
+
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "SPACE CHAOS"
 msgstr "SPACE CHAOS"
+
+#~ msgid "Pew pew or die!"
+#~ msgstr "Atire ou morra!"
 
 #: src/routes/space-invaders/+page.svelte
 msgid "SCORE:"
@@ -483,13 +632,34 @@ msgstr "Recorde:"
 msgid "CHAOS ACTIVE"
 msgstr "Caos Ativo"
 
+#~ msgid "DEFEND THE LINE, SHRED THE SWARM, AND CHASE THE UFO. <0>KEYBOARD / GAMEPAD / TOUCH READY<0/> A / ENTER = SELECT • B / ESC = RETURN</0>"
+#~ msgstr "DEFENDA A LINHA, ESMAGUE A MULTIDÃO E PERSEGUIA O OVNI. <0>TECLADO / CONTROLE / TELA PRONTA<0/> A / ENTER = SELECT • B / ESC = RETURN</0>"
+
+#~ msgid "← → MOVE • SPACE / ↑ FIRE<0/> D-PAD / STICK MOVE<1/> TOUCH DRAG + FIRE BUTTON"
+#~ msgstr "← → MOVE • SPACE / ↑ FIRE<0/> D-PAD / STICK MOVE<1/> TOUCH DRAG + FIRE BUTTON"
+
+#~ msgid "Current run difficulty stays locked until the run ends."
+#~ msgstr "A difi  culdade atual da rodada fica travada até o fim dela."
+
+#~ msgid "Hard matches the current Chaos balance. <0/>"
+#~ msgstr "Difícil corresponde ao equilíbrio de caos atual. <0/>"
+
 #: src/routes/space-invaders/+page.svelte
 msgid "P to resume • ESC / B to splash"
 msgstr "P para continuar • ESC / B para o splash"
 
+#~ msgid "WASTED 💀"
+#~ msgstr "MORTO 💀"
+
+#~ msgid "Score {0}"
+#~ msgstr "Pontuação {0}"
+
 #: src/routes/space-invaders/+page.svelte
 msgid "Retry 🔄"
 msgstr "Tentar novamente 🔄"
+
+#~ msgid "VICTORY 🏆"
+#~ msgstr "VITÓRIA 🏆"
 
 #: src/routes/space-invaders/+page.svelte
 msgid "TOUCH CONTROLS"
@@ -502,6 +672,27 @@ msgstr "ATIRAR"
 #: src/routes/space-invaders/+page.svelte
 msgid "RETURN"
 msgstr "VOLTAR"
+
+#~ msgid "DO NOT PRESS 🚫"
+#~ msgstr "NÃO APERTE 🚫"
+
+#~ msgid "WHAT HAVE YOU DONE?!"
+#~ msgstr "O QUE VOCÊ FEZ?!"
+
+#~ msgid "\"THE ALIENS ARE NOW ON STEROIDS AND YOUR BULLETS ARE FAT. GOOD LUCK.\""
+#~ msgstr "\"OS ALIENS ESTÃO AGORA EM ESTEROIDES E SEUS BALAS ESTÃO GORDOS. BOA SORTE.\""
+
+#~ msgid "I REGRET EVERYTHING 😭"
+#~ msgstr "Eu lamento tudo 😭"
+
+#~ msgid "Your pieces are feeling threatened. 🕵️♂️"
+#~ msgstr "Suas peças estão se sentindo ameaçadas. 🕵️♂ "
+
+#~ msgid "ASTROVISION"
+#~ msgstr "ASTROVISION"
+
+#~ msgid "Your finger is too curious for its own good. 🕵️♂️"
+#~ msgstr "Seu dedo é muito curioso para o próprio bem. 🕵️‍♂️"
 
 #: src/routes/space-invaders/+page.svelte
 msgid "Space Chaos | Infinite Arcade Shooter"
@@ -607,6 +798,9 @@ msgstr "Revele cada peça segura para vencer.<0/> Clique/toque para revelar • 
 msgid "Pick white. Pick fights."
 msgstr "Escolha as brancas. Escolha as lutas."
 
+#~ msgid "You play white.<0/> Tap/click piece then destination.<1/> <2>A / Enter = select • B / Esc = return.</2>"
+#~ msgstr ""
+
 #: src/routes/enduro/+page.svelte
 msgid "Enduro Chaos | Retro 3D Racing Game"
 msgstr "Enduro Chaos | Jogo de Corrida 3D Retrô"
@@ -673,6 +867,7 @@ msgstr "Sua nave foi destruída. A invasão continua."
 msgid "Difficulty: {0}"
 msgstr "Dificuldade: {0}"
 
+#: src/routes/frog/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Final Score"
@@ -840,3 +1035,207 @@ msgstr "{0} pts • Nível {1}"
 #: src/routes/tetris/+page.svelte
 msgid "Recorde"
 msgstr "Recorde"
+
+#: src/routes/settings/+page.svelte
+msgid "Frog Chaos"
+msgstr "Frog Chaos"
+
+#~ msgid "Leap lanes, dodge metal, ride junk downstream."
+#~ msgstr ""
+
+#~ msgid "Swamp Dash"
+#~ msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Hop In"
+msgstr "Entrar Pulando"
+
+#~ msgid "Frog Chaos | The Chaos Arcade"
+#~ msgstr ""
+
+#~ msgid "Leap lanes, dodge metal, ride junk downstream, and fill every Home Slot in Frog Chaos."
+#~ msgstr ""
+
+#~ msgid "Swamp Dash // Stage Run"
+#~ msgstr ""
+
+#~ msgid "🐸 Frog Chaos"
+#~ msgstr ""
+
+#~ msgid "Leap lanes, dodge metal, ride junk downstream, and stuff five homes before the clock bites."
+#~ msgstr ""
+
+#~ msgid "Homes"
+#~ msgstr ""
+
+#~ msgid "Timer"
+#~ msgstr ""
+
+#~ msgid "{0}s"
+#~ msgstr ""
+
+#~ msgid "Arrow keys / WASD hop one tile. D-pad hops too. A / Enter selects menus. B / Esc returns to splash."
+#~ msgstr ""
+
+#~ msgid "Do Not Lick"
+#~ msgstr ""
+
+#~ msgid "Swamp Closed"
+#~ msgstr ""
+
+#~ msgid "The frog paperwork department denies your crossing permit."
+#~ msgstr ""
+
+#~ msgid "Stage"
+#~ msgstr ""
+
+#~ msgid "New swamp record"
+#~ msgstr ""
+
+#~ msgid "Back To Splash"
+#~ msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "Score <0/>"
+msgstr "Pontuação <0/>"
+
+#~ msgid "Stage <0/>"
+#~ msgstr ""
+
+#~ msgid "Homes <0/>"
+#~ msgstr ""
+
+#~ msgid "Time <0/>"
+#~ msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "Lives <0/>"
+msgstr "Vidas <0/>"
+
+#~ msgid "Paused"
+#~ msgstr ""
+
+#~ msgid "P resumes. B / Esc returns."
+#~ msgstr ""
+
+#~ msgid "Contamination Alert"
+#~ msgstr ""
+
+#~ msgid "No licking the cabinet"
+#~ msgstr ""
+
+#~ msgid "The swamp panel tastes like old batteries and questionable ambition."
+#~ msgstr ""
+
+#~ msgid "Disinfect"
+#~ msgstr ""
+
+#: src/routes/+page.svelte
+msgid "Hop the road, ride the river, and claim every pad."
+msgstr "Atravesse a pista, pegue carona no rio e conquiste cada pad."
+
+#: src/routes/+page.svelte
+msgid "River Panic"
+msgstr "Pânico no Rio"
+
+#: src/routes/frog/+page.svelte
+msgid "Frog Chaos | Classic River Crossing Arcade"
+msgstr "Frog Chaos | Arcade clássico de travessia do rio"
+
+#: src/routes/frog/+page.svelte
+msgid "Hop across traffic, ride logs, dodge turtles and claim every home pad in Frog Chaos."
+msgstr "Salte pelo trânsito, pegue carona nos troncos, desvie das tartarugas e conquiste cada home pad em Frog Chaos."
+
+#: src/routes/frog/+page.svelte
+msgid "Frog Chaos - Retro Frogger Cabinet"
+msgstr "Frog Chaos - Gabinete retrô estilo Frogger"
+
+#: src/routes/frog/+page.svelte
+msgid "A fast, chaotic Frogger-style cabinet with flies, crocodiles, and brutal arcade scoring."
+msgstr "Um gabinete rápido e caótico estilo Frogger, com moscas, crocodilos e pontuação arcade brutal."
+
+#: src/routes/frog/+page.svelte
+msgid "🐸 FROG CHAOS 🐸"
+msgstr "🐸 FROG CHAOS 🐸"
+
+#: src/routes/frog/+page.svelte
+msgid "REACH ALL 5 PADS"
+msgstr "CHEGUE AOS 5 PADS"
+
+#: src/routes/frog/+page.svelte
+msgid "TOUCH D-PAD ARMED BELOW THE CANVAS."
+msgstr "D-PAD DE TOQUE ARMADO ABAIXO DO CANVAS."
+
+#: src/routes/frog/+page.svelte
+msgid "ARROWS / WASD HOP ONE CELL. SPACE PAUSES. RIDE LOGS, TRUST SOME TURTLES, FEAR ALL TRAFFIC. <0>A / ENTER = SELECT • B / ESC = RETURN</0> <1/>"
+msgstr "SETAS / WASD SALTAM UMA CÉLULA. ESPAÇO PAUSA. ANDE NOS TRONCOS, CONFIE EM ALGUMAS TARTARUGAS, TEMA TODO O TRÂNSITO. <0>A / ENTER = SELECIONAR • B / ESC = VOLTAR</0> <1/>"
+
+#: src/routes/frog/+page.svelte
+msgid "Current High Score"
+msgstr "Recorde Atual"
+
+#: src/routes/frog/+page.svelte
+#: src/routes/frog/+page.svelte
+msgid "START"
+msgstr "INICIAR"
+
+#: src/routes/frog/+page.svelte
+msgid "DO NOT CLICK THIS FROG"
+msgstr "NÃO CLIQUE NESTE SAPO"
+
+#: src/routes/frog/+page.svelte
+msgid "BACK"
+msgstr "VOLTAR"
+
+#: src/routes/frog/+page.svelte
+msgid "FROG CHAOS"
+msgstr "FROG CHAOS"
+
+#: src/routes/frog/+page.svelte
+msgid "GAME OVER"
+msgstr "FIM DE JOGO"
+
+#: src/routes/frog/+page.svelte
+msgid "NEW BEST!"
+msgstr "NOVO RECORDE!"
+
+#. 0: level; 1: homePads.filter(Boolean).length
+#: src/routes/frog/+page.svelte
+msgid "Level {0} • Pads {1}/5"
+msgstr "Nível {0} • Pads {1}/5"
+
+#: src/routes/frog/+page.svelte
+msgid "Session recorded"
+msgstr "Sessão registrada"
+
+#: src/routes/frog/+page.svelte
+msgid "PLAY AGAIN"
+msgstr "JOGAR DE NOVO"
+
+#: src/routes/frog/+page.svelte
+msgid "BACK TO ARCADE"
+msgstr "VOLTAR AO ARCADE"
+
+#: src/routes/frog/+page.svelte
+msgid "Timer <0>{0}s</0>"
+msgstr "Tempo <0>{0}s</0>"
+
+#: src/routes/frog/+page.svelte
+msgid "Level <0/>"
+msgstr "Nível <0/>"
+
+#: src/routes/frog/+page.svelte
+msgid "Frog Chaos playfield"
+msgstr "Playfield do Frog Chaos"
+
+#: src/routes/frog/+page.svelte
+msgid "ARROWS / WASD HOP • SPACE / A PAUSE • ESC / B BACK"
+msgstr "SETAS / WASD SALTAM • ESPAÇO / A PAUSA • ESC / B VOLTA"
+
+#: src/routes/frog/+page.svelte
+msgid "🐸 YOU DISOBEYED. THE FROG IS DISAPPOINTED."
+msgstr "🐸 VOCÊ DESOBEDECEU. O SAPO ESTÁ DECEPCIONADO."
+
+#: src/routes/frog/+page.svelte
+msgid "OK FINE"
+msgstr "TUDO BEM"

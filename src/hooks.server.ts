@@ -4,20 +4,30 @@ import * as main from './locales/main.loader.server.svelte.js';
 import { runWithLocale, loadLocales } from 'wuchale/load-utils/server';
 import { locales } from './locales/data.js';
 
+type AppLocale = 'en' | 'pt-BR';
+
+const supportedLocales: readonly AppLocale[] = ['en', 'pt-BR'];
+
 // Load the server-side catalogs
 await loadLocales(main.key, main.loadIDs, main.loadCatalog, locales);
 
+function normalizeLocale(lang: string): AppLocale {
+	if (supportedLocales.includes(lang as AppLocale)) return lang as AppLocale;
+	return lang.startsWith('pt') ? 'pt-BR' : 'en';
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
 	// Detect language from cookie, header, or fallback to 'pt-BR'
-	const lang = event.cookies.get('lang') || 
-				 event.request.headers.get('accept-language')?.split(',')[0] || 
-				 'pt-BR';
+	const lang =
+		event.cookies.get('lang') ||
+		event.request.headers.get('accept-language')?.split(',')[0] ||
+		'pt-BR';
 
-    // To ensure exact match with locales
-    const normalizedLang = locales.includes(lang as any) ? lang : (lang.startsWith('pt') ? 'pt-BR' : 'en');
+	// To ensure exact match with locales
+	const normalizedLang = normalizeLocale(lang);
 
 	// Run the request context with the detected locale
-	return await runWithLocale(normalizedLang as any, async () => {
+	return await runWithLocale(normalizedLang, async () => {
 		return await resolve(event, {
 			transformPageChunk: ({ html }) => html.replace('%lang%', normalizedLang)
 		});

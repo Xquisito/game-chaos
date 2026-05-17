@@ -15,13 +15,13 @@ export const load = async () => {
 		} else if (navigator.language) {
 			lang = navigator.language.startsWith('pt') ? 'pt-BR' : 'en';
 		}
-		
+
 		// Ensure exact casing for wuchale
 		const exactLang = lang === 'pt-BR' || lang.startsWith('pt') ? 'pt-BR' : 'en';
-		
+
 		// Set document language so CSS and Wuchale know the real lang
 		document.documentElement.lang = exactLang;
-		
+
 		// Await the translation catalogs before SvelteKit hydrates
 		await loadLocale(exactLang);
 	}

@@ -31,7 +31,6 @@ Basic rules to intercation with games
 
 - Try keep game chaos style and not bring new one
 
-
 ## Testing e2e
 
 - Use playwright cli either to take a screen shots, access console logs or even play to do an e2e test

@@ -67,6 +67,12 @@
 			description: 'Stack the blocks and survive the falling chaos!',
 			kicker: 'Block Zone',
 			cta: 'Drop In'
+		},
+		'frog-chaos': {
+			name: 'FROG CHAOS',
+			description: 'Hop the road, ride the river, and claim every pad.',
+			kicker: 'River Panic',
+			cta: 'Hop In'
 		}
 	};
 

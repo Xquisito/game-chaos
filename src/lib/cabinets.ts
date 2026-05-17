@@ -1,4 +1,10 @@
-export type GameCabinetId = 'minesweeper' | 'checkers' | 'enduro' | 'space-chaos' | 'tetris';
+export type GameCabinetId =
+	| 'minesweeper'
+	| 'checkers'
+	| 'enduro'
+	| 'space-chaos'
+	| 'tetris'
+	| 'frog-chaos';
 export type UtilityCabinetId = 'settings';
 export type CabinetId = GameCabinetId | UtilityCabinetId;
 export type CabinetHref =
@@ -7,6 +13,7 @@ export type CabinetHref =
 	| '/enduro'
 	| '/space-invaders'
 	| '/tetris'
+	| '/frog'
 	| '/settings';
 
 export type ScoreMode = 'wins' | 'high-score';
@@ -100,6 +107,19 @@ export const gameCabinets: readonly GameCabinet[] = [
 		score: {
 			mode: 'high-score',
 			storageKey: 'tetris-chaos-high-score'
+		}
+	},
+	{
+		kind: 'game',
+		id: 'frog-chaos',
+		schemaName: 'Frog Chaos',
+		href: '/frog',
+		emoji: '🐸',
+		color: 'bg-lime-500',
+		marquee: 'bg-lime-200',
+		score: {
+			mode: 'high-score',
+			storageKey: 'frog-chaos-high-score'
 		}
 	}
 ];

@@ -21,7 +21,8 @@
 		checkers: 'Checkers Chaos',
 		enduro: 'Enduro Chaos',
 		'space-chaos': 'Space Chaos',
-		tetris: 'Tetris Chaos'
+		tetris: 'Tetris Chaos',
+		'frog-chaos': 'Frog Chaos'
 	};
 
 	let highScores = $state<Record<GameCabinetId, number>>(createScoreRecord());

@@ -17,7 +17,7 @@ export const ARROW_TO_WASD: Record<string, string> = {
 	ArrowUp: 'w',
 	ArrowDown: 's',
 	ArrowLeft: 'a',
-	ArrowRight: 'd',
+	ArrowRight: 'd'
 };
 
 // Arrow → direction normalization map (for grid/2D navigation)
@@ -25,7 +25,7 @@ export const ARROW_TO_DIR: Record<string, 'up' | 'down' | 'left' | 'right'> = {
 	ArrowUp: 'up',
 	ArrowDown: 'down',
 	ArrowLeft: 'left',
-	ArrowRight: 'right',
+	ArrowRight: 'right'
 };
 
 /** Normalize an arrow key to its WASD equivalent, or return the key as-is. */

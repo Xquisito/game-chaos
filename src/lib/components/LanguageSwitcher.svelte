@@ -1,7 +1,6 @@
 <script lang="ts">
 	// Use the generated locales list
 	import { locales } from '../../locales/data.js';
-	import { page } from '$app/stores';
 	import { browser } from '$app/environment';
 
 	// Format locale names nicely using the Intl API
@@ -14,8 +13,11 @@
 	}
 </script>
 
-<select onchange={changeLanguage} class="bg-gray-800 text-white border border-gray-600 rounded px-2 py-1 text-sm">
-	{#each locales as l}
+<select
+	onchange={changeLanguage}
+	class="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-sm text-white"
+>
+	{#each locales as l (l)}
 		<option value={l} selected={browser ? document.cookie.includes(`lang=${l}`) : false}>
 			{displayName(l)}
 		</option>
