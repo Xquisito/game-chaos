@@ -1239,3 +1239,7 @@ msgstr "🐸 YOU DISOBEYED. THE FROG IS DISAPPOINTED."
 #: src/routes/frog/+page.svelte
 msgid "OK FINE"
 msgstr "OK FINE"
+
+#: src/routes/tetris/+page.svelte
+msgid "Tetris Chaos playfield"
+msgstr "Tetris Chaos playfield"

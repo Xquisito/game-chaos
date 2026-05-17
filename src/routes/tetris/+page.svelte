@@ -81,8 +81,6 @@
 	const LOCK_DELAY_MS = 500;
 	const MAX_LOCK_RESETS = 15;
 	const cabinet = gameCabinetById.tetris;
-	const BOARD_ROWS = Array.from({ length: ROWS }, (_, index) => index);
-	const BOARD_COLS = Array.from({ length: COLS }, (_, index) => index);
 
 	const DIFFICULTY_OPTIONS = ['easy', 'normal', 'hard'] as const;
 	type Difficulty = 'easy' | 'normal' | 'hard';
@@ -293,6 +291,8 @@
 
 	// 7-bag randomizer
 	let bag: PieceType[] = [];
+	let boardCanvasEl = $state<HTMLCanvasElement | null>(null);
+	let boardCtx: CanvasRenderingContext2D | null = null;
 
 	function shuffleArray<T>(arr: T[]): T[] {
 		const result = [...arr];
@@ -356,7 +356,7 @@
 	let splashScreen = $derived(flow.splashScreen);
 	let endScreen = $derived(flow.endScreen);
 	let menuScreen = $derived(flow.menuScreen);
-	let gameAreaWidth = $derived(GAME_WIDTH + 184);
+	let gameAreaWidth = $derived(GAME_WIDTH + 240);
 	let gameScale = $derived(
 		viewportWidth > 0 ? Math.min(1, Math.max(0.45, (viewportWidth - 24) / gameAreaWidth)) : 1
 	);
@@ -380,6 +380,136 @@
 			}
 		}
 		return cells;
+	}
+
+	function getBoardContext() {
+		if (!boardCanvasEl) return null;
+		if (boardCtx?.canvas !== boardCanvasEl) {
+			boardCtx = boardCanvasEl.getContext('2d');
+		}
+		return boardCtx;
+	}
+
+	function drawBoardBackground(context: CanvasRenderingContext2D) {
+		context.fillStyle = '#18181b';
+		context.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+		context.save();
+		context.strokeStyle = 'rgba(8, 145, 178, 0.28)';
+		context.lineWidth = 1;
+		for (let col = 0; col <= COLS; col += 1) {
+			const x = col * CELL_SIZE + 0.5;
+			context.beginPath();
+			context.moveTo(x, 0);
+			context.lineTo(x, GAME_HEIGHT);
+			context.stroke();
+		}
+		for (let row = 0; row <= ROWS; row += 1) {
+			const y = row * CELL_SIZE + 0.5;
+			context.beginPath();
+			context.moveTo(0, y);
+			context.lineTo(GAME_WIDTH, y);
+			context.stroke();
+		}
+		context.restore();
+	}
+
+	function drawBlock(
+		context: CanvasRenderingContext2D,
+		col: number,
+		row: number,
+		color: string,
+		options: { active?: boolean; clearing?: boolean; ghost?: boolean } = {}
+	) {
+		if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
+
+		const x = col * CELL_SIZE;
+		const y = row * CELL_SIZE;
+		const inset = options.ghost ? 4 : 1;
+		const size = CELL_SIZE - inset * 2;
+
+		context.save();
+
+		if (options.ghost) {
+			context.globalAlpha = 0.24;
+			context.fillStyle = color;
+			context.fillRect(x + inset, y + inset, size, size);
+			context.globalAlpha = 0.9;
+			context.strokeStyle = color;
+			context.lineWidth = 2;
+			context.setLineDash([5, 4]);
+			context.strokeRect(x + inset + 0.5, y + inset + 0.5, size - 1, size - 1);
+			context.restore();
+			return;
+		}
+
+		context.fillStyle = options.clearing ? '#ffffff' : color;
+		context.fillRect(x + inset, y + inset, size, size);
+
+		context.fillStyle = 'rgba(255, 255, 255, 0.28)';
+		context.fillRect(x + inset + 2, y + inset + 2, size - 4, 4);
+		context.fillRect(x + inset + 2, y + inset + 2, 4, size - 4);
+
+		context.fillStyle = 'rgba(0, 0, 0, 0.24)';
+		context.fillRect(x + inset + 3, y + CELL_SIZE - 6, size - 4, 4);
+		context.fillRect(x + CELL_SIZE - 6, y + inset + 3, 4, size - 4);
+
+		context.strokeStyle = options.active ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.55)';
+		context.lineWidth = 1;
+		context.strokeRect(x + inset + 0.5, y + inset + 0.5, size - 1, size - 1);
+		context.restore();
+	}
+
+	function drawTetrisBoard(time = performance.now()) {
+		const context = getBoardContext();
+		if (!context) return;
+
+		context.imageSmoothingEnabled = false;
+		context.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+		drawBoardBackground(context);
+
+		const clearingPulse = 0.75 + Math.sin(time / 45) * 0.25;
+		for (let row = 0; row < board.length; row += 1) {
+			const isClearing = clearingRows.includes(row);
+			for (let col = 0; col < board[row].length; col += 1) {
+				const cell = board[row][col];
+				if (!cell) continue;
+
+				context.save();
+				context.globalAlpha = isClearing ? clearingPulse : 1;
+				drawBlock(context, col, row, PIECE_COLORS[cell], { clearing: isClearing });
+				context.restore();
+			}
+		}
+
+		if (!currentPiece) return;
+
+		const ghostY = getGhostY(currentPiece);
+		for (const cell of getShapeCells(currentPiece.type, currentPiece.rotation)) {
+			drawBlock(
+				context,
+				currentPiece.x + cell.col,
+				ghostY + cell.row,
+				PIECE_COLORS[currentPiece.type],
+				{
+					ghost: true
+				}
+			);
+		}
+
+		for (const cell of getShapeCells(currentPiece.type, currentPiece.rotation)) {
+			drawBlock(
+				context,
+				currentPiece.x + cell.col,
+				currentPiece.y + cell.row,
+				PIECE_COLORS[currentPiece.type],
+				{ active: true }
+			);
+		}
+	}
+
+	function drawTetrisBoardSoon() {
+		requestAnimationFrame((time) => drawTetrisBoard(time));
 	}
 
 	function isValidPosition(piece: Piece, boardState?: (PieceType | null)[][]): boolean {
@@ -539,6 +669,7 @@
 		lastTime = performance.now();
 		lastDropTime = lastTime;
 		if (audioCtx?.state === 'suspended') audioCtx.resume();
+		drawTetrisBoardSoon();
 		requestAnimationFrame(gameLoop);
 	}
 
@@ -577,6 +708,7 @@
 		lastTime = performance.now();
 		lastDropTime = lastTime;
 		if (audioCtx?.state === 'suspended') audioCtx.resume();
+		drawTetrisBoardSoon();
 		requestAnimationFrame(gameLoop);
 	}
 
@@ -843,7 +975,10 @@
 
 	// Game loop
 	function gameLoop(time: number) {
-		if (!running || paused || gameOver || gameWon) return;
+		if (!running || paused || gameOver || gameWon) {
+			drawTetrisBoard(time);
+			return;
+		}
 
 		const dt = time - lastTime;
 		lastTime = time;
@@ -859,11 +994,13 @@
 					spawnNext();
 				}
 			}
+			drawTetrisBoard(time);
 			requestAnimationFrame(gameLoop);
 			return;
 		}
 
 		if (!currentPiece) {
+			drawTetrisBoard(time);
 			requestAnimationFrame(gameLoop);
 			return;
 		}
@@ -880,7 +1017,11 @@
 			lockTimer += dt;
 			if (lockTimer >= LOCK_DELAY_MS) {
 				performLock();
-				if (gameOver) return;
+				if (gameOver) {
+					drawTetrisBoard(time);
+					return;
+				}
+				drawTetrisBoard(time);
 				requestAnimationFrame(gameLoop);
 				return;
 			}
@@ -901,6 +1042,7 @@
 			}
 		}
 
+		drawTetrisBoard(time);
 		requestAnimationFrame(gameLoop);
 	}
 
@@ -1214,7 +1356,7 @@
 				</div>
 
 				<div
-					class="grid grid-cols-[4.75rem_minmax(0,1fr)_4.75rem] items-start gap-2 sm:grid-cols-[5.75rem_minmax(0,1fr)_5.75rem] sm:gap-4"
+					class="grid grid-cols-[4.75rem_280px_4.75rem] items-start gap-2 sm:grid-cols-[5.75rem_280px_5.75rem] sm:gap-4"
 				>
 					<div class="grid gap-2 sm:gap-4">
 						<div class="border-4 border-black bg-black p-1 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-2">
@@ -1259,80 +1401,13 @@
 						style:width={`${GAME_WIDTH}px`}
 						style:height={`${GAME_HEIGHT}px`}
 					>
-						<div class="absolute inset-0 overflow-hidden">
-							<!-- Grid lines -->
-							{#each BOARD_ROWS as row (row)}
-								{#each BOARD_COLS as col (col)}
-									<div
-										class="absolute border border-zinc-800/40"
-										style:left={`${col * CELL_SIZE}px`}
-										style:top={`${row * CELL_SIZE}px`}
-										style:width={`${CELL_SIZE}px`}
-										style:height={`${CELL_SIZE}px`}
-									></div>
-								{/each}
-							{/each}
-
-							<!-- Board cells -->
-							{#each board as row, rowIndex (rowIndex)}
-								{#each row as cell, colIndex (colIndex)}
-									{#if cell !== null}
-										{@const isClearing = clearingRows.includes(rowIndex)}
-										<div
-											class={[
-												'absolute border border-black/30',
-												isClearing ? 'animate-pulse' : ''
-											].join(' ')}
-											style:left={`${colIndex * CELL_SIZE}px`}
-											style:top={`${rowIndex * CELL_SIZE}px`}
-											style:width={`${CELL_SIZE}px`}
-											style:height={`${CELL_SIZE}px`}
-											style:background={isClearing ? '#fff' : PIECE_COLORS[cell]}
-										></div>
-									{/if}
-								{/each}
-							{/each}
-
-							<!-- Ghost piece -->
-							{#if currentPiece}
-								{@const ghostY = getGhostY(currentPiece)}
-								{@const ghostCells = getShapeCells(currentPiece.type, currentPiece.rotation)}
-								{#each ghostCells as cell (`${cell.row}:${cell.col}`)}
-									{@const r = ghostY + cell.row}
-									{@const c = currentPiece.x + cell.col}
-									{#if r >= 0 && r < ROWS && c >= 0 && c < COLS}
-										<div
-											class="absolute border-2 border-dashed"
-											style:left={`${c * CELL_SIZE}px`}
-											style:top={`${r * CELL_SIZE}px`}
-											style:width={`${CELL_SIZE}px`}
-											style:height={`${CELL_SIZE}px`}
-											style:border-color={PIECE_COLORS[currentPiece.type]}
-											style:background={PIECE_COLORS[currentPiece.type] + '15'}
-										></div>
-									{/if}
-								{/each}
-							{/if}
-
-							<!-- Current piece -->
-							{#if currentPiece}
-								{@const cells = getShapeCells(currentPiece.type, currentPiece.rotation)}
-								{#each cells as cell (`${cell.row}:${cell.col}`)}
-									{@const r = currentPiece.y + cell.row}
-									{@const c = currentPiece.x + cell.col}
-									{#if r >= 0 && r < ROWS && c >= 0 && c < COLS}
-										<div
-											class="absolute border border-white/30"
-											style:left={`${c * CELL_SIZE}px`}
-											style:top={`${r * CELL_SIZE}px`}
-											style:width={`${CELL_SIZE}px`}
-											style:height={`${CELL_SIZE}px`}
-											style:background={PIECE_COLORS[currentPiece.type]}
-										></div>
-									{/if}
-								{/each}
-							{/if}
-						</div>
+						<canvas
+							bind:this={boardCanvasEl}
+							width={GAME_WIDTH}
+							height={GAME_HEIGHT}
+							class="block h-full w-full bg-zinc-900"
+							aria-label="Tetris Chaos playfield"
+						></canvas>
 					</div>
 
 					<div class="grid gap-2 sm:gap-4">
