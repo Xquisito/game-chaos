@@ -178,6 +178,16 @@
 	const UFO_FIRE_INTERVAL_MAX = 32000;
 	const UFO_SCORES = [50, 100, 150, 300];
 	const DIFFICULTY_OPTIONS = ['easy', 'normal', 'hard'] as const;
+	const LEVEL_CLEAR_TRANSITION_MS = 1250;
+	const LEVEL_CLEAR_BASE_BONUS = 250;
+	const LEVEL_CLEAR_BONUS_STEP = 125;
+	const LEVEL_PRESSURE_CAP = 9;
+	const LEVEL_ALIEN_START_Y_STEP = 8;
+	const LEVEL_STEP_REDUCTION = 28;
+	const LEVEL_FIRE_REDUCTION = 48;
+	const LEVEL_BULLET_SPEED_BONUS = 0.14;
+	const CHAOS_MODE_LEVEL = 5;
+	const LEVEL_HUD_LABEL = String.fromCharCode(76, 86, 58);
 
 	type Difficulty = 'easy' | 'normal' | 'hard';
 	type BulletVariant = 'player' | 'alien';
@@ -194,6 +204,12 @@
 	};
 	type Alien = { x: number; y: number; alive: boolean; id: number; legFrame: number };
 	type Shield = { x: number; y: number; pixels: boolean[][] };
+	type LevelTransition = {
+		clearedLevel: number;
+		nextLevel: number;
+		bonus: number;
+		expiresAt: number;
+	};
 
 	// State
 	let canvasEl = $state<HTMLCanvasElement | null>(null);
@@ -202,6 +218,7 @@
 	let highScore = $state(0);
 	let difficulty = $state<Difficulty>('easy');
 	let selectedDifficulty = $state<Difficulty>('easy');
+	let level = $state(1);
 	let lives = $state(3);
 	let gameOver = $state(false);
 	let gameWon = $state(false);
@@ -233,6 +250,7 @@
 	let ufoScorePopup = $state<{ x: number; y: number; score: number; expiresAt: number } | null>(
 		null
 	);
+	let levelTransition = $state<LevelTransition | null>(null);
 	let lastTime = 0;
 	let chaosMode = $state(false);
 	let globalTick = $state(0);
@@ -263,7 +281,7 @@
 	let menuScreen = $derived(flow.menuScreen);
 	let lifeSlots = $derived(Array.from({ length: lives }, (_, index) => index));
 	let showTouchControls = $derived(
-		touchCapable && viewportWidth < 960 && gameStarted && !gameOver && !gameWon
+		touchCapable && viewportWidth < 960 && gameStarted && !gameOver && !gameWon && !levelTransition
 	);
 	let gameScale = $derived(
 		viewportWidth > 0 ? Math.min(1, Math.max(0.34, (viewportWidth - 24) / GAME_WIDTH)) : 1
@@ -393,8 +411,109 @@
 		selectedDifficulty = level;
 	}
 
+	function getLevelPressure(nextLevel = level) {
+		return Math.min(nextLevel - 1, LEVEL_PRESSURE_CAP);
+	}
+
+	function getLevelClearBonus(clearedLevel = level) {
+		return LEVEL_CLEAR_BASE_BONUS + (clearedLevel - 1) * LEVEL_CLEAR_BONUS_STEP;
+	}
+
+	function getNextUfoFireTimer(nextLevel = level) {
+		const pressure = getLevelPressure(nextLevel);
+		const min = Math.max(6500, UFO_FIRE_INTERVAL_MIN - pressure * 1250);
+		const max = Math.max(min + 4500, UFO_FIRE_INTERVAL_MAX - pressure * 1900);
+
+		return min + Math.random() * (max - min);
+	}
+
+	function createAlienFormation(nextLevel: number) {
+		const pressure = getLevelPressure(nextLevel);
+		const startY = 50 + pressure * LEVEL_ALIEN_START_Y_STEP;
+		const aliensForLevel: Alien[] = [];
+
+		for (let r = 0; r < ALIEN_ROWS; r++) {
+			for (let c = 0; c < ALIEN_COLS; c++) {
+				aliensForLevel.push({
+					x: c * (ALIEN_WIDTH + 10) + 50,
+					y: r * (ALIEN_HEIGHT + 10) + startY,
+					alive: true,
+					id: r * ALIEN_COLS + c,
+					legFrame: 0
+				});
+			}
+		}
+
+		return aliensForLevel;
+	}
+
+	function shouldErodeShieldPixel(
+		row: number,
+		col: number,
+		shieldIndex: number,
+		nextLevel: number
+	) {
+		const pressure = getLevelPressure(nextLevel);
+		if (pressure < 2 || row < 2) return false;
+
+		const erosion = Math.min(pressure - 1, 6);
+		const hash = (row * 17 + col * 29 + shieldIndex * 11 + pressure * 7) % 13;
+
+		return hash < erosion;
+	}
+
+	function createShieldsForLevel(nextLevel: number) {
+		const shieldY = GAME_HEIGHT - PLAYER_HEIGHT - SHIELD_PLAYER_GAP;
+		const spacing = GAME_WIDTH / (SHIELD_COUNT + 1);
+		const nextShields: Shield[] = [];
+
+		for (let i = 0; i < SHIELD_COUNT; i++) {
+			const sx = (i + 1) * spacing - SHIELD_WIDTH / 2;
+			const pixels = SHIELD_PATTERN.map((row, rowIndex) =>
+				row.map(
+					(val, colIndex) => val === 1 && !shouldErodeShieldPixel(rowIndex, colIndex, i, nextLevel)
+				)
+			);
+			nextShields.push({ x: sx, y: shieldY, pixels });
+		}
+
+		return nextShields;
+	}
+
+	function prepareLevel(nextLevel: number, grantInvulnerability = false) {
+		level = nextLevel;
+		aliens = createAlienFormation(nextLevel);
+		shields = createShieldsForLevel(nextLevel);
+		bullets = [];
+		alienDirection = 1;
+		alienStep = 0;
+		alienDescents = 0;
+		marchToneIndex = 0;
+		alienFireCooldown = Math.max(
+			MIN_ALIEN_FIRE_INTERVAL,
+			BASE_ALIEN_FIRE_INTERVAL - getLevelPressure(nextLevel) * LEVEL_FIRE_REDUCTION
+		);
+		ufo = { x: 0, direction: 1, active: false };
+		ufoFireTimer = getNextUfoFireTimer(nextLevel);
+		ufoScorePopup = null;
+		levelTransition = null;
+		chaosMode = nextLevel >= CHAOS_MODE_LEVEL;
+		globalTick = 0;
+		playerX = Math.max(0, Math.min(GAME_WIDTH - PLAYER_WIDTH, playerX));
+		stopUfoHum();
+
+		if (grantInvulnerability) {
+			playerInvulnerableUntil = performance.now() + PLAYER_RESPAWN_INVULNERABILITY_MS;
+			playerInvulnerable = true;
+		} else {
+			playerInvulnerableUntil = 0;
+			playerInvulnerable = false;
+		}
+	}
+
 	function initGame() {
 		score = 0;
+		level = 1;
 		lives = 3;
 		gameOver = false;
 		gameWon = false;
@@ -420,6 +539,7 @@
 		ufo = { x: 0, direction: 1, active: false };
 		ufoFireTimer = UFO_FIRE_INTERVAL_MIN;
 		ufoScorePopup = null;
+		levelTransition = null;
 		chaosMode = false;
 		globalTick = 0;
 		touchSteer = 0;
@@ -428,28 +548,7 @@
 		touchFireCooldown = 0;
 
 		highScore = readCabinetScore(localStorage, cabinet);
-
-		for (let r = 0; r < ALIEN_ROWS; r++) {
-			for (let c = 0; c < ALIEN_COLS; c++) {
-				aliens.push({
-					x: c * (ALIEN_WIDTH + 10) + 50,
-					y: r * (ALIEN_HEIGHT + 10) + 50,
-					alive: true,
-					id: r * ALIEN_COLS + c,
-					legFrame: 0
-				});
-			}
-		}
-
-		// Create 4 shields
-		const shieldY = GAME_HEIGHT - PLAYER_HEIGHT - SHIELD_PLAYER_GAP;
-		const spacing = GAME_WIDTH / (SHIELD_COUNT + 1);
-		shields = [];
-		for (let i = 0; i < SHIELD_COUNT; i++) {
-			const sx = (i + 1) * spacing - SHIELD_WIDTH / 2;
-			const pixels = SHIELD_PATTERN.map((row) => row.map((val) => val === 1));
-			shields.push({ x: sx, y: shieldY, pixels });
-		}
+		prepareLevel(1);
 	}
 
 	function clearTransientControls() {
@@ -705,10 +804,12 @@
 	function getAlienStepInterval(destroyedAliens: number, endgameIntensity: number) {
 		const tuning = getDifficultyTuning(difficulty);
 		const scaledEndgameIntensity = endgameIntensity * tuning.aggression;
+		const levelPressure = getLevelPressure();
 
 		return Math.max(
 			MIN_ALIEN_STEP_INTERVAL,
 			(BASE_ALIEN_STEP_INTERVAL -
+				levelPressure * LEVEL_STEP_REDUCTION -
 				alienDescents * ALIEN_STEP_DESCENT_REDUCTION -
 				destroyedAliens * ALIEN_STEP_KILL_REDUCTION -
 				scaledEndgameIntensity * ALIEN_STEP_ENDGAME_REDUCTION) *
@@ -720,10 +821,12 @@
 	function getAlienFireInterval(destroyedAliens: number, endgameIntensity: number) {
 		const tuning = getDifficultyTuning(difficulty);
 		const scaledEndgameIntensity = endgameIntensity * tuning.aggression;
+		const levelPressure = getLevelPressure();
 
 		return Math.max(
 			MIN_ALIEN_FIRE_INTERVAL,
 			(BASE_ALIEN_FIRE_INTERVAL -
+				levelPressure * LEVEL_FIRE_REDUCTION -
 				alienDescents * ALIEN_FIRE_DESCENT_REDUCTION -
 				destroyedAliens * ALIEN_FIRE_KILL_REDUCTION -
 				scaledEndgameIntensity * ALIEN_FIRE_ENDGAME_REDUCTION) *
@@ -735,10 +838,12 @@
 	function getAlienBulletSpeed(destroyedAliens: number, endgameIntensity: number) {
 		const tuning = getDifficultyTuning(difficulty);
 		const scaledEndgameIntensity = endgameIntensity * tuning.aggression;
+		const levelPressure = getLevelPressure();
 
 		return Math.min(
 			MAX_ALIEN_BULLET_SPEED,
 			(BASE_ALIEN_BULLET_SPEED +
+				levelPressure * LEVEL_BULLET_SPEED_BONUS +
 				alienDescents * ALIEN_BULLET_SPEED_DESCENT_BONUS +
 				destroyedAliens * ALIEN_BULLET_SPEED_KILL_BONUS +
 				scaledEndgameIntensity * ALIEN_BULLET_SPEED_ENDGAME_BONUS) *
@@ -969,6 +1074,45 @@
 		context.restore();
 	}
 
+	function drawLevelTransition(context: CanvasRenderingContext2D, now: number) {
+		if (!levelTransition) return;
+
+		const remaining = Math.max(0, levelTransition.expiresAt - now);
+		const progress = 1 - remaining / LEVEL_CLEAR_TRANSITION_MS;
+
+		context.save();
+		context.fillStyle = 'rgba(0, 0, 0, 0.68)';
+		context.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+		context.textAlign = 'center';
+		context.textBaseline = 'middle';
+		context.shadowColor = '#fde047';
+		context.shadowBlur = 16;
+		context.fillStyle = '#fde047';
+		context.font = '900 42px "Courier New", monospace';
+		context.fillText(
+			`LEVEL ${levelTransition.clearedLevel} CLEAR`,
+			GAME_WIDTH / 2,
+			GAME_HEIGHT / 2 - 48
+		);
+
+		context.shadowColor = '#4ade80';
+		context.fillStyle = '#4ade80';
+		context.font = '900 28px "Courier New", monospace';
+		context.fillText(`+${levelTransition.bonus} BONUS`, GAME_WIDTH / 2, GAME_HEIGHT / 2 + 2);
+
+		context.globalAlpha = Math.min(1, progress * 2);
+		context.shadowColor = '#f472b6';
+		context.fillStyle = '#f472b6';
+		context.font = '900 22px "Courier New", monospace';
+		context.fillText(
+			`NEXT LEVEL ${levelTransition.nextLevel}`,
+			GAME_WIDTH / 2,
+			GAME_HEIGHT / 2 + 50
+		);
+		context.restore();
+	}
+
 	function drawSpace(now = performance.now()) {
 		if (!ctx || !canvasEl) return;
 
@@ -982,6 +1126,7 @@
 		drawBullets(ctx);
 		drawPlayerExplosion(ctx, now);
 		drawUfoScorePopup(ctx, now);
+		drawLevelTransition(ctx, now);
 	}
 
 	function damageShield(shield: Shield, px: number, py: number) {
@@ -1051,8 +1196,41 @@
 		return columnShooters[Math.floor(Math.random() * columnShooters.length)];
 	}
 
+	function completeLevel(time: number) {
+		const clearedLevel = level;
+		const bonus = getLevelClearBonus(clearedLevel);
+
+		score += bonus;
+		if (score > highScore) {
+			highScore = recordCabinetHighScore(localStorage, cabinet, score);
+		}
+
+		levelTransition = {
+			clearedLevel,
+			nextLevel: clearedLevel + 1,
+			bonus,
+			expiresAt: time + LEVEL_CLEAR_TRANSITION_MS
+		};
+		bullets = [];
+		ufo = { x: 0, direction: 1, active: false };
+		ufoScorePopup = null;
+		clearTransientControls();
+		stopUfoHum();
+	}
+
 	function update(time: number) {
 		if (!running || paused || gameOver || gameWon) return;
+
+		if (levelTransition) {
+			if (time >= levelTransition.expiresAt) {
+				prepareLevel(levelTransition.nextLevel, true);
+				lastTime = time;
+			}
+
+			drawSpace(time);
+			requestAnimationFrame(update);
+			return;
+		}
 
 		if (playerExplosion && playerExplosion.expiresAt <= time) {
 			playerExplosion = null;
@@ -1159,10 +1337,11 @@
 			marchToneIndex = (marchToneIndex + 1) % 4;
 			playMarchTone(marchToneIndex);
 			let hitEdge = false;
+			const stepDistance = 10 + Math.floor(getLevelPressure() / 3) * 2;
 			aliens.forEach((a) => {
 				if (a.alive) {
 					a.legFrame = globalTick;
-					a.x += 10 * alienDirection;
+					a.x += stepDistance * alienDirection;
 					if (a.x > GAME_WIDTH - ALIEN_WIDTH || a.x < 0) hitEdge = true;
 				}
 			});
@@ -1189,8 +1368,7 @@
 				direction,
 				active: true
 			};
-			ufoFireTimer =
-				UFO_FIRE_INTERVAL_MIN + Math.random() * (UFO_FIRE_INTERVAL_MAX - UFO_FIRE_INTERVAL_MIN);
+			ufoFireTimer = getNextUfoFireTimer();
 			startUfoHum();
 		}
 
@@ -1307,10 +1485,10 @@
 		}
 
 		if (aliens.every((a) => !a.alive)) {
-			if (score > highScore) {
-				highScore = recordCabinetHighScore(localStorage, cabinet, score);
-			}
-			gameWon = true;
+			completeLevel(time);
+			drawSpace(time);
+			requestAnimationFrame(update);
+			return;
 		}
 
 		if (gameOver || gameWon) {
@@ -1543,6 +1721,10 @@
 						<div class="flex items-center gap-2">
 							<span class="score-label">HIGH SCORE:</span>
 							<span class="score-value">{highScore}</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<span class="score-label">{LEVEL_HUD_LABEL}</span>
+							<span class="score-value">{level}</span>
 						</div>
 					</div>
 					{#if chaosMode}
