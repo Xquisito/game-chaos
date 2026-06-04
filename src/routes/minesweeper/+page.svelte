@@ -547,7 +547,7 @@
 	{:else}
 		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
 			<div
-				class="relative w-full max-w-4xl border-4 border-black bg-gradient-to-br from-white via-yellow-50 to-amber-100 p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:rounded-[1.5rem] sm:p-6"
+				class="relative w-full max-w-4xl border-4 border-black bg-gradient-to-br from-white via-yellow-50 to-amber-100 p-2 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:rounded-[1.5rem] sm:p-6"
 			>
 				<div
 					class="mb-5 flex flex-col gap-3 border-4 border-black bg-[linear-gradient(180deg,#111_0%,#000_100%)] p-3 text-sm font-black text-yellow-300 uppercase shadow-[0_6px_0_rgba(0,0,0,0.2)] sm:flex-row sm:items-center sm:justify-between sm:text-lg"
@@ -584,15 +584,15 @@
 				</div>
 
 					<div
-						class="mx-auto w-fit rounded-[1.25rem] border-4 border-black bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.2),_transparent_40%),linear-gradient(180deg,#111_0%,#000_100%)] p-2 shadow-[0_0_0_4px_rgba(250,204,21,0.7),0_16px_30px_rgba(0,0,0,0.35)] sm:p-3"
-						style={`display: grid; grid-template-columns: repeat(${cols}, minmax(0, 1fr)); gap: 0.25rem;`}
+						class="board-grid mx-auto w-full sm:w-fit rounded-[1.25rem] border-4 border-black bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.2),_transparent_40%),linear-gradient(180deg,#111_0%,#000_100%)] p-2 shadow-[0_0_0_4px_rgba(250,204,21,0.7),0_16px_30px_rgba(0,0,0,0.35)] sm:p-3"
+						style={`display: grid; grid-template-columns: repeat(${cols}, minmax(0, 1fr)); gap: ${cols >= 15 ? '2px' : cols >= 12 ? '3px' : '4px'}; --cols: ${cols};`}
 					>
 						{#each grid as row, r (r)}
 							{#each row as cell, c (`${r}-${c}`)}
 								<button
 									type="button"
 									class={[
-										'cell-button flex h-8 w-8 items-center justify-center rounded-[0.4rem] border border-black text-sm font-black transition-all select-none sm:h-10 sm:w-10 sm:border-2 sm:text-base',
+										'cell-button flex aspect-square w-full items-center justify-center rounded-[0.2rem] border border-black font-black transition-all select-none sm:h-10 sm:w-10 sm:rounded-[0.4rem] sm:border-2 sm:text-sm',
 										cell.state === 'revealed'
 											? 'bg-[linear-gradient(180deg,#fffef5_0%,#e7e1d0_100%)] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-2px_0_rgba(0,0,0,0.08)]'
 											: 'bg-[linear-gradient(180deg,#8f8f8f_0%,#5c5c5c_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-2px_0_rgba(0,0,0,0.35)] hover:-translate-y-[1px] hover:brightness-110 active:translate-y-[1px]',
@@ -611,7 +611,7 @@
 							>
 									{#if cell.state === 'revealed'}
 										{#if cell.value === 'mine'}
-											<span class="text-base drop-shadow-[1px_1px_0_rgba(255,255,255,0.35)] sm:text-xl">💣</span>
+											<span class="drop-shadow-[1px_1px_0_rgba(255,255,255,0.35)] sm:text-xl">💣</span>
 										{:else if typeof cell.value === 'number' && cell.value > 0}
 											<span
 												class={[
@@ -627,7 +627,7 @@
 											</span>
 										{/if}
 									{:else if cell.state === 'flagged'}
-										<span class="text-base drop-shadow-[1px_1px_0_rgba(255,255,255,0.35)] sm:text-xl">🚩</span>
+										<span class="drop-shadow-[1px_1px_0_rgba(255,255,255,0.35)] sm:text-xl">🚩</span>
 									{/if}
 								</button>
 							{/each}
@@ -699,5 +699,17 @@
 		touch-action: manipulation;
 		-webkit-touch-callout: none;
 		text-shadow: 0 1px 0 rgba(255, 255, 255, 0.18);
+	}
+
+	@media (max-width: 639px) {
+		.board-grid {
+			font-size: clamp(0.45rem, calc((100vw - 3.5rem) / var(--cols) * 0.55), 0.875rem);
+		}
+	}
+
+	@media (min-width: 640px) {
+		.cell-button {
+			font-size: 0.875rem;
+		}
 	}
 </style>
