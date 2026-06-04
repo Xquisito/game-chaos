@@ -335,6 +335,8 @@
 	let clearingTimer = $state(0);
 	let touchCapable = $state(false);
 	let viewportWidth = $state(0);
+	let viewportHeight = $state(0);
+	let dpr = $state(1);
 	let gamepadLeftWasPressed = $state(false);
 	let gamepadRightWasPressed = $state(false);
 	let gamepadDownWasPressed = $state(false);
@@ -356,10 +358,34 @@
 	let splashScreen = $derived(flow.splashScreen);
 	let endScreen = $derived(flow.endScreen);
 	let menuScreen = $derived(flow.menuScreen);
-	let gameAreaWidth = $derived(GAME_WIDTH + 240);
-	let gameScale = $derived(
-		viewportWidth > 0 ? Math.min(1, Math.max(0.45, (viewportWidth - 24) / gameAreaWidth)) : 1
-	);
+	// Responsive board sizing. The canvas renders in a fixed logical space
+	// (GAME_WIDTH x GAME_HEIGHT) but is displayed at `boardW` x `boardH`, computed
+	// from the available viewport so the board grows on desktop while the HUD and
+	// touch controls always stay on screen on mobile.
+	const MIN_CELL = 12;
+	const MAX_CELL = 38;
+	const SIDE_CELLS = 3.2; // each side panel is roughly this many cells wide
+
+	let cellSize = $derived.by(() => {
+		if (!viewportWidth || !viewportHeight) return CELL_SIZE;
+		const isDesktop = viewportWidth >= 640;
+		const hPad = isDesktop ? 56 : 10;
+		const colGap = isDesktop ? 32 : 16;
+		const widthBudget = viewportWidth - hPad * 2 - colGap;
+		const byW = widthBudget / (COLS + SIDE_CELLS * 2);
+
+		const hudH = isDesktop ? 76 : 52;
+		const controlsH = touchCapable && !isDesktop ? 215 : 0;
+		const vChrome = isDesktop ? 88 : 26;
+		const heightBudget = viewportHeight - hudH - controlsH - vChrome;
+		const byH = heightBudget / ROWS;
+
+		return Math.floor(Math.max(MIN_CELL, Math.min(MAX_CELL, Math.min(byW, byH))));
+	});
+	let boardW = $derived(cellSize * COLS);
+	let boardH = $derived(cellSize * ROWS);
+	let panelW = $derived(Math.round(cellSize * SIDE_CELLS));
+	let previewCell = $derived(Math.max(6, Math.round(cellSize * 0.5)));
 
 	function createEmptyBoard(): (PieceType | null)[][] {
 		return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -463,6 +489,13 @@
 	function drawTetrisBoard(time = performance.now()) {
 		const context = getBoardContext();
 		if (!context) return;
+
+		// Map the fixed logical playfield (GAME_WIDTH x GAME_HEIGHT) onto the
+		// canvas's actual device-pixel resolution so the board stays sharp whether
+		// it's shrunk on mobile or enlarged on desktop.
+		const sx = context.canvas.width / GAME_WIDTH;
+		const sy = context.canvas.height / GAME_HEIGHT;
+		context.setTransform(sx, 0, 0, sy, 0, 0);
 
 		context.imageSmoothingEnabled = false;
 		context.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -1064,8 +1097,18 @@
 		};
 	});
 
+	// Repaint when the display size changes (e.g. resize while paused or idle),
+	// since resizing the canvas resolution clears its bitmap.
+	$effect(() => {
+		boardW;
+		boardH;
+		dpr;
+		if (boardCanvasEl) drawTetrisBoardSoon();
+	});
+
 	onMount(() => {
 		initGame();
+		dpr = Math.min(window.devicePixelRatio || 1, 2);
 		touchCapable = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 
 		const gamepadPoll = setInterval(pollGamepad, 16);
@@ -1099,13 +1142,14 @@
 
 <svelte:window
 	bind:innerWidth={viewportWidth}
+	bind:innerHeight={viewportHeight}
 	onkeydown={handleKeydown}
 	onkeyup={handleKeyup}
 	onblur={stopTouchRepeat}
 />
 
 <div
-	class="relative flex min-h-screen flex-col items-center justify-center gap-2 overflow-hidden bg-cyan-900 px-1 py-1 font-mono text-white sm:gap-4 sm:px-6 sm:py-8"
+	class="relative flex min-h-screen flex-col items-center justify-start gap-2 overflow-hidden bg-cyan-900 px-1 py-1 font-mono text-white sm:justify-center sm:gap-4 sm:px-6 sm:py-8"
 >
 	{#if splashScreen}
 		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
@@ -1325,12 +1369,8 @@
 				</div>
 			{/if}
 
-			<div
-				class="flex flex-col items-center gap-2 sm:gap-4"
-				style:transform={`scale(${gameScale})`}
-				style:transform-origin="top center"
-			>
-				<div class="grid w-full gap-2 sm:grid-cols-4 sm:gap-3">
+			<div class="flex flex-col items-center gap-2 sm:gap-4">
+				<div class="grid w-full grid-cols-4 gap-1 sm:gap-3">
 					<div
 						class="border-4 border-black bg-black px-2 py-1 text-[0.55rem] font-black tracking-[0.2em] text-cyan-400 uppercase shadow-[4px_4px_0_rgba(0,0,0,1)] sm:text-[0.65rem]"
 					>
@@ -1356,7 +1396,8 @@
 				</div>
 
 				<div
-					class="grid grid-cols-[4.75rem_280px_4.75rem] items-start gap-2 sm:grid-cols-[5.75rem_280px_5.75rem] sm:gap-4"
+					class="grid items-start gap-2 sm:gap-4"
+					style:grid-template-columns={`${panelW}px ${boardW}px ${panelW}px`}
 				>
 					<div class="grid gap-2 sm:gap-4">
 						<div class="border-4 border-black bg-black p-1 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-2">
@@ -1366,7 +1407,7 @@
 								Hold
 							</div>
 							<div
-								class="mt-1 box-content flex h-12 w-12 items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900 sm:h-24 sm:w-24"
+								class="mt-1 flex aspect-square w-full items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900"
 							>
 								{#if holdPieceType}
 									{@const preview = getPreviewCells(holdPieceType)}
@@ -1379,8 +1420,8 @@
 											{#each row as cell, cellIndex (cellIndex)}
 												<div
 													class="border border-black/30"
-													style:width={`${canHold ? CELL_SIZE * 0.45 : CELL_SIZE * 0.45}px`}
-													style:height={`${canHold ? CELL_SIZE * 0.45 : CELL_SIZE * 0.45}px`}
+													style:width={`${previewCell}px`}
+													style:height={`${previewCell}px`}
 													style:background={cell
 														? canHold
 															? PIECE_COLORS[holdPieceType]
@@ -1398,13 +1439,13 @@
 					<!-- Main Board -->
 					<div
 						class="relative border-4 border-black bg-zinc-900 shadow-[8px_8px_0_rgba(0,0,0,1)]"
-						style:width={`${GAME_WIDTH}px`}
-						style:height={`${GAME_HEIGHT}px`}
+						style:width={`${boardW}px`}
+						style:height={`${boardH}px`}
 					>
 						<canvas
 							bind:this={boardCanvasEl}
-							width={GAME_WIDTH}
-							height={GAME_HEIGHT}
+							width={Math.round(boardW * dpr)}
+							height={Math.round(boardH * dpr)}
 							class="block h-full w-full bg-zinc-900"
 							aria-label="Tetris Chaos playfield"
 						></canvas>
@@ -1418,7 +1459,7 @@
 								Next
 							</div>
 							<div
-								class="mt-1 box-content flex h-12 w-12 items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900 sm:h-24 sm:w-24"
+								class="mt-1 flex aspect-square w-full items-center justify-center overflow-hidden border-2 border-cyan-800 bg-zinc-900"
 							>
 								{#if nextPieceType}
 									{@const nextPreview = getPreviewCells(nextPieceType)}
@@ -1431,8 +1472,8 @@
 											{#each row as cell, cellIndex (cellIndex)}
 												<div
 													class="border border-black/30"
-													style:width={`${CELL_SIZE * 0.45}px`}
-													style:height={`${CELL_SIZE * 0.45}px`}
+													style:width={`${previewCell}px`}
+													style:height={`${previewCell}px`}
 													style:background={cell ? PIECE_COLORS[nextPieceType] : 'transparent'}
 												></div>
 											{/each}
@@ -1460,11 +1501,7 @@
 
 			<!-- Mobile Touch Controls -->
 			{#if touchCapable && !gameOver && !gameWon}
-				<div
-					class="mt-3 flex w-full flex-col items-center gap-2 sm:mt-4"
-					style:transform={`scale(${gameScale > 0.7 ? 1 : gameScale > 0.55 ? 1.15 : 1.3})`}
-					style:transform-origin="top center"
-				>
+				<div class="mt-3 flex w-full flex-col items-center gap-2 sm:mt-4">
 					<div class="flex items-center gap-2">
 						<button
 							type="button"
