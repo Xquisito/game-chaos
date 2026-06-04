@@ -32,7 +32,8 @@
 		riverSpeed: { min: 0.6, max: 1.4, scale: 1.1, cap: 3.5 },
 		vehicleGap: { min: 4, max: 8, scale: 0.93, cap: 2 },
 		turtleSurfaceMs: 3_000,
-		turtleSubmergedMs: 2_000,
+		turtleSubmergedMs: 1_000,
+
 		turtleSurfaceScale: 0.95,
 		turtleSurfaceCapMs: 1_500,
 		flySpawnMinMs: 12_000,
