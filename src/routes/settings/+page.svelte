@@ -18,6 +18,7 @@
 
 	const cabinetNames: Record<GameCabinetId, string> = {
 		minesweeper: 'Minesweeper',
+		sudoku: 'Sudoku Chaos',
 		checkers: 'Checkers Chaos',
 		enduro: 'Enduro Chaos',
 		'space-chaos': 'Space Chaos',

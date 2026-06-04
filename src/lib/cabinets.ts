@@ -1,5 +1,6 @@
 export type GameCabinetId =
 	| 'minesweeper'
+	| 'sudoku'
 	| 'checkers'
 	| 'enduro'
 	| 'space-chaos'
@@ -9,6 +10,7 @@ export type UtilityCabinetId = 'settings';
 export type CabinetId = GameCabinetId | UtilityCabinetId;
 export type CabinetHref =
 	| '/minesweeper'
+	| '/sudoku'
 	| '/checkers'
 	| '/enduro'
 	| '/space-invaders'
@@ -55,6 +57,19 @@ export const gameCabinets: readonly GameCabinet[] = [
 		score: {
 			mode: 'wins',
 			storageKey: 'minesweeper-wins'
+		}
+	},
+	{
+		kind: 'game',
+		id: 'sudoku',
+		schemaName: 'Sudoku Chaos',
+		href: '/sudoku',
+		emoji: '🔢',
+		color: 'bg-indigo-500',
+		marquee: 'bg-indigo-200',
+		score: {
+			mode: 'wins',
+			storageKey: 'sudoku-wins'
 		}
 	},
 	{

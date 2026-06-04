@@ -216,6 +216,7 @@ msgstr "Linha {0}, coluna {1}"
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Game Chaos"
 msgstr "Caos no Jogo"
@@ -233,6 +234,7 @@ msgstr "🏁 Dama Caótica 🏁"
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Score Board"
 msgstr "Placar de Pontuação"
@@ -245,8 +247,10 @@ msgstr "Vitórias do Jogador"
 #~ msgstr "Partida ao vivo: {0}<0/> Novo jogo: {1}"
 
 #: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Difficulty"
 msgstr "Dificuldade"
@@ -257,6 +261,7 @@ msgstr "Dificuldade"
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Continue"
 msgstr "Continuar"
@@ -271,6 +276,7 @@ msgstr "Novo Jogo"
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Press Start"
 msgstr "Pressione Iniciar"
@@ -278,6 +284,7 @@ msgstr "Pressione Iniciar"
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Dashboard"
@@ -301,6 +308,7 @@ msgstr "Vitórias {0}"
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/sudoku/+page.svelte
 msgid "Return"
 msgstr "Voltar"
 
@@ -347,11 +355,13 @@ msgstr "Tentar Novamente"
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 msgid "Back to Splash"
 msgstr "Voltar para o Splash"
 
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/sudoku/+page.svelte
 msgid "Enter / A to select • Esc / B to return"
 msgstr "Enter / A para selecionar • Esc / B para retornar"
 
@@ -594,7 +604,9 @@ msgstr "Você cutucou a pedra picante. Tente novamente ou fuja para o splash."
 msgid "Playwright e2e test demo"
 msgstr ""
 
+#: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Easy"
 msgstr "Fácil"
@@ -605,6 +617,7 @@ msgid "Normal"
 msgstr "Normal"
 
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Hard"
 msgstr "Difícil"
@@ -1243,3 +1256,152 @@ msgstr "TUDO BEM"
 #: src/routes/tetris/+page.svelte
 msgid "Tetris Chaos playfield"
 msgstr "Playfield do Tetris Chaos"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Board Size"
+msgstr ""
+
+#. 0: option.label; 1: getMineCount(option.rows, option.cols, difficulty.density)
+#: src/routes/minesweeper/+page.svelte
+msgid "{0} • {1} mines"
+msgstr ""
+
+#: src/routes/minesweeper/+page.svelte
+#: src/routes/sudoku/+page.svelte
+msgid "Medium"
+msgstr "Médio"
+
+#: src/routes/minesweeper/+page.svelte
+msgid "Death Field"
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "A gentle warm up."
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "A balanced challenge."
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Bring your logic."
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Expert"
+msgstr "Expert"
+
+#: src/routes/sudoku/+page.svelte
+msgid "No mercy for the brain."
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Backspace"
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Delete"
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Sudoku Chaos | Vintage Number Logic Puzzle"
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Sharpen your logic with Sudoku Chaos. A vintage-style number puzzle with adjustable difficulty, pencil-mark drafts, and completed-number tracking."
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Sudoku Chaos - The Classic Number Puzzle"
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Fill the grid from Easy to Expert. Draft notes, track finished digits, and solve the most chaotic Sudoku yet."
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "🔢 Sudoku Chaos 🔢"
+msgstr "🔢 Sudoku Caótico 🔢"
+
+#: src/routes/sudoku/+page.svelte
+msgid "Pure logic. One solution."
+msgstr "Pura lógica. Uma solução."
+
+#: src/routes/sudoku/+page.svelte
+msgid "Fill every row, column and box with 1-9.<0/> Tap a cell, then a number to place it.<1/> Toggle Draft to pencil in candidate notes.<2/> <3>A / Enter = select • B / Esc = return.</3>"
+msgstr "Preencha cada linha, coluna e bloco com 1-9.<0/> Toque numa célula e depois num número para colocá-lo.<1/> Ative o Rascunho para anotar candidatos a lápis.<2/> <3>A / Enter = selecionar • B / Esc = voltar.</3>"
+
+#: src/routes/sudoku/+page.svelte
+msgid "Puzzles Solved"
+msgstr "Jogos Resolvidos"
+
+#: src/routes/sudoku/+page.svelte
+#: src/routes/sudoku/+page.svelte
+msgid "New Puzzle"
+msgstr "Novo Jogo"
+
+#. 0: option.clues
+#: src/routes/sudoku/+page.svelte
+msgid "{0} clues"
+msgstr "{0} dicas"
+
+#. 0: conflictCount
+#: src/routes/sudoku/+page.svelte
+msgid "Conflicts {0}"
+msgstr "Conflitos {0}"
+
+#: src/routes/sudoku/+page.svelte
+msgid "Generating…"
+msgstr "Gerando…"
+
+#. 0: r + 1; 1: c + 1; 2: cell.value ? `, value ${cell.value}` \\: ', empty'
+#: src/routes/sudoku/+page.svelte
+msgid "Row {0}, column {1}{2}"
+msgstr "Linha {0}, coluna {1}{2}"
+
+#: src/routes/sudoku/+page.svelte
+msgid "On"
+msgstr "Ligado"
+
+#: src/routes/sudoku/+page.svelte
+msgid "Off"
+msgstr "Desligado"
+
+#. 0: draftMode ? 'On' \\: 'Off'
+#: src/routes/sudoku/+page.svelte
+msgid "✏️ Draft {0}"
+msgstr "✏️ Rascunho {0}"
+
+#: src/routes/sudoku/+page.svelte
+msgid "⌫ Erase"
+msgstr "⌫ Apagar"
+
+#: src/routes/sudoku/+page.svelte
+msgid "N toggles draft • Backspace erases • Esc / B returns to splash."
+msgstr "N alterna o rascunho • Backspace apaga • Esc / B volta ao início."
+
+#: src/routes/sudoku/+page.svelte
+msgid "Solved!"
+msgstr "Resolvido!"
+
+#. 0: difficulty.label; 1: formatTime(seconds); 2: wins
+#: src/routes/sudoku/+page.svelte
+msgid "{0} grid cleared in {1}. Total solved: {2}."
+msgstr "Grade {0} resolvida em {1}. Total resolvido: {2}."
+
+#: src/routes/+page.svelte
+#: src/routes/settings/+page.svelte
+msgid "Sudoku Chaos"
+msgstr "Sudoku Caótico"
+
+#: src/routes/+page.svelte
+msgid "Fill the grid with pure logic, from Easy to Expert."
+msgstr "Preencha a grade com pura lógica, do Fácil ao Expert."
+
+#: src/routes/+page.svelte
+msgid "Logic Lab"
+msgstr "Laboratório Lógico"
+
+#: src/routes/+page.svelte
+msgid "Solve It"
+msgstr "Resolver"

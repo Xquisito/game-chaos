@@ -44,6 +44,12 @@
 			kicker: 'Puzzle Bay',
 			cta: 'Insert Coin'
 		},
+		sudoku: {
+			name: 'Sudoku Chaos',
+			description: 'Fill the grid with pure logic, from Easy to Expert.',
+			kicker: 'Logic Lab',
+			cta: 'Solve It'
+		},
 		checkers: {
 			name: 'Checkers Chaos',
 			description: 'Fast board control in a chunky neon showdown.',
