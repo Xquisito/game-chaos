@@ -40,15 +40,19 @@ msgstr "Dama Caótica"
 #~ msgstr "Enduro 3D Caótico"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "Minesweeper"
 msgstr "Caça Mina"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Avoid the boom with quick reads and cooler nerves."
 msgstr "Evite as explosões com leituras rápidas e nervos de aço."
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/sudoku/+page.svelte
 msgid "Puzzle Bay"
 msgstr "Baía de Quebra"
 
@@ -58,35 +62,48 @@ msgid "Wins"
 msgstr "Vitórias"
 
 #: src/routes/+page.svelte
+#: src/routes/frog/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/space-invaders/+page.svelte
 msgid "Insert Coin"
 msgstr "Colocar Moeda"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Fast board control in a chunky neon showdown."
 msgstr "Controle o tabuleiro com agilidade em um duelo neon."
 
 #: src/routes/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Battle Table"
 msgstr "Peão e Dama"
 
 #: src/routes/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Start Match"
 msgstr "Iniciar Partida"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "Enduro Chaos"
 msgstr "Enduro Caótico"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Race the night through storms, ice, and blind corners."
 msgstr "Corra pela noite sob tempestades, gelo e curvas fechadas."
 
 #: src/routes/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Road Fury"
 msgstr "Estrada Furiosa"
 
 #: src/routes/+page.svelte
+#: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/settings/+page.svelte
@@ -97,35 +114,45 @@ msgid "Hi-Score"
 msgstr "Recorde"
 
 #: src/routes/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Burn Rubber"
 msgstr "Queimar Borracha"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "Space Chaos"
 msgstr "Invasores Caóticos"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Scramble the fleet and climb the cosmic score board."
 msgstr "Desembaralhe a frota e suba no placar cósmico."
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/space-invaders/+page.svelte
 msgid "Galaxy Sector"
 msgstr "Setor Galáctico"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Launch Run"
 msgstr "Defenda o Ataque"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Settings"
 msgstr "Configurações"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Tune the cabinet, inspect scores, and wipe save data."
 msgstr "Ajuste o painel, confira os recordes e limpe os dados salvos."
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "System Deck"
 msgstr "Painel do Sistema"
 
@@ -134,6 +161,7 @@ msgid "Scores • Reset • System"
 msgstr "Recordes • Resetar • Sistema"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Open Panel"
 msgstr "Abrir Painel"
 
@@ -158,6 +186,9 @@ msgstr "ArrowDown"
 #~ msgstr "O Fliperama do Caos | Painel"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Arcade Hub // Ready"
 msgstr "Central de Fliperama // Pronto"
 
@@ -168,7 +199,13 @@ msgstr "Central de Fliperama // Pronto"
 #~ msgstr "Toque, tab, ou use o D-pad para pular de fliperama em fliperama."
 
 #. 0: dashboardCabinets.length
+#. 0: games.length
+#. 0: games.length
+#. 0: games.length
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "{0} Hotspots"
 msgstr "{0} Pontos de interação"
 
@@ -211,16 +248,11 @@ msgstr "Linha {0}, coluna {1}"
 #~ msgid "Checkers | Game Chaos"
 #~ msgstr "Dama | Caos no Jogo"
 
-#: src/routes/checkers/+page.svelte
-#: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/minesweeper/proto/+page.svelte
 #: src/routes/minesweeper/proto/+page.svelte
 #: src/routes/minesweeper/proto/+page.svelte
 #: src/routes/space-invaders/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/sudoku/+page.svelte
-#: src/routes/tetris/+page.svelte
 msgid "Game Chaos"
 msgstr "Caos no Jogo"
 
@@ -234,21 +266,15 @@ msgstr "🏁 Dama Caótica 🏁"
 #~ msgid "You play white.<0/> Tap or click a piece, then tap its destination.<1/> Arrow keys / Tab move menu focus.<2/> A / Enter = select • B / Esc = return.<3/> <4>During a live match, Esc / B jumps back here and Continue resumes the exact board.</4>"
 #~ msgstr "Você joga de branco.<0/> Toque ou clique em uma peça, depois toque em seu destino.<1/> Setas / Tab movem o foco do menu.<2/> A / Enter = selecionar • B / Esc = retornar.<3/> <4>Durante uma partida ao vivo, Esc / B voltam para cá e Continuar retoma exatamente o tabuleiro.</4>"
 
-#: src/routes/checkers/+page.svelte
-#: src/routes/space-invaders/+page.svelte
-#: src/routes/sudoku/+page.svelte
-#: src/routes/tetris/+page.svelte
-msgid "Score Board"
-msgstr "Placar de Pontuação"
+#~ msgid "Score Board"
+#~ msgstr "Placar de Pontuação"
 
-#: src/routes/checkers/+page.svelte
-msgid "Player Wins"
-msgstr "Vitórias do Jogador"
+#~ msgid "Player Wins"
+#~ msgstr "Vitórias do Jogador"
 
 #~ msgid "Live match: {0}<0/> New game: {1}"
 #~ msgstr "Partida ao vivo: {0}<0/> Novo jogo: {1}"
 
-#: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
@@ -261,6 +287,8 @@ msgstr "Dificuldade"
 #~ msgstr "Continue mantém o tabuleiro {0} atual. O Novo Jogo usa o modo selecionado."
 
 #: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
@@ -269,25 +297,33 @@ msgid "Continue"
 msgstr "Continuar"
 
 #: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "New Game"
 msgstr "Novo Jogo"
 
-#: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
-#: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Press Start"
 msgstr "Pressione Iniciar"
 
 #: src/routes/checkers/+page.svelte
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/frog/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
+#: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
+#: src/routes/sudoku/+page.svelte
+#: src/routes/tetris/+page.svelte
 #: src/routes/tetris/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Dashboard"
@@ -384,46 +420,35 @@ msgstr "playwright"
 #~ msgid "Enduro | Game Chaos"
 #~ msgstr "Enduro | Caos no Jogo"
 
-#: src/routes/enduro/+page.svelte
-msgid "ENDURO"
-msgstr "ENDURO"
+#~ msgid "ENDURO"
+#~ msgstr "ENDURO"
 
-#: src/routes/enduro/+page.svelte
-msgid "ACTIVISION"
-msgstr "ACTIVISION"
+#~ msgid "ACTIVISION"
+#~ msgstr "ACTIVISION"
 
-#: src/routes/enduro/+page.svelte
-msgid "PASS <0>200 CARS</0> ON DAY 1<1/> THEN 300+ EVERY DAY AFTER<2/> <3>FOG • ICE • NIGHT</3> <4>KEYBOARD • GAMEPAD • TOUCH<0/> A / ENTER = SELECT • B / ESC = RETURN</4>"
-msgstr "PASE 200 CARROS NO PRIMEIRO DIA <0>200 CARS</0> UN DIA 1<1/> ENTÃO 300+ A CADA DIA DEPOIS<2/> <3>NEBLINA • GELO • NOITE</3> <4>TECLADO • GAMEPAD • TOQUE<0/> A / ENTER = SELECT • B / ESC = RETURN</4>"
+#~ msgid "PASS <0>200 CARS</0> ON DAY 1<1/> THEN 300+ EVERY DAY AFTER<2/> <3>FOG • ICE • NIGHT</3> <4>KEYBOARD • GAMEPAD • TOUCH<0/> A / ENTER = SELECT • B / ESC = RETURN</4>"
+#~ msgstr "PASE 200 CARROS NO PRIMEIRO DIA <0>200 CARS</0> UN DIA 1<1/> ENTÃO 300+ A CADA DIA DEPOIS<2/> <3>NEBLINA • GELO • NOITE</3> <4>TECLADO • GAMEPAD • TOQUE<0/> A / ENTER = SELECT • B / ESC = RETURN</4>"
 
-#: src/routes/enduro/+page.svelte
-#: src/routes/frog/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "CONTINUE"
 msgstr "CONTINUAR"
 
-#: src/routes/enduro/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "NEW GAME"
 msgstr "NOVO JOGO"
 
-#: src/routes/enduro/+page.svelte
-msgid "PRESS START"
-msgstr "Pressione Iniciar"
+#~ msgid "PRESS START"
+#~ msgstr "Pressione Iniciar"
 
-#: src/routes/enduro/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "DASHBOARD"
 msgstr "Painel"
 
-#: src/routes/enduro/+page.svelte
-msgid "← → / WASD STEER • ↑ ↓ SPEED<0/> GAMEPAD + TOUCH DRAG / THROTTLE / BRAKE"
-msgstr "setas← → / wasd manobrar • seta ↑ ↓ acelerar<0/> gamepad + arrasto de toque / aceleração / freio"
+#~ msgid "← → / WASD STEER • ↑ ↓ SPEED<0/> GAMEPAD + TOUCH DRAG / THROTTLE / BRAKE"
+#~ msgstr "setas← → / wasd manobrar • seta ↑ ↓ acelerar<0/> gamepad + arrasto de toque / aceleração / freio"
 
-#. 0: highScore
-#: src/routes/enduro/+page.svelte
-msgid "HIGH SCORE — {0}"
-msgstr "Melhor Pontuação — {0}"
+#~ msgid "HIGH SCORE — {0}"
+#~ msgstr "Melhor Pontuação — {0}"
 
 #: src/routes/enduro/+page.svelte
 msgid "DAY <0/>"
@@ -561,6 +586,7 @@ msgstr "Campo Minado 💣"
 #~ msgid "Reveal every safe tile to win.<0/> Click or tap to reveal.<1/> Right click or long-press to flag.<2/> <3>Arrow keys / Tab move menu focus.<0/> A / Enter = select • B / Esc = return.</3>"
 #~ msgstr "Descubra cada tile seguro para vencer.<0/> Clique ou toque para revelar.<1/> Clique direito ou pressione longo para marcar.<2/> <3>Setas / Tab movem o foco do menu.<0/> A / Enter = selecionar • B / Esc = retornar.</3>"
 
+#: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 msgid "Total Wins"
 msgstr "Total de vitórias"
@@ -786,6 +812,9 @@ msgid "Manage your Chaos Arcade cabinet. Reset scores, tune performance, and con
 msgstr "Gerencie seu gabinete Chaos Arcade. Reinicie pontuações, ajuste o desempenho e configure as definições do sistema."
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "🕹️ Chaos Arcade"
 msgstr "🕹️ Arcade do Caos"
 
@@ -798,10 +827,16 @@ msgid "Launch = Enter"
 msgstr "Iniciar = Enter"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Built with ⚡ SvelteKit"
 msgstr "Feito com ⚡ SvelteKit"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Cabinet memory: Online"
 msgstr "Memória do gabinete: Online"
 
@@ -850,9 +885,8 @@ msgstr "EN"
 msgid "PT"
 msgstr "PT"
 
-#: src/routes/checkers/+page.svelte
-msgid "You play white. Tap/click piece then destination. <0>A / Enter = select • B / Esc = return.</0>"
-msgstr "Você joga com as brancas. Toque/clique na peça e depois no destino. <0>A / Enter = selecionar • B / Esc = retornar.</0>"
+#~ msgid "You play white. Tap/click piece then destination. <0>A / Enter = select • B / Esc = return.</0>"
+#~ msgstr "Você joga com as brancas. Toque/clique na peça e depois no destino. <0>A / Enter = selecionar • B / Esc = retornar.</0>"
 
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
@@ -863,9 +897,8 @@ msgstr "🛸 Space Chaos 🛸"
 msgid "Defend the line. Shred the swarm."
 msgstr "Defenda a linha. Destrua o enxame."
 
-#: src/routes/space-invaders/+page.svelte
-msgid "Move with arrows / WASD. Space / Up to shoot. <0>A / Enter = select • B / Esc = return.</0>"
-msgstr "Mova-se com setas / WASD. Espaço / Cima para atirar. <0>A / Enter = selecionar • B / Esc = retornar.</0>"
+#~ msgid "Move with arrows / WASD. Space / Up to shoot. <0>A / Enter = select • B / Esc = return.</0>"
+#~ msgstr "Mova-se com setas / WASD. Espaço / Cima para atirar. <0>A / Enter = selecionar • B / Esc = retornar.</0>"
 
 #: src/routes/space-invaders/+page.svelte
 msgid "Galaxy secured."
@@ -899,19 +932,23 @@ msgid "Points"
 msgstr "Pontos"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "Tetris Chaos"
 msgstr "Tetris do Caos"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Stack the blocks and survive the falling chaos!"
 msgstr "Empilhe os blocos e sobreviva ao caos que cai!"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Block Zone"
 msgstr "Zona de Blocos"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Drop In"
 msgstr "Cair"
 
@@ -947,13 +984,11 @@ msgstr "🧱 Tetris Caos 🧱"
 msgid "Stack the blocks. Survive the chaos."
 msgstr "Empilhe os blocos. Sobreviva ao caos."
 
-#: src/routes/tetris/+page.svelte
-msgid "Touch controls available during gameplay."
-msgstr "Controles de toque disponíveis durante o jogo."
+#~ msgid "Touch controls available during gameplay."
+#~ msgstr "Controles de toque disponíveis durante o jogo."
 
-#: src/routes/tetris/+page.svelte
-msgid "Arrow keys / WASD to move. Up / W to rotate. Space to hard drop. C to hold piece. Z for counter-clockwise. <0>A / Enter = select • B / Esc = return</0> <1/>"
-msgstr "Teclas de seta / WASD para mover. Cima / W para girar. Espaço para queda rápida. C para segurar a peça. Z para anti-horário. <0>A / Enter = selecionar • B / Esc = retornar</0> <1/>"
+#~ msgid "Arrow keys / WASD to move. Up / W to rotate. Space to hard drop. C to hold piece. Z for counter-clockwise. <0>A / Enter = select • B / Esc = return</0> <1/>"
+#~ msgstr "Teclas de seta / WASD para mover. Cima / W para girar. Espaço para queda rápida. C para segurar a peça. Z para anti-horário. <0>A / Enter = selecionar • B / Esc = retornar</0> <1/>"
 
 #: src/routes/tetris/+page.svelte
 msgid "The blocks got you!"
@@ -1057,6 +1092,7 @@ msgstr "{0} pts • Nível {1}"
 msgid "Recorde"
 msgstr "Recorde"
 
+#: src/routes/proto/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "Frog Chaos"
 msgstr "Frog Chaos"
@@ -1068,6 +1104,7 @@ msgstr "Frog Chaos"
 #~ msgstr ""
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Hop In"
 msgstr "Entrar Pulando"
 
@@ -1152,10 +1189,12 @@ msgstr "Vidas <0/>"
 #~ msgstr ""
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Hop the road, ride the river, and claim every pad."
 msgstr "Atravesse a pista, pegue carona no rio e conquiste cada pad."
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "River Panic"
 msgstr "Pânico no Rio"
 
@@ -1175,38 +1214,29 @@ msgstr "Frog Chaos - Gabinete retrô estilo Frogger"
 msgid "A fast, chaotic Frogger-style cabinet with flies, crocodiles, and brutal arcade scoring."
 msgstr "Um gabinete rápido e caótico estilo Frogger, com moscas, crocodilos e pontuação arcade brutal."
 
-#: src/routes/frog/+page.svelte
-msgid "🐸 FROG CHAOS 🐸"
-msgstr "🐸 FROG CHAOS 🐸"
+#~ msgid "🐸 FROG CHAOS 🐸"
+#~ msgstr "🐸 FROG CHAOS 🐸"
 
-#: src/routes/frog/+page.svelte
-msgid "REACH ALL 5 PADS"
-msgstr "CHEGUE AOS 5 PADS"
+#~ msgid "REACH ALL 5 PADS"
+#~ msgstr "CHEGUE AOS 5 PADS"
 
-#: src/routes/frog/+page.svelte
-msgid "TOUCH D-PAD ARMED BELOW THE CANVAS."
-msgstr "D-PAD DE TOQUE ARMADO ABAIXO DO CANVAS."
+#~ msgid "TOUCH D-PAD ARMED BELOW THE CANVAS."
+#~ msgstr "D-PAD DE TOQUE ARMADO ABAIXO DO CANVAS."
 
-#: src/routes/frog/+page.svelte
-msgid "ARROWS / WASD HOP ONE CELL. SPACE PAUSES. RIDE LOGS, TRUST SOME TURTLES, FEAR ALL TRAFFIC. <0>A / ENTER = SELECT • B / ESC = RETURN</0> <1/>"
-msgstr "SETAS / WASD SALTAM UMA CÉLULA. ESPAÇO PAUSA. ANDE NOS TRONCOS, CONFIE EM ALGUMAS TARTARUGAS, TEMA TODO O TRÂNSITO. <0>A / ENTER = SELECIONAR • B / ESC = VOLTAR</0> <1/>"
+#~ msgid "ARROWS / WASD HOP ONE CELL. SPACE PAUSES. RIDE LOGS, TRUST SOME TURTLES, FEAR ALL TRAFFIC. <0>A / ENTER = SELECT • B / ESC = RETURN</0> <1/>"
+#~ msgstr "SETAS / WASD SALTAM UMA CÉLULA. ESPAÇO PAUSA. ANDE NOS TRONCOS, CONFIE EM ALGUMAS TARTARUGAS, TEMA TODO O TRÂNSITO. <0>A / ENTER = SELECIONAR • B / ESC = VOLTAR</0> <1/>"
 
-#: src/routes/frog/+page.svelte
-msgid "Current High Score"
-msgstr "Recorde Atual"
+#~ msgid "Current High Score"
+#~ msgstr "Recorde Atual"
 
-#: src/routes/frog/+page.svelte
-#: src/routes/frog/+page.svelte
-msgid "START"
-msgstr "INICIAR"
+#~ msgid "START"
+#~ msgstr "INICIAR"
 
-#: src/routes/frog/+page.svelte
-msgid "DO NOT CLICK THIS FROG"
-msgstr "NÃO CLIQUE NESTE SAPO"
+#~ msgid "DO NOT CLICK THIS FROG"
+#~ msgstr "NÃO CLIQUE NESTE SAPO"
 
-#: src/routes/frog/+page.svelte
-msgid "BACK"
-msgstr "VOLTAR"
+#~ msgid "BACK"
+#~ msgstr "VOLTAR"
 
 #: src/routes/frog/+page.svelte
 msgid "FROG CHAOS"
@@ -1333,9 +1363,8 @@ msgstr "🔢 Sudoku Caótico 🔢"
 msgid "Pure logic. One solution."
 msgstr "Pura lógica. Uma solução."
 
-#: src/routes/sudoku/+page.svelte
-msgid "Fill every row, column and box with 1-9.<0/> Tap a cell, then a number to place it.<1/> Toggle Draft to pencil in candidate notes.<2/> <3>A / Enter = select • B / Esc = return.</3>"
-msgstr "Preencha cada linha, coluna e bloco com 1-9.<0/> Toque numa célula e depois num número para colocá-lo.<1/> Ative o Rascunho para anotar candidatos a lápis.<2/> <3>A / Enter = selecionar • B / Esc = voltar.</3>"
+#~ msgid "Fill every row, column and box with 1-9.<0/> Tap a cell, then a number to place it.<1/> Toggle Draft to pencil in candidate notes.<2/> <3>A / Enter = select • B / Esc = return.</3>"
+#~ msgstr "Preencha cada linha, coluna e bloco com 1-9.<0/> Toque numa célula e depois num número para colocá-lo.<1/> Ative o Rascunho para anotar candidatos a lápis.<2/> <3>A / Enter = selecionar • B / Esc = voltar.</3>"
 
 #: src/routes/sudoku/+page.svelte
 msgid "Puzzles Solved"
@@ -1396,19 +1425,23 @@ msgid "{0} grid cleared in {1}. Total solved: {2}."
 msgstr "Grade {0} resolvida em {1}. Total resolvido: {2}."
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "Sudoku Chaos"
 msgstr "Sudoku Caótico"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Fill the grid with pure logic, from Easy to Expert."
 msgstr "Preencha a grade com pura lógica, do Fácil ao Expert."
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Logic Lab"
 msgstr "Laboratório Lógico"
 
 #: src/routes/+page.svelte
+#: src/routes/proto/+page.svelte
 msgid "Solve It"
 msgstr "Resolver"
 
@@ -1526,6 +1559,156 @@ msgstr ""
 msgid "{0} mines"
 msgstr ""
 
+#: src/routes/checkers/+page.svelte
+#: src/routes/enduro/+page.svelte
+#: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/space-invaders/+page.svelte
+#: src/routes/sudoku/+page.svelte
+#: src/routes/tetris/+page.svelte
 msgid "❓ How to Play"
+msgstr ""
+
+#: src/routes/sudoku/+page.svelte
+msgid "Fill every row, column, and box with 1–9.<0/> Tap a cell, then a number. Toggle Draft for pencil notes.<1/> <2>A / Enter = select • B / Esc = return.</2>"
+msgstr ""
+
+#: src/routes/space-invaders/+page.svelte
+msgid "Move with arrows / WASD. Space or Up to shoot.<0/> Clear waves before they land. Grab the mystery ship bonus.<1/> <2>A / Enter = select • B / Esc = return.</2>"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Stack Sector"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Touch controls appear during gameplay.<0/>"
+msgstr ""
+
+#: src/routes/tetris/+page.svelte
+msgid "Arrows / WASD move. Up / W rotates. Space hard drops. C holds. Z spins CCW.<0/> <1/> <2>A / Enter = select • B / Esc = return.</2>"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "🏎️ Enduro Chaos 🏎️"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "Pass 200 cars on day 1. Burn rubber."
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "Day 1 Target"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "Pass 200 Cars"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "300+ every day after"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "Conditions"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "Fog • Ice • Night"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "Weather shifts mid-run"
+msgstr ""
+
+#: src/routes/enduro/+page.svelte
+msgid "← → / WASD steer • ↑ ↓ speed up or brake.<0/> Gamepad + touch drag / throttle / brake supported.<1/> P pauses during a run. Esc / B returns to splash.<2/> <3>A / Enter = select • B / Esc = return.</3>"
+msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "River Run"
+msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "🐸 Frog Chaos 🐸"
+msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "Reach all 5 home pads."
+msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "Touch D-pad sits below the canvas.<0/>"
+msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "Arrows / WASD hop one cell. Space pauses.<0/> Ride logs, trust some turtles, fear all traffic.<1/> <2/> <3>A / Enter = select • B / Esc = return.</3>"
+msgstr ""
+
+#: src/routes/frog/+page.svelte
+msgid "Do Not Click This Frog"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "A — List"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "B — Strip"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "C — Big Cards"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "Wins: 4"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+msgid "Hi-Score: 0"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "Checkers"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "Wins: 2"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "Hi-Score: 1200"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "Hi-Score: 800"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "Wins: 0"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+msgid "Scores • Reset"
+msgstr ""
+
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+#: src/routes/proto/+page.svelte
+msgid "v0.1.6"
+msgstr ""
+
+#. 0: games.length
+#: src/routes/proto/+page.svelte
+msgid "← swipe to browse {0} cabinets →"
+msgstr ""
+
+#: src/routes/checkers/+page.svelte
+msgid "Opponent"
+msgstr ""
+
+#: src/routes/checkers/+page.svelte
+msgid "You play white. Tap a piece, then its destination.<0/> Jump chains when available. Crown kings on the far row.<1/> <2>A / Enter = select • B / Esc = return.</2>"
 msgstr ""
