@@ -243,6 +243,51 @@ Style:
 - font-black uppercase
 ```
 
+### Splash Screen Card
+
+The canonical splash screen layout for all games. Defined by a **black header band + compact score counter**, a **2-col config grid**, an **accordion help toggle**, and a **2-col CTA row**. Reference implementation: `src/routes/minesweeper/+page.svelte`.
+
+```
+Card: border-4 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,1)]
+  ├── Header Band  bg-black border-b-4 border-black px-4 py-3
+  │     ├── Kicker:   text-[0.55rem] font-black tracking-[0.4em] uppercase text-yellow-300/50
+  │     ├── Row:      flex items-center justify-between gap-4
+  │     │     ├── Title:   text-xl font-black leading-none uppercase sm:text-5xl text-yellow-300
+  │     │     └── Score:   text-right, label text-[0.5rem] text-yellow-300/50,
+  │     │                  value text-lg font-black leading-none sm:text-4xl text-yellow-300
+  │     └── Tagline: text-[0.65rem] font-bold uppercase text-yellow-300/60 mt-1
+  │
+  └── Content  p-4 sm:p-8
+        ├── Config Grid  grid grid-cols-2 gap-2 sm:gap-4 mb-4
+        │     └── Panel (×2)  border-2 border-black bg-yellow-100 p-2 sm:border-4 sm:p-4
+        │           ├── Label:   text-[0.55rem] font-black tracking-[0.3em] uppercase text-black/50
+        │           └── Buttons: flex-col gap-1, active=bg-black text-yellow-300,
+        │                        inactive=bg-white text-black; all have data-menu-button
+        │
+        ├── Accordion  border-2 border-black sm:border-4 mb-4
+        │     ├── Toggle:  bg-yellow-200 hover:bg-yellow-300, flex justify-between,
+        │     │            text-xs font-black uppercase, chevron ▾ rotates 180° when open
+        │     └── Content: bg-yellow-50 border-t-2 border-black px-3 py-2
+        │                  text-xs font-bold uppercase (shown only when helpOpen)
+        │
+        └── CTAs  grid grid-cols-2 gap-2 sm:gap-4
+              ├── Primary:   border-2 border-yellow-400 bg-black text-yellow-400
+              ├── Secondary: border-2 border-black bg-white text-black
+              └── (Optional) New Game: mt-2 w-full border-2 border-black bg-white
+                             (appears below grid only when hasActiveRun)
+
+State: let helpOpen = $state(false)
+       let hasActiveRun = $state(false)  ← drives CTA variant
+```
+
+**Component rules:**
+- The outer card has **no padding** — padding is inside each zone.
+- Score counter is always in the header band; there is no separate score card.
+- Config grid is **always 2-col** — never stacks on mobile.
+- Accordion is **collapsed by default** (`helpOpen = false`).
+- CTA buttons are **always side-by-side** in a 2-col grid, never stacked.
+- See `GUIDE.md > Splash Screen` for the full annotated markup.
+
 ### Footer Block
 
 ```
@@ -339,6 +384,10 @@ When creating new UI components or pages for Chaos Arcade, verify:
 - [ ] **Focus:** Are focus states visible with `focus-visible:ring-4` and adequate offset?
 - [ ] **Voice:** Does the copy use arcade terminology and uppercase styling?
 - [ ] **Depth:** Do interactive elements have a "lift" hover state (`-translate-y-1`) or "press" state (`shadow-none` + shift)?
+- [ ] **Splash — Header Band:** Is the score counter inside the black header band (not a separate card)?
+- [ ] **Splash — Config:** Is the config grid always `grid-cols-2` (never stacks on mobile)?
+- [ ] **Splash — Help:** Is the help accordion collapsed by default (`helpOpen = $state(false)`)?
+- [ ] **Splash — CTAs:** Are the primary CTA and Dashboard in a `grid-cols-2` row (never stacked)?
 
 ---
 

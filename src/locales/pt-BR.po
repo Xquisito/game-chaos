@@ -214,6 +214,9 @@ msgstr "Linha {0}, coluna {1}"
 #: src/routes/checkers/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
@@ -232,7 +235,6 @@ msgstr "🏁 Dama Caótica 🏁"
 #~ msgstr "Você joga de branco.<0/> Toque ou clique em uma peça, depois toque em seu destino.<1/> Setas / Tab movem o foco do menu.<2/> A / Enter = selecionar • B / Esc = retornar.<3/> <4>Durante uma partida ao vivo, Esc / B voltam para cá e Continuar retoma exatamente o tabuleiro.</4>"
 
 #: src/routes/checkers/+page.svelte
-#: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -282,6 +284,7 @@ msgid "Press Start"
 msgstr "Pressione Iniciar"
 
 #: src/routes/checkers/+page.svelte
+#: src/routes/minesweeper/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
@@ -546,6 +549,9 @@ msgstr "Joystick: A para selecionar · B para retornar"
 #~ msgstr "Campo Minado | Caos no Jogo"
 
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
 msgid "💣 Boom Box 💣"
 msgstr "Campo Minado 💣"
 
@@ -800,6 +806,8 @@ msgid "Cabinet memory: Online"
 msgstr "Memória do gabinete: Online"
 
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
 msgid "Vintage minefield. No mercy."
 msgstr "Campo minado vintage. Sem piedade."
 
@@ -1261,10 +1269,8 @@ msgstr "Playfield do Tetris Chaos"
 msgid "Board Size"
 msgstr ""
 
-#. 0: option.label; 1: getMineCount(option.rows, option.cols, difficulty.density)
-#: src/routes/minesweeper/+page.svelte
-msgid "{0} • {1} mines"
-msgstr ""
+#~ msgid "{0} • {1} mines"
+#~ msgstr ""
 
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/sudoku/+page.svelte
@@ -1405,3 +1411,121 @@ msgstr "Laboratório Lógico"
 #: src/routes/+page.svelte
 msgid "Solve It"
 msgstr "Resolver"
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "A — Bottom Drawer"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "B — Side Panel"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "C — Accordion"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Ajuda"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Vitórias"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Tabuleiro"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Dificuldade"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Fácil"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Médio"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Campo da Morte"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Iniciar"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Painel"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Fechar ajuda"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Como Jogar"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "✕ Fechar"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Revele todas as peças seguras para vencer.<0/> Toque para revelar • Pressione longo para marcar.<1/> <2>A / Enter = selecionar • B / Esc = voltar.</2>"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Morte"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Revele todas as peças seguras para vencer.<0/><1/> Toque para revelar.<2/> Pressione longo para marcar uma mina.<3/><4/> <5>A / Enter = selecionar<0/>B / Esc = voltar.</5>"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Dica"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "Os números indicam quantas minas há nas 8 células ao redor."
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "❓ Como Jogar"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "▶ Iniciar"
+msgstr ""
+
+#: src/routes/minesweeper/proto/+page.svelte
+msgid "⬡ Painel"
+msgstr ""
+
+#. 0: getMineCount(option.rows, option.cols, difficulty.density)
+#: src/routes/minesweeper/+page.svelte
+msgid "{0} mines"
+msgstr ""
+
+#: src/routes/minesweeper/+page.svelte
+msgid "❓ How to Play"
+msgstr ""

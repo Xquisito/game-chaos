@@ -38,6 +38,7 @@
 	let wins = $state(0);
 	let selectedBoardIndex = $state(0);
 	let selectedDifficultyIndex = $state(1);
+	let helpOpen = $state(false);
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 	let longPressPointerId: number | null = null;
 	let longPressCellKey = '';
@@ -390,127 +391,156 @@
 	{#if splashScreen}
 		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
 			<div
-				class="w-full max-w-4xl border-4 border-black bg-white p-4 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
+				class="w-full max-w-4xl border-4 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
 			>
-				<div class="mb-5 text-center sm:mb-8">
-					<div
-						class="mb-2 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm"
-					>
+				<!-- Black header band: title + compact wins counter -->
+				<div class="border-b-4 border-black bg-black px-4 py-3 text-yellow-300 sm:px-8 sm:py-5">
+					<div class="text-[0.55rem] font-black tracking-[0.4em] uppercase text-yellow-300/50 sm:text-xs">
 						Game Chaos
 					</div>
-					<h1
-						class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
-					>
-						💣 Boom Box 💣
-					</h1>
-					<p class="mt-2 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">
+					<div class="flex items-center justify-between gap-4">
+						<h1
+							class="text-xl font-black leading-none uppercase sm:text-5xl sm:drop-shadow-[3px_3px_0_rgba(255,221,0,0.25)]"
+						>
+							💣 Boom Box 💣
+						</h1>
+						<div class="shrink-0 text-right">
+							<div class="text-[0.5rem] tracking-widest uppercase text-yellow-300/50 sm:text-[0.6rem]">
+								Total Wins
+							</div>
+							<div class="text-lg font-black leading-none sm:text-4xl">{wins}</div>
+						</div>
+					</div>
+					<p class="mt-1 text-[0.65rem] font-bold uppercase text-yellow-300/60 sm:mt-2 sm:text-base">
 						Vintage minefield. No mercy.
 					</p>
 				</div>
 
-				<div class="grid gap-4 md:grid-cols-[1.3fr_0.7fr]">
-					<div
-						class="border-4 border-black bg-yellow-200 p-3 text-xs leading-relaxed font-bold uppercase sm:p-5 sm:text-base"
-					>
-						Reveal every safe tile to win.<br />
-						Click/tap reveal • Long-press flag.<br />
-						<span class="mt-3 block text-black/70 sm:mt-4">
-							A / Enter = select • B / Esc = return.
-						</span>
-					</div>
-
-					<div class="border-4 border-black bg-black p-3 text-yellow-300 sm:p-5">
-						<div
-							class="text-[0.6rem] font-black tracking-[0.35em] text-yellow-300/70 uppercase sm:text-xs"
-						>
-							Score Board
+				<div class="p-4 sm:p-8">
+					<!-- Config: board size + difficulty always side-by-side -->
+					<div class="mb-4 grid grid-cols-2 gap-2 sm:mb-6 sm:gap-4">
+						<div class="border-2 border-black bg-yellow-100 p-2 sm:border-4 sm:p-4">
+							<div
+								class="mb-2 text-[0.55rem] font-black tracking-[0.3em] uppercase text-black/50 sm:mb-3 sm:text-xs"
+							>
+								Board Size
+							</div>
+							<div class="flex flex-col gap-1 sm:gap-2">
+								{#each BOARD_SIZES as option, index (`${option.rows}x${option.cols}`)}
+									<button
+										type="button"
+										data-menu-button
+										onclick={() => selectBoard(index)}
+										class={[
+											'border-2 border-black px-1.5 py-1.5 text-left text-xs font-black uppercase leading-tight transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 sm:border-4 sm:px-3 sm:py-2 sm:text-base',
+											selectedBoardIndex === index
+												? 'bg-black text-yellow-300'
+												: 'bg-white text-black hover:bg-black hover:text-white focus:bg-black focus:text-white'
+										]}
+									>
+										<span class="block">{option.label}</span>
+										<span class="block text-[0.5rem] opacity-60 sm:text-xs">
+											{getMineCount(option.rows, option.cols, difficulty.density)} mines
+										</span>
+									</button>
+								{/each}
+							</div>
 						</div>
-						<div class="mt-2 text-3xl font-black sm:mt-4 sm:text-5xl">{wins}</div>
-						<div class="mt-1 text-sm font-bold uppercase sm:mt-2 sm:text-lg">Total Wins</div>
-					</div>
-				</div>
 
-				<div class="mt-6 flex flex-col gap-2 sm:mt-8 sm:gap-4">
-					{#if hasActiveRun}
+						<div class="border-2 border-black bg-yellow-100 p-2 sm:border-4 sm:p-4">
+							<div
+								class="mb-2 text-[0.55rem] font-black tracking-[0.3em] uppercase text-black/50 sm:mb-3 sm:text-xs"
+							>
+								Difficulty
+							</div>
+							<div class="flex flex-col gap-1 sm:gap-2">
+								{#each DIFFICULTIES as option, index (option.label)}
+									<button
+										type="button"
+										data-menu-button
+										onclick={() => selectDifficulty(index)}
+										class={[
+											'border-2 border-black px-1.5 py-1.5 text-xs font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 sm:border-4 sm:px-3 sm:py-2 sm:text-base',
+											selectedDifficultyIndex === index
+												? 'bg-black text-yellow-300'
+												: 'bg-white text-black hover:bg-black hover:text-white focus:bg-black focus:text-white'
+										]}
+									>
+										{option.label}
+									</button>
+								{/each}
+							</div>
+						</div>
+					</div>
+
+					<!-- Accordion help -->
+					<div class="mb-4 border-2 border-black sm:mb-6 sm:border-4">
 						<button
-							data-menu-button
-							onclick={continueGame}
-							class="border-2 border-yellow-400 bg-black px-4 py-3 text-lg font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
+							onclick={() => (helpOpen = !helpOpen)}
+							class="flex w-full items-center justify-between bg-yellow-200 px-3 py-2 text-xs font-black uppercase transition-colors hover:bg-yellow-300 active:scale-[0.98] sm:px-4 sm:py-3 sm:text-sm"
 						>
-							Continue
+							<span>❓ How to Play</span>
+							<span
+								class="text-base leading-none transition-transform duration-200"
+								class:rotate-180={helpOpen}>▾</span
+							>
 						</button>
+						{#if helpOpen}
+							<div
+								class="border-t-2 border-black bg-yellow-50 px-3 py-2 text-xs font-bold leading-relaxed uppercase sm:border-t-4 sm:px-4 sm:py-3 sm:text-sm"
+							>
+								Reveal every safe tile to win.<br />
+								Click/tap reveal • Long-press flag.<br />
+								<span class="mt-2 block text-[0.6rem] text-black/60 sm:text-xs">
+									A / Enter = select • B / Esc = return.
+								</span>
+							</div>
+						{/if}
+					</div>
+
+					<!-- CTA buttons: primary + Dashboard side-by-side; New Game below when resuming -->
+					{#if hasActiveRun}
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
+							<button
+								data-menu-button
+								onclick={continueGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Continue
+							</button>
+							<button
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
 						<button
 							data-menu-button
 							onclick={startGame}
-							class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
+							class="mt-2 w-full border-2 border-black bg-white py-2 text-sm font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-3 sm:text-base"
 						>
 							New Game
 						</button>
 					{:else}
-						<button
-							data-menu-button
-							onclick={startGame}
-							class="border-2 border-yellow-400 bg-black px-4 py-3 text-lg font-black text-yellow-400 uppercase transition-all hover:scale-[1.02] hover:bg-yellow-400 hover:text-black focus:scale-[1.02] focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
-						>
-							Press Start
-						</button>
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
+							<button
+								data-menu-button
+								onclick={startGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Press Start
+							</button>
+							<button
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
 					{/if}
-
-					<button
-						data-menu-button
-						onclick={backToDashboard}
-						class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
-					>
-						Dashboard
-					</button>
-				</div>
-
-				<div class="mt-6 grid gap-4 sm:mt-8 lg:grid-cols-2">
-					<div class="border-4 border-black bg-yellow-100 p-3 sm:p-4">
-						<div class="mb-3 text-xs font-black tracking-[0.3em] text-black/60 uppercase sm:text-sm">
-							Board Size
-						</div>
-						<div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-							{#each BOARD_SIZES as option, index (`${option.rows}x${option.cols}`)}
-								<button
-									type="button"
-									data-menu-button
-									onclick={() => selectBoard(index)}
-									class={[
-										'border-2 border-black px-3 py-2 text-sm font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 sm:border-4 sm:text-base',
-										selectedBoardIndex === index
-											? 'bg-black text-yellow-300'
-											: 'bg-white text-black hover:bg-black hover:text-white focus:bg-black focus:text-white'
-									]}
-								>
-									{option.label} • {getMineCount(option.rows, option.cols, difficulty.density)} mines
-								</button>
-							{/each}
-						</div>
-					</div>
-
-					<div class="border-4 border-black bg-yellow-100 p-3 sm:p-4">
-						<div class="mb-3 text-xs font-black tracking-[0.3em] text-black/60 uppercase sm:text-sm">
-							Difficulty
-						</div>
-						<div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
-							{#each DIFFICULTIES as option, index (option.label)}
-								<button
-									type="button"
-									data-menu-button
-									onclick={() => selectDifficulty(index)}
-									class={[
-										'border-2 border-black px-3 py-2 text-sm font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 sm:border-4 sm:text-base',
-										selectedDifficultyIndex === index
-											? 'bg-black text-yellow-300'
-											: 'bg-white text-black hover:bg-black hover:text-white focus:bg-black focus:text-white'
-									]}
-								>
-									{option.label}
-								</button>
-							{/each}
-						</div>
-					</div>
 				</div>
 			</div>
 		</div>
