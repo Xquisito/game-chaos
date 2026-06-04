@@ -32,7 +32,6 @@ msgstr ""
 #~ msgstr "Minesweeper Chaos"
 
 #: src/routes/+page.svelte
-#: src/routes/settings/+page.svelte
 msgid "Checkers Chaos"
 msgstr "Checkers Chaos"
 
@@ -41,7 +40,6 @@ msgstr "Checkers Chaos"
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
-#: src/routes/settings/+page.svelte
 msgid "Minesweeper"
 msgstr "Minesweeper"
 
@@ -87,7 +85,6 @@ msgstr "Start Match"
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
-#: src/routes/settings/+page.svelte
 msgid "Enduro Chaos"
 msgstr "Enduro Chaos"
 
@@ -121,7 +118,6 @@ msgstr "Burn Rubber"
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
-#: src/routes/settings/+page.svelte
 msgid "Space Chaos"
 msgstr "Space Chaos"
 
@@ -141,26 +137,22 @@ msgstr "Galaxy Sector"
 msgid "Launch Run"
 msgstr "Launch Run"
 
-#: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
 msgid "Settings"
 msgstr "Settings"
 
-#: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
 msgid "Tune the cabinet, inspect scores, and wipe save data."
 msgstr "Tune the cabinet, inspect scores, and wipe save data."
 
-#: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
+#: src/routes/settings/+page.svelte
 msgid "System Deck"
 msgstr "System Deck"
 
-#: src/routes/+page.svelte
-msgid "Scores • Reset • System"
-msgstr "Scores • Reset • System"
+#~ msgid "Scores • Reset • System"
+#~ msgstr "Scores • Reset • System"
 
-#: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
 msgid "Open Panel"
 msgstr "Open Panel"
@@ -198,7 +190,7 @@ msgstr "Arcade Hub // Ready"
 #~ msgid "Tap, tab, or hit the D-pad to jump cabinet-to-cabinet."
 #~ msgstr "Tap, tab, or hit the D-pad to jump cabinet-to-cabinet."
 
-#. 0: dashboardCabinets.length
+#. 0: dashboardGameCabinets.length
 #. 0: games.length
 #. 0: games.length
 #. 0: games.length
@@ -532,31 +524,26 @@ msgstr "BACK TO SPLASH"
 msgid "ENTER / A TO SELECT • ESC / B TO RETURN"
 msgstr "ENTER / A TO SELECT • ESC / B TO RETURN"
 
-#: src/routes/settings/+page.svelte
-msgid "⚙️ SYSTEM SETTINGS ⚙️"
-msgstr "⚙️ SYSTEM SETTINGS ⚙️"
+#~ msgid "⚙️ SYSTEM SETTINGS ⚙️"
+#~ msgstr "⚙️ SYSTEM SETTINGS ⚙️"
 
-#: src/routes/settings/+page.svelte
-msgid "MEMORY MANAGEMENT UNIT"
-msgstr "MEMORY MANAGEMENT UNIT"
+#~ msgid "MEMORY MANAGEMENT UNIT"
+#~ msgstr "MEMORY MANAGEMENT UNIT"
 
 #~ msgid "WINS: {0}"
 #~ msgstr "WINS: {0}"
 
-#: src/routes/settings/+page.svelte
-msgid "RESET"
-msgstr "RESET"
+#~ msgid "RESET"
+#~ msgstr "RESET"
 
 #~ msgid "HI-SCORE: {0}"
 #~ msgstr "HI-SCORE: {0}"
 
-#: src/routes/settings/+page.svelte
-msgid "RETURN TO DASHBOARD"
-msgstr "RETURN TO DASHBOARD"
+#~ msgid "RETURN TO DASHBOARD"
+#~ msgstr "RETURN TO DASHBOARD"
 
-#: src/routes/settings/+page.svelte
-msgid "Joystick: A to Select · B to Return"
-msgstr "Joystick: A to Select · B to Return"
+#~ msgid "Joystick: A to Select · B to Return"
+#~ msgstr "Joystick: A to Select · B to Return"
 
 #~ msgid "SYSTEM ERROR: Too much chaos detected! ⚠️"
 #~ msgstr "SYSTEM ERROR: Too much chaos detected! ⚠️"
@@ -933,7 +920,6 @@ msgstr "Points"
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
-#: src/routes/settings/+page.svelte
 msgid "Tetris Chaos"
 msgstr "Tetris Chaos"
 
@@ -1093,7 +1079,6 @@ msgid "Recorde"
 msgstr "Recorde"
 
 #: src/routes/proto/+page.svelte
-#: src/routes/settings/+page.svelte
 msgid "Frog Chaos"
 msgstr "Frog Chaos"
 
@@ -1426,7 +1411,6 @@ msgstr "{0} grid cleared in {1}. Total solved: {2}."
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
-#: src/routes/settings/+page.svelte
 msgid "Sudoku Chaos"
 msgstr "Sudoku Chaos"
 
@@ -1712,3 +1696,37 @@ msgstr "Opponent"
 #: src/routes/checkers/+page.svelte
 msgid "You play white. Tap a piece, then its destination.<0/> Jump chains when available. Crown kings on the far row.<1/> <2>A / Enter = select • B / Esc = return.</2>"
 msgstr "You play white. Tap a piece, then its destination.<0/> Jump chains when available. Crown kings on the far row.<1/> <2>A / Enter = select • B / Esc = return.</2>"
+
+#: src/routes/settings/+page.svelte
+msgid "⚙️ System Settings ⚙️"
+msgstr "⚙️ System Settings ⚙️"
+
+#: src/routes/settings/+page.svelte
+msgid "Memory management unit — wipe cabinet saves."
+msgstr "Memory management unit — wipe cabinet saves."
+
+#: src/routes/settings/+page.svelte
+msgid "Cabinet Memory"
+msgstr "Cabinet Memory"
+
+#. 0: gameCabinets.length
+#: src/routes/settings/+page.svelte
+msgid "{0} units"
+msgstr "{0} units"
+
+#: src/routes/settings/+page.svelte
+msgid "Reset"
+msgstr "Reset"
+
+#: src/routes/settings/+page.svelte
+msgid "Return to Dashboard"
+msgstr "Return to Dashboard"
+
+#: src/routes/settings/+page.svelte
+msgid "A / Enter = select • B / Esc = return"
+msgstr "A / Enter = select • B / Esc = return"
+
+#: src/routes/+page.svelte
+#: src/routes/+page.svelte
+msgid "System settings"
+msgstr "System settings"
