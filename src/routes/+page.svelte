@@ -244,17 +244,17 @@
 							<p class="text-[0.65rem] font-black uppercase sm:text-sm">▶</p>
 						</div>
 
-						<!-- Unified body: horizontal row on mobile, vertical stack on desktop -->
+						<!-- Vertical stack on all sizes -->
 						<div
-							class="{card.color} flex flex-1 items-center gap-3 p-3 sm:flex-col sm:items-start sm:justify-between sm:p-5"
+							class="{card.color} flex flex-1 flex-col items-start justify-between gap-2 p-3 sm:p-5"
 						>
 							<div
-								class="flex h-12 w-12 shrink-0 items-center justify-center border-4 border-black bg-black text-2xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl"
+								class="flex h-10 w-10 shrink-0 items-center justify-center border-4 border-black bg-black text-xl sm:h-[4.5rem] sm:w-[4.5rem] sm:text-4xl"
 							>
 								{card.emoji}
 							</div>
 
-							<div class="flex min-w-0 flex-1 flex-col justify-between gap-1 sm:w-full sm:flex-1">
+							<div class="flex w-full flex-col gap-1 sm:flex-1">
 								<div>
 									<h2 class="text-sm font-black uppercase leading-none sm:text-[1.7rem]">
 										{card.name}
@@ -266,7 +266,7 @@
 									</p>
 								</div>
 
-								<div class="mt-1 flex items-center justify-between gap-2 sm:mt-4">
+								<div class="mt-1 flex flex-col gap-1 sm:mt-4">
 									<div
 										class="border-[3px] border-black bg-black px-2 py-1 text-[0.5rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm"
 									>
@@ -274,7 +274,7 @@
 									</div>
 
 									<span
-										class="border-[3px] border-black bg-white px-2.5 py-1.5 text-[0.55rem] font-black uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] transition-colors group-hover:bg-black group-hover:text-white group-hover:shadow-none sm:min-w-36 sm:border-4 sm:px-3 sm:py-3 sm:text-base sm:shadow-[4px_4px_0_rgba(0,0,0,1)]"
+										class="w-full border-[3px] border-black bg-white px-2.5 py-1.5 text-center text-[0.55rem] font-black uppercase shadow-[2px_2px_0_rgba(0,0,0,1)] transition-colors group-hover:bg-black group-hover:text-white group-hover:shadow-none sm:border-4 sm:px-3 sm:py-3 sm:text-base sm:shadow-[4px_4px_0_rgba(0,0,0,1)]"
 									>
 										{card.cta}
 									</span>

@@ -64,7 +64,7 @@ msgstr "Vitórias"
 #: src/routes/proto/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "Insert Coin"
-msgstr "Colocar Moeda"
+msgstr "Caçar"
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
@@ -81,7 +81,7 @@ msgstr "Peão e Dama"
 #: src/routes/checkers/+page.svelte
 #: src/routes/proto/+page.svelte
 msgid "Start Match"
-msgstr "Iniciar Partida"
+msgstr "Desafie"
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
@@ -114,7 +114,7 @@ msgstr "Recorde"
 #: src/routes/enduro/+page.svelte
 #: src/routes/proto/+page.svelte
 msgid "Burn Rubber"
-msgstr "Queimar Borracha"
+msgstr "Borracha"
 
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
@@ -135,7 +135,7 @@ msgstr "Setor Galáctico"
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
 msgid "Launch Run"
-msgstr "Defenda o Ataque"
+msgstr "Defender"
 
 #: src/routes/proto/+page.svelte
 msgid "Settings"
@@ -1091,7 +1091,7 @@ msgstr "Frog Chaos"
 #: src/routes/+page.svelte
 #: src/routes/proto/+page.svelte
 msgid "Hop In"
-msgstr "Entrar Pulando"
+msgstr "Pular"
 
 #~ msgid "Frog Chaos | The Chaos Arcade"
 #~ msgstr ""
