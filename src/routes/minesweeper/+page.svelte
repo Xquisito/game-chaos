@@ -9,9 +9,16 @@
 		MENU_BUTTON_SELECTOR
 	} from '$lib/unified-controls';
 
-	const ROWS = 10;
-	const COLS = 10;
-	const MINES_COUNT = 15;
+	const BOARD_SIZES = [
+		{ label: '10×10', rows: 10, cols: 10 },
+		{ label: '12×12', rows: 12, cols: 12 },
+		{ label: '15×15', rows: 15, cols: 15 }
+	] as const;
+	const DIFFICULTIES = [
+		{ label: 'Easy', density: 0.12 },
+		{ label: 'Medium', density: 0.15 },
+		{ label: 'Death Field', density: 0.21 }
+	] as const;
 	const LONG_PRESS_MS = 360;
 	const cabinet = gameCabinetById.minesweeper;
 
@@ -29,6 +36,8 @@
 	let endMode = $state<EndMode>(null);
 	let hasActiveRun = $state(false);
 	let wins = $state(0);
+	let selectedBoardIndex = $state(0);
+	let selectedDifficultyIndex = $state(1);
 	let longPressTimer: ReturnType<typeof setTimeout> | null = null;
 	let longPressPointerId: number | null = null;
 	let longPressCellKey = '';
@@ -41,6 +50,11 @@
 	let menuScreen = $derived(flow.menuScreen);
 	let gameWon = $derived(endMode === 'won');
 	let gameOver = $derived(endMode === 'lost');
+	let board = $derived(BOARD_SIZES[selectedBoardIndex]);
+	let difficulty = $derived(DIFFICULTIES[selectedDifficultyIndex]);
+	let rows = $derived(board.rows);
+	let cols = $derived(board.cols);
+	let minesCount = $derived(getMineCount(rows, cols, difficulty.density));
 	let minesLeft = $derived.by(() => {
 		let flagged = 0;
 		for (const row of grid) {
@@ -48,15 +62,15 @@
 				if (cell.state === 'flagged') flagged += 1;
 			}
 		}
-		return MINES_COUNT - flagged;
+		return minesCount - flagged;
 	});
 
 	function createEmptyGrid() {
 		const nextGrid: Cell[][] = [];
 
-		for (let r = 0; r < ROWS; r += 1) {
+		for (let r = 0; r < rows; r += 1) {
 			const row: Cell[] = [];
-			for (let c = 0; c < COLS; c += 1) {
+			for (let c = 0; c < cols; c += 1) {
 				row.push({ value: 'empty', state: 'hidden' });
 			}
 			nextGrid.push(row);
@@ -65,15 +79,27 @@
 		return nextGrid;
 	}
 
+	function getMineCount(rows: number, cols: number, density: number) {
+		const totalCells = rows * cols;
+		const roundedMines = Math.round(totalCells * density);
+		return Math.min(Math.max(roundedMines, 1), totalCells - 1);
+	}
+
+	function clearConfiguredRun() {
+		hasActiveRun = false;
+		endMode = null;
+		grid = [];
+	}
+
 	function initGame() {
 		clearLongPress();
 		endMode = null;
 		grid = createEmptyGrid();
 
 		let minesPlaced = 0;
-		while (minesPlaced < MINES_COUNT) {
-			const r = Math.floor(Math.random() * ROWS);
-			const c = Math.floor(Math.random() * COLS);
+		while (minesPlaced < minesCount) {
+			const r = Math.floor(Math.random() * rows);
+			const c = Math.floor(Math.random() * cols);
 
 			if (grid[r][c].value === 'mine') continue;
 
@@ -81,8 +107,8 @@
 			minesPlaced += 1;
 		}
 
-		for (let r = 0; r < ROWS; r += 1) {
-			for (let c = 0; c < COLS; c += 1) {
+		for (let r = 0; r < rows; r += 1) {
+			for (let c = 0; c < cols; c += 1) {
 				if (grid[r][c].value === 'mine') continue;
 
 				let count = 0;
@@ -92,7 +118,7 @@
 
 						const nr = r + dr;
 						const nc = c + dc;
-						if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) continue;
+						if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
 						if (grid[nr][nc].value === 'mine') count += 1;
 					}
 				}
@@ -106,6 +132,20 @@
 		initGame();
 		hasActiveRun = true;
 		screen = 'game';
+	}
+
+	function selectBoard(index: number) {
+		if (selectedBoardIndex === index) return;
+
+		selectedBoardIndex = index;
+		clearConfiguredRun();
+	}
+
+	function selectDifficulty(index: number) {
+		if (selectedDifficultyIndex === index) return;
+
+		selectedDifficultyIndex = index;
+		clearConfiguredRun();
 	}
 
 	function continueGame() {
@@ -145,7 +185,7 @@
 	}
 
 	function revealCell(r: number, c: number) {
-		if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return;
+		if (r < 0 || r >= rows || c < 0 || c >= cols) return;
 
 		const cell = grid[r][c];
 		if (cell.state !== 'hidden') return;
@@ -424,6 +464,54 @@
 						Dashboard
 					</button>
 				</div>
+
+				<div class="mt-6 grid gap-4 sm:mt-8 lg:grid-cols-2">
+					<div class="border-4 border-black bg-yellow-100 p-3 sm:p-4">
+						<div class="mb-3 text-xs font-black tracking-[0.3em] text-black/60 uppercase sm:text-sm">
+							Board Size
+						</div>
+						<div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+							{#each BOARD_SIZES as option, index (`${option.rows}x${option.cols}`)}
+								<button
+									type="button"
+									data-menu-button
+									onclick={() => selectBoard(index)}
+									class={[
+										'border-2 border-black px-3 py-2 text-sm font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 sm:border-4 sm:text-base',
+										selectedBoardIndex === index
+											? 'bg-black text-yellow-300'
+											: 'bg-white text-black hover:bg-black hover:text-white focus:bg-black focus:text-white'
+									]}
+								>
+									{option.label} • {getMineCount(option.rows, option.cols, difficulty.density)} mines
+								</button>
+							{/each}
+						</div>
+					</div>
+
+					<div class="border-4 border-black bg-yellow-100 p-3 sm:p-4">
+						<div class="mb-3 text-xs font-black tracking-[0.3em] text-black/60 uppercase sm:text-sm">
+							Difficulty
+						</div>
+						<div class="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+							{#each DIFFICULTIES as option, index (option.label)}
+								<button
+									type="button"
+									data-menu-button
+									onclick={() => selectDifficulty(index)}
+									class={[
+										'border-2 border-black px-3 py-2 text-sm font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 sm:border-4 sm:text-base',
+										selectedDifficultyIndex === index
+											? 'bg-black text-yellow-300'
+											: 'bg-white text-black hover:bg-black hover:text-white focus:bg-black focus:text-white'
+									]}
+								>
+									{option.label}
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	{:else}
@@ -467,7 +555,7 @@
 
 					<div
 						class="mx-auto w-fit rounded-[1.25rem] border-4 border-black bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.2),_transparent_40%),linear-gradient(180deg,#111_0%,#000_100%)] p-2 shadow-[0_0_0_4px_rgba(250,204,21,0.7),0_16px_30px_rgba(0,0,0,0.35)] sm:p-3"
-						style={`display: grid; grid-template-columns: repeat(${COLS}, minmax(0, 1fr)); gap: 0.25rem;`}
+						style={`display: grid; grid-template-columns: repeat(${cols}, minmax(0, 1fr)); gap: 0.25rem;`}
 					>
 						{#each grid as row, r (r)}
 							{#each row as cell, c (`${r}-${c}`)}
