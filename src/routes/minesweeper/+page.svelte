@@ -429,14 +429,18 @@
 	{:else}
 		<div class="flex min-h-[calc(100vh-3rem)] items-center justify-center">
 			<div
-				class="relative w-full max-w-4xl border-4 border-black bg-white p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:p-6"
+				class="relative w-full max-w-4xl border-4 border-black bg-gradient-to-br from-white via-yellow-50 to-amber-100 p-4 shadow-[14px_14px_0_rgba(0,0,0,1)] sm:rounded-[1.5rem] sm:p-6"
 			>
 				<div
-					class="mb-5 flex flex-col gap-3 border-4 border-black bg-black p-3 text-sm font-black text-yellow-300 uppercase sm:flex-row sm:items-center sm:justify-between sm:text-lg"
+					class="mb-5 flex flex-col gap-3 border-4 border-black bg-[linear-gradient(180deg,#111_0%,#000_100%)] p-3 text-sm font-black text-yellow-300 uppercase shadow-[0_6px_0_rgba(0,0,0,0.2)] sm:flex-row sm:items-center sm:justify-between sm:text-lg"
 				>
-					<div class="flex flex-wrap items-center gap-x-6 gap-y-2">
-						<span>Mines {minesLeft}</span>
-						<span>Wins {wins}</span>
+					<div class="flex flex-wrap items-center gap-2 sm:gap-3">
+						<span class="border-2 border-yellow-400 bg-black px-3 py-1 tracking-[0.2em] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+							Mines {minesLeft}
+						</span>
+						<span class="border-2 border-yellow-400 bg-black px-3 py-1 tracking-[0.2em] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+							Wins {wins}
+						</span>
 					</div>
 					{#if gameScreen}
 						<button
@@ -450,7 +454,7 @@
 
 				<div class="mb-3 text-center sm:mb-5">
 					<h2
-						class="hidden text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(0,0,0,1)] sm:block sm:text-5xl"
+						class="hidden text-4xl font-black uppercase drop-shadow-[3px_3px_0_rgba(255,255,255,0.65)] sm:block sm:text-5xl"
 					>
 						{gameWon ? 'Victory!' : gameOver ? 'Kaboom!' : 'Minefield Live'}
 					</h2>
@@ -461,23 +465,25 @@
 					</p>
 				</div>
 
-				<div
-					class="mx-auto w-fit gap-1 border-2 border-black bg-black p-1 sm:border-4 sm:p-1"
-					style={`display: grid; grid-template-columns: repeat(${COLS}, minmax(0, 1fr));`}
-				>
-					{#each grid as row, r (r)}
-						{#each row as cell, c (`${r}-${c}`)}
-							<button
-								type="button"
-								class={[
-									'cell-button flex h-8 w-8 items-center justify-center border border-black text-sm font-black transition-all select-none sm:h-10 sm:w-10 sm:border-2 sm:text-base',
-									cell.state === 'revealed'
-										? 'bg-white text-black'
-										: 'bg-zinc-500 text-white hover:bg-zinc-400 active:translate-y-[2px]',
-									cell.state === 'flagged' ? 'bg-yellow-400 text-black' : '',
-									gameScreen && cell.state === 'hidden' ? 'cursor-pointer' : 'cursor-default'
-								]}
-								tabindex={-1}
+					<div
+						class="mx-auto w-fit rounded-[1.25rem] border-4 border-black bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.2),_transparent_40%),linear-gradient(180deg,#111_0%,#000_100%)] p-2 shadow-[0_0_0_4px_rgba(250,204,21,0.7),0_16px_30px_rgba(0,0,0,0.35)] sm:p-3"
+						style={`display: grid; grid-template-columns: repeat(${COLS}, minmax(0, 1fr)); gap: 0.25rem;`}
+					>
+						{#each grid as row, r (r)}
+							{#each row as cell, c (`${r}-${c}`)}
+								<button
+									type="button"
+									class={[
+										'cell-button flex h-8 w-8 items-center justify-center rounded-[0.4rem] border border-black text-sm font-black transition-all select-none sm:h-10 sm:w-10 sm:border-2 sm:text-base',
+										cell.state === 'revealed'
+											? 'bg-[linear-gradient(180deg,#fffef5_0%,#e7e1d0_100%)] text-black shadow-[inset_0_1px_0_rgba(255,255,255,0.9),inset_0_-2px_0_rgba(0,0,0,0.08)]'
+											: 'bg-[linear-gradient(180deg,#8f8f8f_0%,#5c5c5c_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35),inset_0_-2px_0_rgba(0,0,0,0.35)] hover:-translate-y-[1px] hover:brightness-110 active:translate-y-[1px]',
+										cell.state === 'flagged'
+											? 'bg-[linear-gradient(180deg,#fde68a_0%,#f59e0b_100%)] text-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.65),inset_0_-2px_0_rgba(0,0,0,0.1)]'
+											: '',
+										gameScreen && cell.state === 'hidden' ? 'cursor-pointer' : 'cursor-default'
+									]}
+									tabindex={-1}
 								aria-label={getCellLabel(cell, r, c)}
 								onclick={() => handleCellClick(r, c)}
 								onpointerdown={(event) => handleCellPointerDown(event, r, c)}
@@ -485,29 +491,30 @@
 								onpointercancel={handleCellPointerEnd}
 								oncontextmenu={(event) => handleCellContextMenu(event, r, c)}
 							>
-								{#if cell.state === 'revealed'}
-									{#if cell.value === 'mine'}
-										💣
-									{:else if typeof cell.value === 'number' && cell.value > 0}
-										<span
-											class={[
-												cell.value === 1 && 'text-blue-600',
-												cell.value === 2 && 'text-green-600',
+									{#if cell.state === 'revealed'}
+										{#if cell.value === 'mine'}
+											<span class="text-base drop-shadow-[1px_1px_0_rgba(255,255,255,0.35)] sm:text-xl">💣</span>
+										{:else if typeof cell.value === 'number' && cell.value > 0}
+											<span
+												class={[
+													cell.value === 1 && 'text-blue-700',
+													cell.value === 2 && 'text-emerald-700',
 												cell.value === 3 && 'text-red-600',
-												cell.value === 4 && 'text-purple-700',
-												cell.value >= 5 && 'text-pink-600'
+												cell.value === 4 && 'text-violet-700',
+												cell.value >= 5 && 'text-fuchsia-700',
+												'[text-shadow:1px_1px_0_rgba(255,255,255,0.65)]'
 											]}
-										>
-											{cell.value}
-										</span>
+											>
+												{cell.value}
+											</span>
+										{/if}
+									{:else if cell.state === 'flagged'}
+										<span class="text-base drop-shadow-[1px_1px_0_rgba(255,255,255,0.35)] sm:text-xl">🚩</span>
 									{/if}
-								{:else if cell.state === 'flagged'}
-									🚩
-								{/if}
-							</button>
+								</button>
+							{/each}
 						{/each}
-					{/each}
-				</div>
+					</div>
 
 				{#if gameScreen}
 					<div
@@ -573,5 +580,6 @@
 	.cell-button {
 		touch-action: manipulation;
 		-webkit-touch-callout: none;
+		text-shadow: 0 1px 0 rgba(255, 255, 255, 0.18);
 	}
 </style>
