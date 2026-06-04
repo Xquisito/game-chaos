@@ -23,6 +23,7 @@
 	let gameOver = $state(false);
 	let gameStarted = $state(false);
 	let hasActiveRun = $state(false);
+	let helpOpen = $state(false);
 	let paused = $state(false);
 	let isStarting = $state(false);
 	let gamepadStartWasPressed = $state(false);
@@ -1024,80 +1025,138 @@
 
 	<!-- SPLASH -->
 	{#if splashScreen}
-		<div class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black">
-			<div class="mb-3 flex gap-4 sm:mb-8 sm:gap-6">
-				<div class="text-4xl sm:text-7xl">🏎️</div>
-				<div class="text-4xl text-yellow-400 sm:text-7xl">1983</div>
-			</div>
-
-			<h1
-				class="mb-1 text-[56px] leading-none font-black tracking-[-4px] text-[#ffcc00] drop-shadow-[4px_4px_0_#000] sm:mb-3 sm:text-[92px] sm:tracking-[-6px]"
-			>
-				ENDURO
-			</h1>
+		<div
+			class="absolute inset-0 z-50 flex items-center justify-center overflow-y-auto bg-yellow-300 px-1 py-2 font-mono text-black sm:px-6 sm:py-8"
+		>
 			<div
-				class="mb-3 text-xl font-bold tracking-[4px] text-white sm:mb-10 sm:text-4xl sm:tracking-[6px]"
+				class="my-auto w-full max-w-4xl border-4 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
 			>
-				ACTIVISION
-			</div>
-
-			<div
-				class="mb-4 max-w-xs border-4 border-white bg-black p-3 text-center text-sm leading-tight text-white shadow-[4px_4px_0_rgba(255,255,255,1)] sm:mb-12 sm:p-6 sm:text-lg"
-			>
-				PASS <span class="text-yellow-300">200 CARS</span> ON DAY 1<br />
-				THEN 300+ EVERY DAY AFTER<br />
-				<span class="mt-2 block text-[0.6rem] opacity-70 sm:mt-4 sm:text-xs">FOG • ICE • NIGHT</span
-				>
-				<span class="mt-1 block text-[0.6rem] leading-relaxed opacity-70 sm:mt-3 sm:text-xs">
-					KEYBOARD • GAMEPAD • TOUCH<br />
-					A / ENTER = SELECT • B / ESC = RETURN
-				</span>
-			</div>
-
-			<div class="mt-2 flex flex-col gap-2 sm:mt-8 sm:gap-4">
-				{#if hasActiveRun}
-					<button
-						data-menu-button
-						onclick={continueGame}
-						class="border-4 border-yellow-400 bg-black px-8 py-2 text-xl font-black text-yellow-400 shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black hover:shadow-none focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-5 sm:text-4xl"
+				<div class="border-b-4 border-black bg-black px-4 py-3 text-yellow-300 sm:px-8 sm:py-5">
+					<div
+						class="text-[0.55rem] font-black tracking-[0.4em] uppercase text-yellow-300/50 sm:text-xs"
 					>
-						CONTINUE
-					</button>
-					<button
-						data-menu-button
-						onclick={startGame}
-						class="border-4 border-white bg-black px-8 py-2 text-center text-lg font-black text-white shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-white hover:text-black hover:shadow-none focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-4 sm:text-2xl"
-					>
-						NEW GAME
-					</button>
-				{:else}
-					<button
-						data-menu-button
-						onclick={startGame}
-						class="border-4 border-yellow-400 bg-black px-8 py-2 text-xl font-black text-yellow-400 shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-yellow-400 hover:text-black hover:shadow-none focus:scale-110 focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-5 sm:text-4xl"
-					>
-						PRESS START
-					</button>
-				{/if}
-				<button
-					data-menu-button
-					onclick={backToDashboard}
-					class="border-4 border-white bg-black px-8 py-2 text-center text-lg font-black text-white shadow-[4px_4px_0_rgba(255,255,255,1)] transition-all hover:scale-110 hover:bg-white hover:text-black hover:shadow-none focus:scale-110 focus:bg-white focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:px-14 sm:py-4 sm:text-2xl"
-				>
-					DASHBOARD
-				</button>
-			</div>
-
-			<div class="mt-4 text-xs text-white/60 sm:mt-16 sm:text-sm">
-				← → / WASD STEER • ↑ ↓ SPEED<br />
-				GAMEPAD + TOUCH DRAG / THROTTLE / BRAKE
-			</div>
-
-			{#if highScore > 0}
-				<div class="absolute bottom-4 text-sm font-bold text-yellow-400 sm:bottom-12 sm:text-xl">
-					HIGH SCORE — {highScore}
+						Road Fury
+					</div>
+					<div class="flex items-center justify-between gap-4">
+						<h1
+							class="text-xl font-black leading-none uppercase sm:text-5xl sm:drop-shadow-[3px_3px_0_rgba(255,221,0,0.25)]"
+						>
+							🏎️ Enduro Chaos 🏎️
+						</h1>
+						<div class="shrink-0 text-right">
+							<div
+								class="text-[0.5rem] tracking-widest uppercase text-yellow-300/50 sm:text-[0.6rem]"
+							>
+								Hi-Score
+							</div>
+							<div class="text-lg font-black leading-none sm:text-4xl">{highScore}</div>
+						</div>
+					</div>
+					<p class="mt-1 text-[0.65rem] font-bold uppercase text-yellow-300/60 sm:mt-2 sm:text-base">
+						Pass 200 cars on day 1. Burn rubber.
+					</p>
 				</div>
-			{/if}
+
+				<div class="p-4 sm:p-8">
+					<div class="mb-4 grid grid-cols-2 gap-2 sm:mb-6 sm:gap-4">
+						<div class="border-2 border-black bg-yellow-100 p-2 sm:border-4 sm:p-4">
+							<div
+								class="mb-2 text-[0.55rem] font-black tracking-[0.3em] uppercase text-black/50 sm:mb-3 sm:text-xs"
+							>
+								Day 1 Target
+							</div>
+							<div class="text-xs font-black uppercase leading-tight sm:text-base">
+								Pass 200 Cars
+							</div>
+							<div class="mt-1 text-[0.5rem] font-bold uppercase text-black/60 sm:text-xs">
+								300+ every day after
+							</div>
+						</div>
+						<div class="border-2 border-black bg-yellow-100 p-2 sm:border-4 sm:p-4">
+							<div
+								class="mb-2 text-[0.55rem] font-black tracking-[0.3em] uppercase text-black/50 sm:mb-3 sm:text-xs"
+							>
+								Conditions
+							</div>
+							<div class="text-xs font-black uppercase leading-tight sm:text-base">
+								Fog • Ice • Night
+							</div>
+							<div class="mt-1 text-[0.5rem] font-bold uppercase text-black/60 sm:text-xs">
+								Weather shifts mid-run
+							</div>
+						</div>
+					</div>
+
+					<div class="mb-4 border-2 border-black sm:mb-6 sm:border-4">
+						<button
+							type="button"
+							onclick={() => (helpOpen = !helpOpen)}
+							class="flex w-full items-center justify-between bg-yellow-200 px-3 py-2 text-xs font-black uppercase transition-colors hover:bg-yellow-300 active:scale-[0.98] sm:px-4 sm:py-3 sm:text-sm"
+						>
+							<span>❓ How to Play</span>
+							<span
+								class="text-base leading-none transition-transform duration-200"
+								class:rotate-180={helpOpen}>▾</span
+							>
+						</button>
+						{#if helpOpen}
+							<div
+								class="border-t-2 border-black bg-yellow-50 px-3 py-2 text-xs font-bold leading-relaxed uppercase sm:border-t-4 sm:px-4 sm:py-3 sm:text-sm"
+							>
+								← → / WASD steer • ↑ ↓ speed up or brake.<br />
+								Gamepad + touch drag / throttle / brake supported.<br />
+								P pauses during a run. Esc / B returns to splash.<br />
+								<span class="mt-2 block text-[0.6rem] text-black/60 sm:text-xs">
+									A / Enter = select • B / Esc = return.
+								</span>
+							</div>
+						{/if}
+					</div>
+
+					{#if hasActiveRun}
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
+							<button
+								data-menu-button
+								onclick={continueGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Continue
+							</button>
+							<button
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
+						<button
+							data-menu-button
+							onclick={startGame}
+							class="mt-2 w-full border-2 border-black bg-white py-2 text-sm font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-3 sm:text-base"
+						>
+							New Game
+						</button>
+					{:else}
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
+							<button
+								data-menu-button
+								onclick={startGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Burn Rubber
+							</button>
+							<button
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
+					{/if}
+				</div>
+			</div>
 		</div>
 	{/if}
 

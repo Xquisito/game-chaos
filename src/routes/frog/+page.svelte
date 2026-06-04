@@ -134,6 +134,7 @@
 	let touchCapable = $state(false);
 	let showFrogModal = $state(false);
 	let hasActiveRun = $state(false);
+	let helpOpen = $state(false);
 	let cellSize = $state(32);
 
 	let flow = $derived(getCabinetFlow(screen));
@@ -1223,74 +1224,111 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div
-	class="relative min-h-screen overflow-hidden bg-lime-400 px-2 py-2 font-mono text-black sm:px-6 sm:py-6"
+	class="relative min-h-screen overflow-hidden bg-yellow-300 px-1 py-1 font-mono text-black sm:px-6 sm:py-8"
 >
 	{#if splashScreen}
-		<div class="flex min-h-[calc(100vh-1rem)] items-center justify-center">
+		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
 			<div
-				class="w-full max-w-5xl border-4 border-black bg-white p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
+				class="w-full max-w-4xl border-4 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
 			>
-				<div class="mb-4 text-center sm:mb-8">
+				<div class="border-b-4 border-black bg-black px-4 py-3 text-yellow-300 sm:px-8 sm:py-5">
 					<div
-						class="mb-1 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm"
+						class="text-[0.55rem] font-black tracking-[0.4em] uppercase text-yellow-300/50 sm:text-xs"
 					>
-						Game Chaos
+						River Run
 					</div>
-					<h1
-						class="text-4xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
-					>
-						🐸 FROG CHAOS 🐸
-					</h1>
-					<p class="mt-2 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">REACH ALL 5 PADS</p>
+					<div class="flex items-center justify-between gap-4">
+						<h1
+							class="text-xl font-black leading-none uppercase sm:text-5xl sm:drop-shadow-[3px_3px_0_rgba(255,221,0,0.25)]"
+						>
+							🐸 Frog Chaos 🐸
+						</h1>
+						<div class="shrink-0 text-right">
+							<div
+								class="text-[0.5rem] tracking-widest uppercase text-yellow-300/50 sm:text-[0.6rem]"
+							>
+								Hi-Score
+							</div>
+							<div class="text-lg font-black leading-none sm:text-4xl">
+								{highScore.toLocaleString()}
+							</div>
+						</div>
+					</div>
+					<p class="mt-1 text-[0.65rem] font-bold uppercase text-yellow-300/60 sm:mt-2 sm:text-base">
+						Reach all 5 home pads.
+					</p>
 				</div>
 
-				<div class="grid gap-3 sm:grid-cols-[1.2fr_0.8fr] sm:gap-4">
-					<div
-						class="border-4 border-black bg-lime-200 p-3 text-[0.68rem] leading-relaxed font-bold uppercase sm:p-5 sm:text-base"
-					>
-						ARROWS / WASD HOP ONE CELL. SPACE PAUSES. RIDE LOGS, TRUST SOME TURTLES, FEAR ALL
-						TRAFFIC.
-						<span class="mt-2 block text-black/70 sm:mt-4">
-							A / ENTER = SELECT • B / ESC = RETURN
-						</span>
-						{#if touchCapable}
-							<span class="mt-2 block text-black/70">TOUCH D-PAD ARMED BELOW THE CANVAS.</span>
+				<div class="p-4 sm:p-8">
+					<div class="mb-4 border-2 border-black sm:mb-6 sm:border-4">
+						<button
+							type="button"
+							onclick={() => (helpOpen = !helpOpen)}
+							class="flex w-full items-center justify-between bg-yellow-200 px-3 py-2 text-xs font-black uppercase transition-colors hover:bg-yellow-300 active:scale-[0.98] sm:px-4 sm:py-3 sm:text-sm"
+						>
+							<span>❓ How to Play</span>
+							<span
+								class="text-base leading-none transition-transform duration-200"
+								class:rotate-180={helpOpen}>▾</span
+							>
+						</button>
+						{#if helpOpen}
+							<div
+								class="border-t-2 border-black bg-yellow-50 px-3 py-2 text-xs font-bold leading-relaxed uppercase sm:border-t-4 sm:px-4 sm:py-3 sm:text-sm"
+							>
+								Arrows / WASD hop one cell. Space pauses.<br />
+								Ride logs, trust some turtles, fear all traffic.<br />
+								{#if touchCapable}
+									Touch D-pad sits below the canvas.<br />
+								{/if}
+								<span class="mt-2 block text-[0.6rem] text-black/60 sm:text-xs">
+									A / Enter = select • B / Esc = return.
+								</span>
+							</div>
 						{/if}
 					</div>
 
-					<div class="border-4 border-black bg-black p-3 text-lime-300 sm:p-5">
-						<div class="text-[0.6rem] font-black tracking-[0.35em] text-lime-300/70 uppercase">
-							Current High Score
-						</div>
-						<div class="mt-2 text-4xl font-black sm:text-6xl">{highScore.toLocaleString()}</div>
-						<div class="mt-1 text-sm font-bold uppercase sm:text-lg">Hi-Score</div>
-					</div>
-				</div>
-
-				<div class="mt-4 flex flex-col gap-2 sm:mt-8 sm:gap-4">
 					{#if hasActiveRun}
-						<button
-							data-menu-button
-							onclick={continueGame}
-							class="border-2 border-lime-400 bg-black px-4 py-3 text-lg font-black text-lime-300 uppercase transition-all hover:scale-[1.02] hover:bg-lime-300 hover:text-black focus:scale-[1.02] focus:bg-lime-300 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
-						>
-							CONTINUE
-						</button>
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
+							<button
+								data-menu-button
+								onclick={continueGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Continue
+							</button>
+							<button
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
 						<button
 							data-menu-button
 							onclick={startGame}
-							class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-lime-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
+							class="mt-2 w-full border-2 border-black bg-white py-2 text-sm font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-3 sm:text-base"
 						>
-							START
+							New Game
 						</button>
 					{:else}
-						<button
-							data-menu-button
-							onclick={startGame}
-							class="border-2 border-lime-400 bg-black px-4 py-3 text-lg font-black text-lime-300 uppercase transition-all hover:scale-[1.02] hover:bg-lime-300 hover:text-black focus:scale-[1.02] focus:bg-lime-300 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
-						>
-							START
-						</button>
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
+							<button
+								data-menu-button
+								onclick={startGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Insert Coin
+							</button>
+							<button
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
 					{/if}
 
 					<button
@@ -1299,17 +1337,9 @@
 							showFrogModal = true;
 							focusFrogModalSoon();
 						}}
-						class="border-2 border-black bg-fuchsia-400 px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-fuchsia-300 focus:scale-[1.02] focus:bg-black focus:text-fuchsia-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-lime-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
+						class="mt-2 w-full border-2 border-black bg-fuchsia-400 py-2 text-sm font-black text-black uppercase transition-all hover:bg-black hover:text-fuchsia-300 focus:bg-black focus:text-fuchsia-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-3 sm:text-base"
 					>
-						DO NOT CLICK THIS FROG
-					</button>
-
-					<button
-						data-menu-button
-						onclick={backToDashboard}
-						class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-lime-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
-					>
-						BACK
+						Do Not Click This Frog
 					</button>
 				</div>
 			</div>

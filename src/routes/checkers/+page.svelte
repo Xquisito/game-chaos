@@ -29,6 +29,7 @@
 	let screen = $state<CabinetScreen>('splash');
 	let hasActiveRun = $state(false);
 	let wins = $state(0);
+	let helpOpen = $state(false);
 	let aiTurnToken = 0;
 
 	let flow = $derived(getCabinetFlow(screen));
@@ -376,117 +377,140 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <div
-	class="relative min-h-screen overflow-hidden bg-orange-400 px-1 py-1 font-mono text-black sm:px-6 sm:py-8"
+	class="relative min-h-screen overflow-hidden bg-yellow-300 px-1 py-1 font-mono text-black sm:px-6 sm:py-8"
 >
 	{#if splashScreen}
 		<div class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
 			<div
-				class="w-full max-w-5xl border-4 border-black bg-white p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-10 sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
+				class="w-full max-w-4xl border-4 border-black bg-white shadow-[4px_4px_0_rgba(0,0,0,1)] sm:shadow-[14px_14px_0_rgba(0,0,0,1)]"
 			>
-				<div class="mb-3 text-center sm:mb-8">
+				<div class="border-b-4 border-black bg-black px-4 py-3 text-yellow-300 sm:px-8 sm:py-5">
 					<div
-						class="mb-1 text-[0.6rem] font-black tracking-[0.45em] text-black/60 uppercase sm:mb-3 sm:text-sm"
+						class="text-[0.55rem] font-black tracking-[0.4em] uppercase text-yellow-300/50 sm:text-xs"
 					>
-						Game Chaos
+						Battle Table
 					</div>
-					<h1
-						class="text-3xl leading-none font-black uppercase drop-shadow-[2px_2px_0_rgba(0,0,0,1)] sm:text-7xl sm:drop-shadow-[4px_4px_0_rgba(0,0,0,1)]"
-					>
-						🏁 Checkers Chaos 🏁
-					</h1>
-					<p class="mt-1 text-sm font-bold uppercase sm:mt-4 sm:text-2xl">
+					<div class="flex items-center justify-between gap-4">
+						<h1
+							class="text-xl font-black leading-none uppercase sm:text-5xl sm:drop-shadow-[3px_3px_0_rgba(255,221,0,0.25)]"
+						>
+							🏁 Checkers Chaos 🏁
+						</h1>
+						<div class="shrink-0 text-right">
+							<div
+								class="text-[0.5rem] tracking-widest uppercase text-yellow-300/50 sm:text-[0.6rem]"
+							>
+								Total Wins
+							</div>
+							<div class="text-lg font-black leading-none sm:text-4xl">{wins}</div>
+						</div>
+					</div>
+					<p class="mt-1 text-[0.65rem] font-bold uppercase text-yellow-300/60 sm:mt-2 sm:text-base">
 						Pick white. Pick fights.
 					</p>
 				</div>
 
-				<div class="grid gap-3 sm:grid-cols-[1.1fr_0.9fr] sm:gap-4">
-					<div
-						class="border-4 border-black bg-orange-200 p-2 text-[0.65rem] leading-relaxed font-bold uppercase sm:p-5 sm:text-base"
-					>
-						You play white. Tap/click piece then destination.
-						<span class="mt-1 block text-black/70 sm:mt-4">
-							A / Enter = select • B / Esc = return.
-						</span>
-					</div>
-
-					<div class="border-4 border-black bg-black p-2 text-orange-400 sm:p-5">
-						<div class="flex items-center justify-between sm:block">
+				<div class="p-4 sm:p-8">
+					<div class="mb-4 grid grid-cols-1 gap-2 sm:mb-6 sm:gap-4">
+						<div class="border-2 border-black bg-yellow-100 p-2 sm:border-4 sm:p-4">
 							<div
-								class="text-[0.6rem] font-black tracking-[0.35em] text-orange-400/70 uppercase sm:text-xs"
+								class="mb-2 text-[0.55rem] font-black tracking-[0.3em] uppercase text-black/50 sm:mb-3 sm:text-xs"
 							>
-								Score Board
+								Opponent
 							</div>
-							<div class="flex items-baseline gap-2 sm:mt-4 sm:block">
-								<div class="text-xl font-black sm:text-5xl">{wins}</div>
-								<div class="text-xs font-bold uppercase sm:mt-2 sm:text-lg">Player Wins</div>
+							<div class="grid grid-cols-2 gap-1 sm:gap-2">
+								{#each DIFFICULTIES as diff (diff)}
+									<button
+										type="button"
+										data-menu-button
+										data-selected={selectedDifficulty === diff ? 'true' : undefined}
+										onclick={() => (selectedDifficulty = diff)}
+										class={[
+											'border-2 border-black px-1.5 py-1.5 text-xs font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 sm:border-4 sm:px-3 sm:py-2 sm:text-base',
+											selectedDifficulty === diff
+												? 'bg-black text-yellow-300'
+												: 'bg-white text-black hover:bg-black hover:text-white focus:bg-black focus:text-white'
+										]}
+									>
+										{diff === 'human' ? '2 Player' : `${diff} AI`}
+									</button>
+								{/each}
 							</div>
 						</div>
 					</div>
-				</div>
 
-				<div class="mt-2 border-4 border-black bg-white p-2 sm:mt-8 sm:p-5">
-					<div
-						class="mb-2 text-[0.6rem] font-black tracking-[0.3em] text-black/60 uppercase sm:mb-3 sm:text-sm"
-					>
-						Difficulty
+					<div class="mb-4 border-2 border-black sm:mb-6 sm:border-4">
+						<button
+							type="button"
+							onclick={() => (helpOpen = !helpOpen)}
+							class="flex w-full items-center justify-between bg-yellow-200 px-3 py-2 text-xs font-black uppercase transition-colors hover:bg-yellow-300 active:scale-[0.98] sm:px-4 sm:py-3 sm:text-sm"
+						>
+							<span>❓ How to Play</span>
+							<span
+								class="text-base leading-none transition-transform duration-200"
+								class:rotate-180={helpOpen}>▾</span
+							>
+						</button>
+						{#if helpOpen}
+							<div
+								class="border-t-2 border-black bg-yellow-50 px-3 py-2 text-xs font-bold leading-relaxed uppercase sm:border-t-4 sm:px-4 sm:py-3 sm:text-sm"
+							>
+								You play white. Tap a piece, then its destination.<br />
+								Jump chains when available. Crown kings on the far row.<br />
+								<span class="mt-2 block text-[0.6rem] text-black/60 sm:text-xs">
+									A / Enter = select • B / Esc = return.
+								</span>
+							</div>
+						{/if}
 					</div>
-					<div class="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
-						{#each DIFFICULTIES as diff (diff)}
+
+					{#if hasActiveRun}
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
 							<button
 								type="button"
 								data-menu-button
-								data-selected={selectedDifficulty === diff ? 'true' : undefined}
-								onclick={() => (selectedDifficulty = diff)}
-								class={[
-									'border-2 px-1 py-1 text-[0.7rem] font-black uppercase transition-all focus:outline-none focus-visible:ring-4 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-4 sm:py-4 sm:text-lg sm:focus-visible:ring-offset-4',
-									selectedDifficulty === diff
-										? 'scale-105 border-4 border-orange-500 bg-black text-orange-400 hover:scale-110 focus-visible:ring-white focus-visible:ring-offset-white'
-										: 'border-black bg-orange-100 text-black hover:scale-[1.02] hover:bg-orange-200 focus:bg-orange-200 focus-visible:ring-2 focus-visible:ring-orange-300 focus-visible:ring-offset-white'
-								]}
+								onclick={continueGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
 							>
-								{diff === 'human' ? '2P' : `${diff} AI`}
+								Continue
 							</button>
-						{/each}
-					</div>
-				</div>
-
-				<div class="mt-2 flex flex-col gap-2 sm:mt-8 sm:gap-4">
-					{#if hasActiveRun}
-						<button
-							type="button"
-							data-menu-button
-							onclick={continueGame}
-							class="border-2 border-orange-400 bg-black px-4 py-2 text-base font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
-						>
-							Continue
-						</button>
+							<button
+								type="button"
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
 						<button
 							type="button"
 							data-menu-button
 							onclick={startGame}
-							class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
+							class="mt-2 w-full border-2 border-black bg-white py-2 text-sm font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-3 sm:text-base"
 						>
 							New Game
 						</button>
 					{:else}
-						<button
-							type="button"
-							data-menu-button
-							onclick={startGame}
-							class="border-2 border-orange-400 bg-black px-4 py-2 text-base font-black text-orange-400 uppercase transition-all hover:scale-[1.02] hover:bg-orange-400 hover:text-black focus:scale-[1.02] focus:bg-orange-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-5 sm:text-3xl sm:focus-visible:ring-offset-4"
-						>
-							Press Start
-						</button>
+						<div class="grid grid-cols-2 gap-2 sm:gap-4">
+							<button
+								type="button"
+								data-menu-button
+								onclick={startGame}
+								class="border-2 border-yellow-400 bg-black py-3 text-base font-black text-yellow-400 uppercase transition-all hover:bg-yellow-400 hover:text-black focus:bg-yellow-400 focus:text-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Start Match
+							</button>
+							<button
+								type="button"
+								data-menu-button
+								onclick={backToDashboard}
+								class="border-2 border-black bg-white py-3 text-base font-black text-black uppercase transition-all hover:bg-black hover:text-white focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:py-5 sm:text-2xl"
+							>
+								Dashboard
+							</button>
+						</div>
 					{/if}
-
-					<button
-						type="button"
-						data-menu-button
-						onclick={backToDashboard}
-						class="border-2 border-black bg-white px-4 py-2 text-base font-black text-black uppercase transition-all hover:scale-[1.02] hover:bg-black hover:text-white focus:scale-[1.02] focus:bg-black focus:text-white focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-400 focus-visible:ring-offset-2 active:scale-[0.98] sm:border-4 sm:px-8 sm:py-4 sm:text-2xl sm:focus-visible:ring-offset-4"
-					>
-						Dashboard
-					</button>
 				</div>
 			</div>
 		</div>
