@@ -4,11 +4,8 @@
 		createScoreRecord,
 		gameCabinets,
 		readCabinetScore,
-		utilityCabinets,
 		type GameCabinet,
-		type GameCabinetId,
-		type UtilityCabinet,
-		type UtilityCabinetId
+		type GameCabinetId
 	} from '$lib/cabinets';
 	import {
 		activateFocusedControlItem,
@@ -25,14 +22,6 @@
 		kicker: string;
 		cta: string;
 	};
-	type DashboardUtilityCabinet = UtilityCabinet & {
-		name: string;
-		description: string;
-		kicker: string;
-		meta: string;
-		cta: string;
-	};
-	type DashboardCabinet = DashboardGameCabinet | DashboardUtilityCabinet;
 
 	const gameCopy: Record<
 		GameCabinetId,
@@ -82,31 +71,10 @@
 		}
 	};
 
-	const utilityCopy: Record<
-		UtilityCabinetId,
-		Pick<DashboardUtilityCabinet, 'name' | 'description' | 'kicker' | 'meta' | 'cta'>
-	> = {
-		settings: {
-			name: 'Settings',
-			description: 'Tune the cabinet, inspect scores, and wipe save data.',
-			kicker: 'System Deck',
-			meta: 'Scores • Reset • System',
-			cta: 'Open Panel'
-		}
-	};
-
 	const dashboardGameCabinets: DashboardGameCabinet[] = gameCabinets.map((cabinet) => ({
 		...cabinet,
 		...gameCopy[cabinet.id]
 	}));
-	const dashboardUtilityCabinets: DashboardUtilityCabinet[] = utilityCabinets.map((cabinet) => ({
-		...cabinet,
-		...utilityCopy[cabinet.id]
-	}));
-	const dashboardCabinets: DashboardCabinet[] = [
-		...dashboardGameCabinets,
-		...dashboardUtilityCabinets
-	];
 
 	let scores = $state<Record<GameCabinetId, number>>(createScoreRecord());
 
@@ -118,10 +86,6 @@
 	function setLanguage(lang: string) {
 		document.cookie = `lang=${lang}; path=/; max-age=31536000`;
 		window.location.reload();
-	}
-
-	function isGameCard(card: DashboardCabinet): card is DashboardGameCabinet {
-		return card.kind === 'game';
 	}
 
 	function loadScores() {
@@ -201,8 +165,10 @@
 		<header
 			class="border-4 border-black bg-yellow-200 p-3 shadow-[4px_4px_0_rgba(0,0,0,1)] sm:p-5 sm:shadow-[8px_8px_0_rgba(0,0,0,1)]"
 		>
-			<div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-				<div>
+			<div
+				class="grid w-full grid-cols-[minmax(0,1fr)_auto] grid-rows-[auto_auto] gap-x-3 gap-y-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:grid-rows-1 lg:items-end"
+			>
+				<div class="col-start-1 row-start-1 min-w-0">
 					<p class="text-[0.6rem] font-black tracking-[0.3em] uppercase sm:text-sm">
 						Arcade Hub // Ready
 					</p>
@@ -216,11 +182,23 @@
 					</p>
 				</div>
 
-				<div class="flex flex-wrap gap-2 text-[0.65rem] font-black uppercase sm:text-sm">
+				<a
+					href={resolve('/settings')}
+					data-dashboard-action="true"
+					aria-label="System settings"
+					title="System settings"
+					class="col-start-2 row-start-1 flex h-9 w-9 shrink-0 items-center justify-center self-start justify-self-end border-[3px] border-black bg-sky-400 text-lg shadow-[2px_2px_0_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 hover:bg-sky-300 focus:outline-none focus-visible:ring-4 focus-visible:ring-black focus-visible:ring-offset-2 active:translate-y-0 active:shadow-none sm:h-11 sm:w-11 sm:border-4 sm:text-2xl sm:shadow-[3px_3px_0_rgba(0,0,0,1)] lg:col-start-3 lg:row-start-1 lg:self-start"
+				>
+					⚙️
+				</a>
+
+				<div
+					class="col-span-2 col-start-1 row-start-2 flex flex-wrap gap-2 text-[0.65rem] font-black uppercase sm:text-sm lg:col-span-1 lg:col-start-2 lg:row-start-1 lg:justify-end lg:self-end"
+				>
 					<div
 						class="border-[3px] border-black bg-black px-2 py-1 text-yellow-300 sm:border-4 sm:px-3 sm:py-2"
 					>
-						{dashboardCabinets.length} Hotspots
+						{dashboardGameCabinets.length} Hotspots
 					</div>
 					<div class="border-[3px] border-black bg-white px-2 py-1 sm:border-4 sm:px-3 sm:py-2">
 						Launch = Enter
@@ -246,8 +224,8 @@
 			</div>
 		</header>
 
-		<section class="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-4">
-			{#each dashboardCabinets as card (card.id)}
+		<section class="grid grid-cols-2 gap-1.5 md:grid-cols-3 md:gap-4 xl:grid-cols-3">
+			{#each dashboardGameCabinets as card (card.id)}
 				<a
 					href={resolve(card.href)}
 					data-dashboard-action="true"
@@ -292,11 +270,7 @@
 									<div
 										class="border-[3px] border-black bg-black px-2 py-1 text-[0.5rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm"
 									>
-										{#if isGameCard(card)}
-											{scoreText(card)}
-										{:else}
-											{card.meta}
-										{/if}
+										{scoreText(card)}
 									</div>
 
 									<span
