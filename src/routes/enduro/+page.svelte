@@ -312,6 +312,7 @@
 	let enemyCars: EnemyCar[] = [];
 	let horizon: THREE.Mesh;
 	let fogPlane: THREE.Mesh;
+	let fogPlaneNear: THREE.Mesh;
 	let animationId = 0;
 	let lastFrameNow = 0;
 	let resizeObserver: ResizeObserver | null = null;
@@ -328,8 +329,9 @@
 	// Coarse arcade hit box tuned to the visible car bodies.
 	const CAR_COLLISION = {
 		halfWidth: 4.2,
-		halfDepth: 7.5,
-		playerZBase: 4
+		playerHalfDepth: 4,
+		enemyHalfDepth: 4,
+		rearClearance: 0.75
 	} as const;
 	const cabinet = gameCabinetById.enduro;
 
@@ -442,6 +444,17 @@
 		fogPlane.position.set(0, 5, -120);
 		scene.add(fogPlane);
 
+		// Second, closer fog plane for denser layered effect
+		const fogGeoNear = new THREE.PlaneGeometry(ROAD_WIDTH * 12, 200);
+		const fogMatNear = new THREE.MeshBasicMaterial({
+			color: 0x909090,
+			transparent: true,
+			opacity: 0
+		});
+		fogPlaneNear = new THREE.Mesh(fogGeoNear, fogMatNear);
+		fogPlaneNear.position.set(0, 8, -55);
+		scene.add(fogPlaneNear);
+
 		roadGroup = new THREE.Group();
 		scene.add(roadGroup);
 
@@ -498,10 +511,20 @@
 
 	function enemyCollidesWithPlayer(enemy: EnemyCar) {
 		if (!playerCar) return false;
+		if (enemy.passed) return false;
 
 		const dx = enemy.mesh.position.x - playerCar.position.x;
-		const dz = enemy.z - (CAR_COLLISION.playerZBase + playerZOffset);
-		return Math.abs(dx) < CAR_COLLISION.halfWidth && Math.abs(dz) < CAR_COLLISION.halfDepth;
+		const dz = enemy.z - playerCar.position.z;
+		const overlapDepth = CAR_COLLISION.playerHalfDepth + CAR_COLLISION.enemyHalfDepth;
+		return Math.abs(dx) < CAR_COLLISION.halfWidth && Math.abs(dz) < overlapDepth;
+	}
+
+	function enemyHasClearedPlayer(enemy: EnemyCar) {
+		if (!playerCar) return false;
+
+		const clearDistance =
+			CAR_COLLISION.playerHalfDepth + CAR_COLLISION.enemyHalfDepth + CAR_COLLISION.rearClearance;
+		return enemy.z - playerCar.position.z > clearDistance;
 	}
 
 	function updateRoadAndWeather(frameScale: number) {
@@ -535,17 +558,22 @@
 		fogFactor = THREE.MathUtils.lerp(fogFactor, targetFog, frameLerp(0.02, frameScale));
 
 		if (fogPlane.material instanceof THREE.MeshBasicMaterial) {
-			fogPlane.material.opacity = fogFactor * 0.85;
+			fogPlane.material.opacity = fogFactor * 0.96;
+		}
+		if (fogPlaneNear.material instanceof THREE.MeshBasicMaterial) {
+			fogPlaneNear.material.opacity = fogFactor * 0.62;
 		}
 
 		if (isNight) {
-			scene.background = new THREE.Color(0x000011);
+			tempColor.setHex(0x000011).lerp(cFog, fogFactor * 0.65);
+			scene.background = tempColor.clone();
 			if (horizon.material instanceof THREE.MeshBasicMaterial) {
-				tempColor.setHex(0x112244).lerp(cFog, fogFactor * 0.5);
+				tempColor.setHex(0x112244).lerp(cFog, fogFactor * 0.65);
 				horizon.material.color.copy(tempColor);
 			}
 		} else {
-			scene.background = new THREE.Color(0x225588);
+			tempColor.setHex(0x225588).lerp(cFog, fogFactor * 0.9);
+			scene.background = tempColor.clone();
 			if (horizon.material instanceof THREE.MeshBasicMaterial) {
 				tempColor.setHex(0x88bbff).lerp(cFog, fogFactor);
 				horizon.material.color.copy(tempColor);
@@ -601,7 +629,7 @@
 			const curveOffset = edz * edz * 0.001 * curve * 0.11;
 			c.mesh.position.x = c.x + curveOffset;
 
-			if (!c.passed && c.z > 14) {
+			if (!c.passed && enemyHasClearedPlayer(c)) {
 				c.passed = true;
 				carsPassed++;
 				score += 15 + day * 3;
@@ -834,13 +862,17 @@
 
 			distance += speed * 12 * frameScale;
 
+			// Centrifugal drift: curve > 0 = road bends right → push player left
+			const curveDrift = Math.sin(distance * 0.0004) * 32;
+			const curvePush = -curveDrift * 0.0006 * speed * frameScale;
+
 			let steer = 0;
 			if (keyLeft) steer -= 1;
 			if (keyRight) steer += 1;
 			steer += input.steer;
 			steer += touchSteer;
 
-			playerX = Math.max(-MAX_X, Math.min(MAX_X, playerX + steer * STEER_SPEED * frameScale));
+			playerX = Math.max(-MAX_X, Math.min(MAX_X, playerX + steer * STEER_SPEED * frameScale + curvePush));
 
 			playerCar.position.x = THREE.MathUtils.lerp(
 				playerCar.position.x,
@@ -853,7 +885,8 @@
 			playerCar.position.z = -2 + playerZOffset;
 
 			camera.position.x = playerCar.position.x * 0.4;
-			camera.lookAt(playerCar.position.x * 0.6, -4, -70);
+			// Camera looks slightly into the curve for a banking feel
+			camera.lookAt(playerCar.position.x * 0.6 + curveDrift * 0.25, -4, -70);
 
 			updateRoadAndWeather(frameScale);
 
