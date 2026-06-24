@@ -39,17 +39,14 @@ msgstr "Checkers Chaos"
 #~ msgstr "Enduro 3D Chaos"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Minesweeper"
 msgstr "Minesweeper"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Avoid the boom with quick reads and cooler nerves."
 msgstr "Avoid the boom with quick reads and cooler nerves."
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 #: src/routes/sudoku/+page.svelte
 msgid "Puzzle Bay"
 msgstr "Puzzle Bay"
@@ -61,45 +58,40 @@ msgstr "Wins"
 
 #: src/routes/+page.svelte
 #: src/routes/frog/+page.svelte
-#: src/routes/proto/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "Insert Coin"
 msgstr "Insert Coin"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Fast board control in a chunky neon showdown."
 msgstr "Fast board control in a chunky neon showdown."
 
 #: src/routes/+page.svelte
 #: src/routes/checkers/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Battle Table"
 msgstr "Battle Table"
 
 #: src/routes/+page.svelte
 #: src/routes/checkers/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Start Match"
 msgstr "Start Match"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Enduro Chaos"
 msgstr "Enduro Chaos"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Race the night through storms, ice, and blind corners."
 msgstr "Race the night through storms, ice, and blind corners."
 
 #: src/routes/+page.svelte
 #: src/routes/enduro/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Road Fury"
 msgstr "Road Fury"
 
 #: src/routes/+page.svelte
+#: src/routes/breakout/+page.svelte
+#: src/routes/breakout/+page.svelte
 #: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/frog/+page.svelte
@@ -112,40 +104,32 @@ msgstr "Hi-Score"
 
 #: src/routes/+page.svelte
 #: src/routes/enduro/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Burn Rubber"
 msgstr "Burn Rubber"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Space Chaos"
 msgstr "Space Chaos"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Scramble the fleet and climb the cosmic score board."
 msgstr "Scramble the fleet and climb the cosmic score board."
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "Galaxy Sector"
 msgstr "Galaxy Sector"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Launch Run"
 msgstr "Launch Run"
 
-#: src/routes/proto/+page.svelte
-msgid "Settings"
-msgstr "Settings"
+#~ msgid "Settings"
+#~ msgstr "Settings"
 
-#: src/routes/proto/+page.svelte
-msgid "Tune the cabinet, inspect scores, and wipe save data."
-msgstr "Tune the cabinet, inspect scores, and wipe save data."
+#~ msgid "Tune the cabinet, inspect scores, and wipe save data."
+#~ msgstr "Tune the cabinet, inspect scores, and wipe save data."
 
-#: src/routes/proto/+page.svelte
 #: src/routes/settings/+page.svelte
 msgid "System Deck"
 msgstr "System Deck"
@@ -153,9 +137,8 @@ msgstr "System Deck"
 #~ msgid "Scores • Reset • System"
 #~ msgstr "Scores • Reset • System"
 
-#: src/routes/proto/+page.svelte
-msgid "Open Panel"
-msgstr "Open Panel"
+#~ msgid "Open Panel"
+#~ msgstr "Open Panel"
 
 #: src/routes/tetris/+page.svelte
 msgid "ArrowUp"
@@ -171,16 +154,14 @@ msgstr "ArrowDown"
 #~ msgid "ArrowRight"
 #~ msgstr "ArrowRight"
 
-#~ msgid "Enter"
-#~ msgstr "Enter"
+#: src/routes/breakout/+page.svelte
+msgid "Enter"
+msgstr "Enter"
 
 #~ msgid "The Chaos Arcade | Dashboard"
 #~ msgstr "The Chaos Arcade | Dashboard"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Arcade Hub // Ready"
 msgstr "Arcade Hub // Ready"
 
@@ -191,13 +172,7 @@ msgstr "Arcade Hub // Ready"
 #~ msgstr "Tap, tab, or hit the D-pad to jump cabinet-to-cabinet."
 
 #. 0: dashboardGameCabinets.length
-#. 0: games.length
-#. 0: games.length
-#. 0: games.length
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "{0} Hotspots"
 msgstr "{0} Hotspots"
 
@@ -241,9 +216,6 @@ msgstr "Row {0}, column {1}"
 #~ msgstr "Checkers | Game Chaos"
 
 #: src/routes/minesweeper/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 msgid "Game Chaos"
 msgstr "Game Chaos"
@@ -267,6 +239,7 @@ msgstr "🏁 Checkers Chaos 🏁"
 #~ msgid "Live match: {0}<0/> New game: {1}"
 #~ msgstr "Live match: {0}<0/> New game: {1}"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
@@ -278,6 +251,7 @@ msgstr "Difficulty"
 #~ msgid "Continue keeps the current {0} board. New Game uses the selected mode."
 #~ msgstr "Continue keeps the current {0} board. New Game uses the selected mode."
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/checkers/+page.svelte
 #: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
@@ -288,6 +262,7 @@ msgstr "Difficulty"
 msgid "Continue"
 msgstr "Continue"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/checkers/+page.svelte
 #: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
@@ -297,12 +272,16 @@ msgstr "Continue"
 msgid "New Game"
 msgstr "New Game"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Press Start"
 msgstr "Press Start"
 
+#: src/routes/breakout/+page.svelte
+#: src/routes/breakout/+page.svelte
+#: src/routes/breakout/+page.svelte
 #: src/routes/checkers/+page.svelte
 #: src/routes/checkers/+page.svelte
 #: src/routes/enduro/+page.svelte
@@ -377,6 +356,7 @@ msgstr "White takes it. Total wins: {0}."
 msgid "Black cleaned the board. Retry or head back to splash."
 msgstr "Black cleaned the board. Retry or head back to splash."
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -561,9 +541,6 @@ msgstr "ENTER / A TO SELECT • ESC / B TO RETURN"
 #~ msgstr "Minesweeper | Game Chaos"
 
 #: src/routes/minesweeper/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
 msgid "💣 Boom Box 💣"
 msgstr "💣 Boom Box 💣"
 
@@ -623,6 +600,7 @@ msgstr "You poked the spicy rock. Try again or bail to splash."
 msgid "Playwright e2e test demo"
 msgstr "Playwright e2e test demo"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
@@ -630,11 +608,13 @@ msgstr "Playwright e2e test demo"
 msgid "Easy"
 msgstr "Easy"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Normal"
 msgstr "Normal"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -799,9 +779,6 @@ msgid "Manage your Chaos Arcade cabinet. Reset scores, tune performance, and con
 msgstr "Manage your Chaos Arcade cabinet. Reset scores, tune performance, and configure system settings."
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "🕹️ Chaos Arcade"
 msgstr "🕹️ Chaos Arcade"
 
@@ -814,22 +791,14 @@ msgid "Launch = Enter"
 msgstr "Launch = Enter"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Built with ⚡ SvelteKit"
 msgstr "Built with ⚡ SvelteKit"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Cabinet memory: Online"
 msgstr "Cabinet memory: Online"
 
 #: src/routes/minesweeper/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
 msgid "Vintage minefield. No mercy."
 msgstr "Vintage minefield. No mercy."
 
@@ -908,6 +877,7 @@ msgstr "Your ship was destroyed. The invasion continues."
 msgid "Difficulty: {0}"
 msgstr "Difficulty: {0}"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -919,22 +889,18 @@ msgid "Points"
 msgstr "Points"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Tetris Chaos"
 msgstr "Tetris Chaos"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Stack the blocks and survive the falling chaos!"
 msgstr "Stack the blocks and survive the falling chaos!"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Block Zone"
 msgstr "Block Zone"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Drop In"
 msgstr "Drop In"
 
@@ -989,18 +955,22 @@ msgstr "Incredible run!"
 msgid "Level {0} • {1} Lines"
 msgstr "Level {0} • {1} Lines"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "★ New Record! ★"
 msgstr "★ New Record! ★"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Splash Screen"
 msgstr "Splash Screen"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "⏸ PAUSED ⏸"
 msgstr "⏸ PAUSED ⏸"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Press P to resume • B / Esc to return"
 msgstr "Press P to resume • B / Esc to return"
@@ -1009,6 +979,7 @@ msgstr "Press P to resume • B / Esc to return"
 msgid "Hold"
 msgstr "Hold"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Score"
 msgstr "Score"
@@ -1017,6 +988,7 @@ msgstr "Score"
 msgid "Lines"
 msgstr "Lines"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Level"
 msgstr "Level"
@@ -1070,6 +1042,8 @@ msgid "💀 GAME OVER 💀"
 msgstr "💀 GAME OVER 💀"
 
 #. 0: score.toLocaleString(); 1: level
+#. 0: score.toLocaleString(); 1: level
+#: src/routes/breakout/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "{0} pts • Level {1}"
 msgstr "{0} pts • Level {1}"
@@ -1078,9 +1052,8 @@ msgstr "{0} pts • Level {1}"
 msgid "Recorde"
 msgstr "Recorde"
 
-#: src/routes/proto/+page.svelte
-msgid "Frog Chaos"
-msgstr "Frog Chaos"
+#~ msgid "Frog Chaos"
+#~ msgstr "Frog Chaos"
 
 #~ msgid "Leap lanes, dodge metal, ride junk downstream."
 #~ msgstr "Leap lanes, dodge metal, ride junk downstream."
@@ -1089,7 +1062,6 @@ msgstr "Frog Chaos"
 #~ msgstr "Swamp Dash"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Hop In"
 msgstr "Hop In"
 
@@ -1174,12 +1146,10 @@ msgstr "Lives <0/>"
 #~ msgstr "Disinfect"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Hop the road, ride the river, and claim every pad."
 msgstr "Hop the road, ride the river, and claim every pad."
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "River Panic"
 msgstr "River Panic"
 
@@ -1410,139 +1380,96 @@ msgid "{0} grid cleared in {1}. Total solved: {2}."
 msgstr "{0} grid cleared in {1}. Total solved: {2}."
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Sudoku Chaos"
 msgstr "Sudoku Chaos"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Fill the grid with pure logic, from Easy to Expert."
 msgstr "Fill the grid with pure logic, from Easy to Expert."
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Logic Lab"
 msgstr "Logic Lab"
 
 #: src/routes/+page.svelte
-#: src/routes/proto/+page.svelte
 msgid "Solve It"
 msgstr "Solve It"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "A — Bottom Drawer"
-msgstr "A — Bottom Drawer"
+#~ msgid "A — Bottom Drawer"
+#~ msgstr "A — Bottom Drawer"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "B — Side Panel"
-msgstr "B — Side Panel"
+#~ msgid "B — Side Panel"
+#~ msgstr "B — Side Panel"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "C — Accordion"
-msgstr "C — Accordion"
+#~ msgid "C — Accordion"
+#~ msgstr "C — Accordion"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Ajuda"
-msgstr "Ajuda"
+#~ msgid "Ajuda"
+#~ msgstr "Ajuda"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Vitórias"
-msgstr "Vitórias"
+#~ msgid "Vitórias"
+#~ msgstr "Vitórias"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Tabuleiro"
-msgstr "Tabuleiro"
+#~ msgid "Tabuleiro"
+#~ msgstr "Tabuleiro"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Dificuldade"
-msgstr "Dificuldade"
+#~ msgid "Dificuldade"
+#~ msgstr "Dificuldade"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Fácil"
-msgstr "Fácil"
+#~ msgid "Fácil"
+#~ msgstr "Fácil"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Médio"
-msgstr "Médio"
+#~ msgid "Médio"
+#~ msgstr "Médio"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Campo da Morte"
-msgstr "Campo da Morte"
+#~ msgid "Campo da Morte"
+#~ msgstr "Campo da Morte"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Iniciar"
-msgstr "Iniciar"
+#~ msgid "Iniciar"
+#~ msgstr "Iniciar"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Painel"
-msgstr "Painel"
+#~ msgid "Painel"
+#~ msgstr "Painel"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Fechar ajuda"
-msgstr "Fechar ajuda"
+#~ msgid "Fechar ajuda"
+#~ msgstr "Fechar ajuda"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Como Jogar"
-msgstr "Como Jogar"
+#~ msgid "Como Jogar"
+#~ msgstr "Como Jogar"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "✕ Fechar"
-msgstr "✕ Fechar"
+#~ msgid "✕ Fechar"
+#~ msgstr "✕ Fechar"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Revele todas as peças seguras para vencer.<0/> Toque para revelar • Pressione longo para marcar.<1/> <2>A / Enter = selecionar • B / Esc = voltar.</2>"
-msgstr "Revele todas as peças seguras para vencer.<0/> Toque para revelar • Pressione longo para marcar.<1/> <2>A / Enter = selecionar • B / Esc = voltar.</2>"
+#~ msgid "Revele todas as peças seguras para vencer.<0/> Toque para revelar • Pressione longo para marcar.<1/> <2>A / Enter = selecionar • B / Esc = voltar.</2>"
+#~ msgstr "Revele todas as peças seguras para vencer.<0/> Toque para revelar • Pressione longo para marcar.<1/> <2>A / Enter = selecionar • B / Esc = voltar.</2>"
 
-#: src/routes/minesweeper/proto/+page.svelte
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Morte"
-msgstr "Morte"
+#~ msgid "Morte"
+#~ msgstr "Morte"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Revele todas as peças seguras para vencer.<0/><1/> Toque para revelar.<2/> Pressione longo para marcar uma mina.<3/><4/> <5>A / Enter = selecionar<0/>B / Esc = voltar.</5>"
-msgstr "Revele todas as peças seguras para vencer.<0/><1/> Toque para revelar.<2/> Pressione longo para marcar uma mina.<3/><4/> <5>A / Enter = selecionar<0/>B / Esc = voltar.</5>"
+#~ msgid "Revele todas as peças seguras para vencer.<0/><1/> Toque para revelar.<2/> Pressione longo para marcar uma mina.<3/><4/> <5>A / Enter = selecionar<0/>B / Esc = voltar.</5>"
+#~ msgstr "Revele todas as peças seguras para vencer.<0/><1/> Toque para revelar.<2/> Pressione longo para marcar uma mina.<3/><4/> <5>A / Enter = selecionar<0/>B / Esc = voltar.</5>"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Dica"
-msgstr "Dica"
+#~ msgid "Dica"
+#~ msgstr "Dica"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "Os números indicam quantas minas há nas 8 células ao redor."
-msgstr "Os números indicam quantas minas há nas 8 células ao redor."
+#~ msgid "Os números indicam quantas minas há nas 8 células ao redor."
+#~ msgstr "Os números indicam quantas minas há nas 8 células ao redor."
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "❓ Como Jogar"
-msgstr "❓ Como Jogar"
+#~ msgid "❓ Como Jogar"
+#~ msgstr "❓ Como Jogar"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "▶ Iniciar"
-msgstr "▶ Iniciar"
+#~ msgid "▶ Iniciar"
+#~ msgstr "▶ Iniciar"
 
-#: src/routes/minesweeper/proto/+page.svelte
-msgid "⬡ Painel"
-msgstr "⬡ Painel"
+#~ msgid "⬡ Painel"
+#~ msgstr "⬡ Painel"
 
 #. 0: getMineCount(option.rows, option.cols, difficulty.density)
 #: src/routes/minesweeper/+page.svelte
 msgid "{0} mines"
 msgstr "{0} mines"
 
+#: src/routes/breakout/+page.svelte
 #: src/routes/checkers/+page.svelte
 #: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
@@ -1633,61 +1560,44 @@ msgstr "Arrows / WASD hop one cell. Space pauses.<0/> Ride logs, trust some turt
 msgid "Do Not Click This Frog"
 msgstr "Do Not Click This Frog"
 
-#: src/routes/proto/+page.svelte
-msgid "A — List"
-msgstr "A — List"
+#~ msgid "A — List"
+#~ msgstr "A — List"
 
-#: src/routes/proto/+page.svelte
-msgid "B — Strip"
-msgstr "B — Strip"
+#~ msgid "B — Strip"
+#~ msgstr "B — Strip"
 
-#: src/routes/proto/+page.svelte
-msgid "C — Big Cards"
-msgstr "C — Big Cards"
+#~ msgid "C — Big Cards"
+#~ msgstr "C — Big Cards"
 
-#: src/routes/proto/+page.svelte
-msgid "Wins: 4"
-msgstr "Wins: 4"
+#~ msgid "Wins: 4"
+#~ msgstr "Wins: 4"
 
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-msgid "Hi-Score: 0"
-msgstr "Hi-Score: 0"
+#~ msgid "Hi-Score: 0"
+#~ msgstr "Hi-Score: 0"
 
-#: src/routes/proto/+page.svelte
-msgid "Checkers"
-msgstr "Checkers"
+#~ msgid "Checkers"
+#~ msgstr "Checkers"
 
-#: src/routes/proto/+page.svelte
-msgid "Wins: 2"
-msgstr "Wins: 2"
+#~ msgid "Wins: 2"
+#~ msgstr "Wins: 2"
 
-#: src/routes/proto/+page.svelte
-msgid "Hi-Score: 1200"
-msgstr "Hi-Score: 1200"
+#~ msgid "Hi-Score: 1200"
+#~ msgstr "Hi-Score: 1200"
 
-#: src/routes/proto/+page.svelte
-msgid "Hi-Score: 800"
-msgstr "Hi-Score: 800"
+#~ msgid "Hi-Score: 800"
+#~ msgstr "Hi-Score: 800"
 
-#: src/routes/proto/+page.svelte
-msgid "Wins: 0"
-msgstr "Wins: 0"
+#~ msgid "Wins: 0"
+#~ msgstr "Wins: 0"
 
-#: src/routes/proto/+page.svelte
-msgid "Scores • Reset"
-msgstr "Scores • Reset"
+#~ msgid "Scores • Reset"
+#~ msgstr "Scores • Reset"
 
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-#: src/routes/proto/+page.svelte
-msgid "v0.1.6"
-msgstr "v0.1.6"
+#~ msgid "v0.1.6"
+#~ msgstr "v0.1.6"
 
-#. 0: games.length
-#: src/routes/proto/+page.svelte
-msgid "← swipe to browse {0} cabinets →"
-msgstr "← swipe to browse {0} cabinets →"
+#~ msgid "← swipe to browse {0} cabinets →"
+#~ msgstr "← swipe to browse {0} cabinets →"
 
 #: src/routes/checkers/+page.svelte
 msgid "Opponent"
@@ -1730,3 +1640,136 @@ msgstr "A / Enter = select • B / Esc = return"
 #: src/routes/+page.svelte
 msgid "System settings"
 msgstr "System settings"
+
+#~ msgid "Slow ball • wide paddle"
+#~ msgstr "Slow ball • wide paddle"
+
+#~ msgid "Classic arcade feel"
+#~ msgstr "Classic arcade feel"
+
+#~ msgid "Fast & narrow"
+#~ msgstr "Fast & narrow"
+
+#~ msgid "Breakout Chaos | Paddle & Bricks"
+#~ msgstr "Breakout Chaos | Paddle & Bricks"
+
+#~ msgid "Classic paddle and ball brick breaker. Move the paddle, bounce the ball, destroy every brick. Pure retro chaos."
+#~ msgstr "Classic paddle and ball brick breaker. Move the paddle, bounce the ball, destroy every brick. Pure retro chaos."
+
+#~ msgid "Breakout Chaos - Retro Brick Breaker"
+#~ msgstr "Breakout Chaos - Retro Brick Breaker"
+
+#~ msgid "Rebound the ball and smash the wall. An authentic 70s/80s arcade experience in the Chaos Arcade."
+#~ msgstr "Rebound the ball and smash the wall. An authentic 70s/80s arcade experience in the Chaos Arcade."
+
+#~ msgid "Brick Panic"
+#~ msgstr "Brick Panic"
+
+#~ msgid "🏓 Breakout Chaos 🏓"
+#~ msgstr "🏓 Breakout Chaos 🏓"
+
+#~ msgid "Rebound. Ricochet. Reduce the wall to dust."
+#~ msgstr "Rebound. Ricochet. Reduce the wall to dust."
+
+#~ msgid "Left / Right arrows or A / D — move paddle.<0/> Space / Enter / Click — launch ball or pause.<1/> Mouse / Touch — drag paddle directly.<2/> M = mute • P = pause • Esc = back to splash. <3>A / Enter = select • B / Esc = return.</3>"
+#~ msgstr "Left / Right arrows or A / D — move paddle.<0/> Space / Enter / Click — launch ball or pause.<1/> Mouse / Touch — drag paddle directly.<2/> M = mute • P = pause • Esc = back to splash. <3>A / Enter = select • B / Esc = return.</3>"
+
+#~ msgid "BREAKOUT CHAOS"
+#~ msgstr "BREAKOUT CHAOS"
+
+#. 0: level
+#: src/routes/breakout/+page.svelte
+msgid "Level {0}"
+msgstr "Level {0}"
+
+#~ msgid "Breakout playfield"
+#~ msgstr "Breakout playfield"
+
+#: src/routes/breakout/+page.svelte
+msgid "Drag or hold arrows • Space to launch/pause • Esc returns to splash"
+msgstr "Drag or hold arrows • Space to launch/pause • Esc returns to splash"
+
+#: src/routes/breakout/+page.svelte
+msgid "Breakout Chaos | Brick Smashing Mayhem"
+msgstr "Breakout Chaos | Brick Smashing Mayhem"
+
+#: src/routes/breakout/+page.svelte
+msgid "Smash every brick, survive the bounce, and chase the hi-score in Breakout Chaos."
+msgstr "Smash every brick, survive the bounce, and chase the hi-score in Breakout Chaos."
+
+#: src/routes/breakout/+page.svelte
+msgid "Breakout Chaos - Brick Smashing Mayhem"
+msgstr "Breakout Chaos - Brick Smashing Mayhem"
+
+#: src/routes/breakout/+page.svelte
+msgid "Classic brick breaker chaos with retro 8-bit flair."
+msgstr "Classic brick breaker chaos with retro 8-bit flair."
+
+#: src/routes/+page.svelte
+#: src/routes/breakout/+page.svelte
+msgid "Brick Sector"
+msgstr "Brick Sector"
+
+#: src/routes/breakout/+page.svelte
+msgid "🧱 Breakout Chaos 🧱"
+msgstr "🧱 Breakout Chaos 🧱"
+
+#: src/routes/breakout/+page.svelte
+msgid "Smash bricks. Save the ball. Chase the record."
+msgstr "Smash bricks. Save the ball. Chase the record."
+
+#: src/routes/breakout/+page.svelte
+msgid "Drag on the playfield to move • Tap to launch.<0/>"
+msgstr "Drag on the playfield to move • Tap to launch.<0/>"
+
+#. 0: STARTING_LIVES; 1: MAX_LEVEL
+#: src/routes/breakout/+page.svelte
+msgid "Move the paddle with A/D or arrows. Space launches the ball.<0/> Clear all bricks to advance. You have {0} lives.<1/> Beat level {1} to win the run.<2/> <3/> <4>A / Enter = select • B / Esc = return.</4>"
+msgstr "Move the paddle with A/D or arrows. Space launches the ball.<0/> Clear all bricks to advance. You have {0} lives.<1/> Beat level {1} to win the run.<2/> <3/> <4>A / Enter = select • B / Esc = return.</4>"
+
+#: src/routes/breakout/+page.svelte
+msgid "Every brick is dust!"
+msgstr "Every brick is dust!"
+
+#: src/routes/breakout/+page.svelte
+msgid "The ball got away!"
+msgstr "The ball got away!"
+
+#. 0: level; 1: lives
+#: src/routes/breakout/+page.svelte
+msgid "Level {0} • {1} Lives Left"
+msgstr "Level {0} • {1} Lives Left"
+
+#: src/routes/breakout/+page.svelte
+msgid "Lives"
+msgstr "Lives"
+
+#: src/routes/breakout/+page.svelte
+msgid "Record"
+msgstr "Record"
+
+#: src/routes/breakout/+page.svelte
+msgid "Breakout Chaos playfield"
+msgstr "Breakout Chaos playfield"
+
+#~ msgid "Drag paddle • Tap to launch • P pause • B/Esc return"
+#~ msgstr "Drag paddle • Tap to launch • P pause • B/Esc return"
+
+#~ msgid "A/D move • Space launch • P pause • B/Esc return"
+#~ msgstr "A/D move • Space launch • P pause • B/Esc return"
+
+#: src/routes/breakout/+page.svelte
+msgid "Hold A/D or arrows • Space to launch/pause • Esc returns to splash"
+msgstr "Hold A/D or arrows • Space to launch/pause • Esc returns to splash"
+
+#: src/routes/+page.svelte
+msgid "Breakout Chaos"
+msgstr "Breakout Chaos"
+
+#: src/routes/+page.svelte
+msgid "Smash the wall, save the ball, and chase the rebound."
+msgstr "Smash the wall, save the ball, and chase the rebound."
+
+#: src/routes/+page.svelte
+msgid "Break In"
+msgstr "Break In"

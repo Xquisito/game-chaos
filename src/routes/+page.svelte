@@ -57,6 +57,12 @@
 			kicker: 'Galaxy Sector',
 			cta: 'Launch Run'
 		},
+		'breakout-chaos': {
+			name: 'Breakout Chaos',
+			description: 'Smash the wall, save the ball, and chase the rebound.',
+			kicker: 'Brick Sector',
+			cta: 'Break In'
+		},
 		tetris: {
 			name: 'Tetris Chaos',
 			description: 'Stack the blocks and survive the falling chaos!',

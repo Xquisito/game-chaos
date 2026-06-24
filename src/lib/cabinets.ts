@@ -4,6 +4,7 @@ export type GameCabinetId =
 	| 'checkers'
 	| 'enduro'
 	| 'space-chaos'
+	| 'breakout-chaos'
 	| 'tetris'
 	| 'frog-chaos';
 export type UtilityCabinetId = 'settings';
@@ -14,6 +15,7 @@ export type CabinetHref =
 	| '/checkers'
 	| '/enduro'
 	| '/space-invaders'
+	| '/breakout'
 	| '/tetris'
 	| '/frog'
 	| '/settings';
@@ -109,6 +111,19 @@ export const gameCabinets: readonly GameCabinet[] = [
 		score: {
 			mode: 'high-score',
 			storageKey: 'space-chaos-high-score'
+		}
+	},
+	{
+		kind: 'game',
+		id: 'breakout-chaos',
+		schemaName: 'Breakout Chaos',
+		href: '/breakout',
+		emoji: '🧱',
+		color: 'bg-orange-500',
+		marquee: 'bg-orange-200',
+		score: {
+			mode: 'high-score',
+			storageKey: 'breakout-chaos-high-score'
 		}
 	},
 	{
