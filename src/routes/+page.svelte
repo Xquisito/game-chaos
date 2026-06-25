@@ -15,6 +15,8 @@
 		handleGridMenuKeydown,
 		moveGridFocus
 	} from '$lib/unified-controls';
+	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 
 	type DashboardGameCabinet = GameCabinet & {
 		name: string;
@@ -95,9 +97,11 @@
 	}
 
 	function loadScores() {
-		for (const cabinet of gameCabinets) {
-			scores[cabinet.id] = readCabinetScore(localStorage, cabinet);
-		}
+		if (!browser) return;
+
+		scores = Object.fromEntries(
+			gameCabinets.map((cabinet) => [cabinet.id, readCabinetScore(localStorage, cabinet)])
+		) as Record<GameCabinetId, number>;
 	}
 
 	function handleDashboardKeydown(event: KeyboardEvent) {
@@ -108,12 +112,11 @@
 		return card.score.mode === 'wins' ? 'Wins' : 'Hi-Score';
 	}
 
-	function scoreText(card: DashboardGameCabinet) {
-		return `${scoreLabel(card)}: ${scores[card.id].toLocaleString()}`;
-	}
+	onMount(() => {
+		loadScores();
+	});
 
 	$effect(() => {
-		loadScores();
 		let animationFrame = requestAnimationFrame(() => {
 			focusFirstControlItem(DASHBOARD_ACTION_SELECTOR, true);
 		});
@@ -276,7 +279,7 @@
 									<div
 										class="border-[3px] border-black bg-black px-2 py-1 text-[0.5rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm"
 									>
-										{scoreText(card)}
+										{scoreLabel(card)}: {scores[card.id].toLocaleString()}
 									</div>
 
 									<span

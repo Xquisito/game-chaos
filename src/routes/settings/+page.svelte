@@ -20,9 +20,9 @@
 	let highScores = $state<Record<GameCabinetId, number>>(createScoreRecord());
 
 	function loadScores() {
-		for (const cabinet of gameCabinets) {
-			highScores[cabinet.id] = readCabinetScore(localStorage, cabinet);
-		}
+		highScores = Object.fromEntries(
+			gameCabinets.map((cabinet) => [cabinet.id, readCabinetScore(localStorage, cabinet)])
+		) as Record<GameCabinetId, number>;
 	}
 
 	function resetScore(cabinet: GameCabinet) {
@@ -32,10 +32,6 @@
 
 	function scoreLabel(cabinet: GameCabinet) {
 		return cabinet.score.mode === 'wins' ? 'Wins' : 'Hi-Score';
-	}
-
-	function formatScore(cabinet: GameCabinet) {
-		return highScores[cabinet.id].toLocaleString();
 	}
 
 	onMount(() => {
@@ -139,7 +135,7 @@
 								<div
 									class="mt-0.5 inline-block border-[2px] border-black bg-black px-1.5 py-0.5 text-[0.55rem] font-black uppercase text-yellow-300 sm:mt-1 sm:border-[3px] sm:px-2 sm:py-1 sm:text-[0.65rem]"
 								>
-									{scoreLabel(cabinet)}: {formatScore(cabinet)}
+									{scoreLabel(cabinet)}: {highScores[cabinet.id].toLocaleString()}
 								</div>
 							</div>
 
