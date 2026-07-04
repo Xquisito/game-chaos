@@ -65,6 +65,12 @@
 			kicker: 'Brick Sector',
 			cta: 'Break In'
 		},
+		'snake-chaos': {
+			name: 'Snake Chaos',
+			description: 'Thread the maze, eat the bait, and never bite yourself.',
+			kicker: 'Grid Garden',
+			cta: 'Coil Up'
+		},
 		tetris: {
 			name: 'Tetris Chaos',
 			description: 'Stack the blocks and survive the falling chaos!',
@@ -265,11 +271,11 @@
 
 							<div class="flex w-full flex-col gap-1 sm:flex-1">
 								<div>
-									<h2 class="text-sm font-black uppercase leading-none sm:text-[1.7rem]">
+									<h2 class="text-sm leading-none font-black uppercase sm:text-[1.7rem]">
 										{card.name}
 									</h2>
 									<p
-										class="mt-0.5 text-[0.6rem] font-bold uppercase leading-tight text-black/70 sm:mt-2 sm:text-[0.95rem]"
+										class="mt-0.5 text-[0.6rem] leading-tight font-bold text-black/70 uppercase sm:mt-2 sm:text-[0.95rem]"
 									>
 										{card.description}
 									</p>
@@ -277,7 +283,7 @@
 
 								<div class="mt-1 flex flex-col gap-1 sm:mt-4">
 									<div
-										class="border-[3px] border-black bg-black px-2 py-1 text-[0.5rem] font-black uppercase text-yellow-300 sm:border-4 sm:px-3 sm:py-2 sm:text-sm"
+										class="border-[3px] border-black bg-black px-2 py-1 text-[0.5rem] font-black text-yellow-300 uppercase sm:border-4 sm:px-3 sm:py-2 sm:text-sm"
 									>
 										{scoreLabel(card)}: {scores[card.id].toLocaleString()}
 									</div>

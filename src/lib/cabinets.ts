@@ -5,6 +5,7 @@ export type GameCabinetId =
 	| 'enduro'
 	| 'space-chaos'
 	| 'breakout-chaos'
+	| 'snake-chaos'
 	| 'tetris'
 	| 'frog-chaos';
 export type UtilityCabinetId = 'settings';
@@ -16,6 +17,7 @@ export type CabinetHref =
 	| '/enduro'
 	| '/space-invaders'
 	| '/breakout'
+	| '/snake'
 	| '/tetris'
 	| '/frog'
 	| '/settings';
@@ -124,6 +126,19 @@ export const gameCabinets: readonly GameCabinet[] = [
 		score: {
 			mode: 'high-score',
 			storageKey: 'breakout-chaos-high-score'
+		}
+	},
+	{
+		kind: 'game',
+		id: 'snake-chaos',
+		schemaName: 'Snake Chaos',
+		href: '/snake',
+		emoji: '🐍',
+		color: 'bg-emerald-500',
+		marquee: 'bg-lime-200',
+		score: {
+			mode: 'high-score',
+			storageKey: 'snake-chaos-high-score'
 		}
 	},
 	{

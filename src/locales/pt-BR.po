@@ -96,6 +96,8 @@ msgstr "Estrada Furiosa"
 #: src/routes/frog/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/settings/+page.svelte
+#: src/routes/snake/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -256,6 +258,7 @@ msgstr "Dificuldade"
 #: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -267,6 +270,7 @@ msgstr "Continuar"
 #: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "New Game"
@@ -274,6 +278,7 @@ msgstr "Novo Jogo"
 
 #: src/routes/breakout/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Press Start"
@@ -290,6 +295,9 @@ msgstr "Pressione Iniciar"
 #: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
+#: src/routes/snake/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
@@ -359,6 +367,7 @@ msgstr "Preta limpou o tabuleiro. Tente novamente ou volte para o splash."
 #: src/routes/breakout/+page.svelte
 #: src/routes/checkers/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Retry"
 msgstr "Tentar Novamente"
@@ -602,6 +611,7 @@ msgstr ""
 
 #: src/routes/breakout/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -609,12 +619,14 @@ msgid "Easy"
 msgstr "Fácil"
 
 #: src/routes/breakout/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Normal"
 msgstr "Normal"
 
 #: src/routes/breakout/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -879,6 +891,7 @@ msgstr "Dificuldade: {0}"
 
 #: src/routes/breakout/+page.svelte
 #: src/routes/frog/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Final Score"
@@ -956,16 +969,19 @@ msgid "Level {0} • {1} Lines"
 msgstr "Nível {0} • {1} Linhas"
 
 #: src/routes/breakout/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "★ New Record! ★"
 msgstr "★ Novo Recorde! ★"
 
 #: src/routes/breakout/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Splash Screen"
 msgstr "Tela Inicial"
 
 #: src/routes/breakout/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "⏸ PAUSED ⏸"
 msgstr "⏸ PAUSADO ⏸"
@@ -980,6 +996,7 @@ msgid "Hold"
 msgstr "Segurar"
 
 #: src/routes/breakout/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/tetris/+page.svelte
 msgid "Score"
 msgstr "Pontuação"
@@ -1251,8 +1268,9 @@ msgid "Tetris Chaos playfield"
 msgstr "Playfield do Tetris Chaos"
 
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
 msgid "Board Size"
-msgstr ""
+msgstr "Tamanho do Tabuleiro"
 
 #~ msgid "{0} • {1} mines"
 #~ msgstr ""
@@ -1474,6 +1492,7 @@ msgstr ""
 #: src/routes/enduro/+page.svelte
 #: src/routes/frog/+page.svelte
 #: src/routes/minesweeper/+page.svelte
+#: src/routes/snake/+page.svelte
 #: src/routes/space-invaders/+page.svelte
 #: src/routes/sudoku/+page.svelte
 #: src/routes/tetris/+page.svelte
@@ -1745,6 +1764,7 @@ msgid "Lives"
 msgstr "Vidas"
 
 #: src/routes/breakout/+page.svelte
+#: src/routes/snake/+page.svelte
 msgid "Record"
 msgstr "Recorde"
 
@@ -1773,3 +1793,118 @@ msgstr "Destrua a parede, salve a bola e persiga o rebote."
 #: src/routes/+page.svelte
 msgid "Break In"
 msgstr "Quebrar"
+
+#: src/routes/+page.svelte
+msgid "Snake Chaos"
+msgstr "Snake Chaos"
+
+#: src/routes/+page.svelte
+msgid "Thread the maze, eat the bait, and never bite yourself."
+msgstr "Costure o labirinto, coma a isca e nunca morda a si mesmo."
+
+#: src/routes/+page.svelte
+#: src/routes/snake/+page.svelte
+msgid "Grid Garden"
+msgstr "Jardim da Grade"
+
+#: src/routes/+page.svelte
+msgid "Coil Up"
+msgstr "Enrolar"
+
+#: src/routes/snake/+page.svelte
+msgid "Tight Arena"
+msgstr "Arena Apertada"
+
+#: src/routes/snake/+page.svelte
+msgid "Arcade Grid"
+msgstr "Grade Arcade"
+
+#: src/routes/snake/+page.svelte
+msgid "Long Run"
+msgstr "Partida Longa"
+
+#: src/routes/snake/+page.svelte
+msgid "Cruise"
+msgstr "Passeio"
+
+#: src/routes/snake/+page.svelte
+msgid "Classic"
+msgstr "Clássico"
+
+#: src/routes/snake/+page.svelte
+msgid "Turbo"
+msgstr "Turbo"
+
+#: src/routes/snake/+page.svelte
+msgid "Snake Chaos | Classic Arcade Serpent"
+msgstr "Snake Chaos | Serpente Arcade Clássica"
+
+#: src/routes/snake/+page.svelte
+msgid "Eat, grow, and survive the grid in Snake Chaos, a fast retro arcade cabinet built for keyboard, touch, and gamepad."
+msgstr "Coma, cresça e sobreviva à grade em Snake Chaos, um gabinete arcade retrô rápido feito para teclado, toque e gamepad."
+
+#: src/routes/snake/+page.svelte
+msgid "Snake Chaos - Classic Arcade Serpent"
+msgstr "Snake Chaos - Serpente Arcade Clássica"
+
+#: src/routes/snake/+page.svelte
+msgid "Classic Snake with chunky Game Chaos controls and hi-score memory."
+msgstr "Snake clássico com controles robustos do Game Chaos e memória de recorde."
+
+#: src/routes/snake/+page.svelte
+msgid "🐍 Snake Chaos 🐍"
+msgstr "🐍 Snake Chaos 🐍"
+
+#: src/routes/snake/+page.svelte
+msgid "Eat the red chip. Grow forever. Hit nothing."
+msgstr "Coma o chip vermelho. Cresça para sempre. Não bata em nada."
+
+#: src/routes/snake/+page.svelte
+#: src/routes/snake/+page.svelte
+msgid "Speed"
+msgstr "Velocidade"
+
+#: src/routes/snake/+page.svelte
+msgid "Touch D-pad appears during gameplay.<0/>"
+msgstr "O D-pad de toque aparece durante a partida.<0/>"
+
+#: src/routes/snake/+page.svelte
+msgid "Use arrows or WASD to turn one cell at a time. Eat red chips to score.<0/> Walls and your own trail end the run. Space pauses.<1/> <2/> <3>A / Enter = select • B / Esc = return.</3>"
+msgstr "Use setas ou WASD para virar uma casa por vez. Coma chips vermelhos para pontuar.<0/> Paredes e seu próprio rastro encerram a partida. Espaço pausa.<1/> <2/> <3>A / Enter = selecionar • B / Esc = voltar.</3>"
+
+#: src/routes/snake/+page.svelte
+msgid "Every cell belongs to the run!"
+msgstr "Cada célula pertence à partida!"
+
+#: src/routes/snake/+page.svelte
+msgid "The line finally caught itself."
+msgstr "A trilha finalmente se encontrou."
+
+#. 0: apples; 1: snake.length; 2: level
+#: src/routes/snake/+page.svelte
+msgid "{0} Apples • Length {1} • Level {2}"
+msgstr "{0} maçãs • Comprimento {1} • Nível {2}"
+
+#: src/routes/snake/+page.svelte
+msgid "Space resumes • B / Esc returns to splash"
+msgstr "Espaço continua • B / Esc volta ao início"
+
+#: src/routes/snake/+page.svelte
+msgid "Apples"
+msgstr "Maçãs"
+
+#: src/routes/snake/+page.svelte
+msgid "Snake Chaos playfield"
+msgstr "Campo de jogo do Snake Chaos"
+
+#: src/routes/snake/+page.svelte
+msgid "Touch D-pad • Space / tap center pauses • Esc returns to splash"
+msgstr "D-pad de toque • Espaço / toque no centro pausa • Esc volta ao início"
+
+#: src/routes/snake/+page.svelte
+msgid "Arrows / WASD turn • Space pauses • Esc returns to splash"
+msgstr "Setas / WASD viram • Espaço pausa • Esc volta ao início"
+
+#: src/routes/snake/+page.svelte
+msgid "Pause"
+msgstr "Pausa"
